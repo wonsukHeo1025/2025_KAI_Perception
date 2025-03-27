@@ -82,14 +82,6 @@ class FusionProjectionNode(Node):
     def __init__(self):
         super().__init__('fusion_projection_node')
         
-        # z 좌표를 파라미터로 선언
-        self.declare_parameter('cone_z_offset', -0.4)  # 기본값 -0.3m (콘이 라이다보다 아래에 있다고 가정)
-        self.cone_z_offset = self.get_parameter('cone_z_offset').value
-        self.get_logger().info(f"Using cone z offset: {self.cone_z_offset} meters")
-        
-        # 파라미터 변경 콜백 설정
-        self.add_on_set_parameters_callback(self.parameters_callback)
-        
         config_file = extract_configuration() 
         if config_file is None:
             self.get_logger().error("Failed to extract configuration file.")
@@ -149,13 +141,6 @@ class FusionProjectionNode(Node):
             "Unknown":      (0, 255, 0)    # Green (default)
         }
 
-    def parameters_callback(self, params):
-        for param in params:
-            if param.name == 'cone_z_offset':
-                self.cone_z_offset = param.value
-                self.get_logger().info(f"Updated cone z offset to: {self.cone_z_offset} meters")
-        return SetParametersResult(successful=True)
-
     def sync_callback(self, image_msg: Image, lidar_msg: PointCloud2, cones_msg: ModifiedFloat32MultiArray, boxes_msg: DetectionArray):
         try:
             if not image_msg.data:
@@ -214,52 +199,95 @@ class FusionProjectionNode(Node):
                 else:
                     self.get_logger().info("No LiDAR points in front of camera (z>0).")
 
-            # 8. cones 메시지 처리
+            # 8. cones 메시지 처리 - Simplified for 3D only
             cone_data = np.array(cones_msg.data, dtype=np.float32)
             if cone_data.size == 0:
                 self.get_logger().warn("Empty cones data.")
             else:
-                # 레이아웃에서 포인트 수 확인
+                # Check for layout structure
+                if len(cones_msg.layout.dim) < 1:
+                    self.get_logger().error("Cone layout dimension is missing or invalid.")
+                    return
+                
                 num_points = cones_msg.layout.dim[0].size
-                if num_points * 2 != cone_data.size:
-                    self.get_logger().error(f"Cone data size ({cone_data.size}) does not match layout dimensions ({num_points}*2).")
-                else:
-                    cones_xy = cone_data.reshape(num_points, 2)  # (N,2) 배열
-                    
-                    # z 좌표를 파라미터 값으로 설정 (0 대신 self.cone_z_offset 사용)
-                    cones_xyz = np.hstack((cones_xy, np.ones((num_points, 1), dtype=np.float32) * self.cone_z_offset))
-                    
-                    # 9. cone 포인트를 이미지 평면으로 투영
-                    # 먼저 cone 좌표를 라이다 좌표계에서 카메라 좌표계로 변환
-                    cones_xyz_h = np.hstack((cones_xyz, np.ones((cones_xyz.shape[0], 1), dtype=np.float32)))  # 동차 좌표
-                    cones_cam_h = cones_xyz_h @ self.T_lidar_to_cam.T  # 카메라 좌표계로 변환
-                    cones_cam = cones_cam_h[:, :3]  # 동차 좌표에서 3D 좌표 추출
-                    
-                    # 카메라 앞에 있는 cone 포인트만 필터링
-                    mask_cones_front = (cones_cam[:, 2] > 0.0)
-                    cones_cam_front = cones_cam[mask_cones_front]
-                    
-                    if cones_cam_front.shape[0] > 0:
-                        # 투영
-                        rvec = np.zeros((3,1), dtype=np.float64)
-                        tvec = np.zeros((3,1), dtype=np.float64)
-                        cone_image_points, _ = cv2.projectPoints(
-                            cones_cam_front.astype(np.float64),
-                            rvec, tvec,
-                            self.camera_matrix,
-                            self.dist_coeffs
+                
+                # --- SIMPLIFIED: Only support 3D format ---
+                # Check for 3D format (either with explicit layout or inferred)
+                if len(cones_msg.layout.dim) == 2 and cones_msg.layout.dim[1].size == 3:
+                    # Explicitly defined 3D data [x, y, z]
+                    expected_size = num_points * 3
+                    if expected_size != cone_data.size:
+                        self.get_logger().error(
+                            f"3D Cone data size ({cone_data.size}) does not match layout "
+                            f"({num_points} cones * 3 values = {expected_size})."
                         )
-                        cone_image_points = cone_image_points.reshape(-1, 2)
-                        
-                        # 10. 투영된 cone 포인트를 이미지에 빨간색 마커로 시각화
-                        h, w = cv_image.shape[:2]
-                        for (u, v) in cone_image_points:
-                            u_int = int(round(u))
-                            v_int = int(round(v))
-                            if 0 <= u_int < w and 0 <= v_int < h:
-                                cv2.circle(cv_image, (u_int, v_int), 4, (0, 0, 255), -1)  # 빨간색 원
-                                # 크기를 더 크게 하고 테두리도 추가
-                                cv2.circle(cv_image, (u_int, v_int), 6, (255, 255, 255), 1)  # 흰색 테두리
+                        return
+                elif cone_data.size % 3 == 0:
+                    # Infer from data size if divisible by 3
+                    num_points = cone_data.size // 3
+                    self.get_logger().info(f"Inferred 3D data with {num_points} points")
+                else:
+                    # Not 3D data
+                    self.get_logger().error(
+                        "Data is not in 3D format. Expected 3 values per point."
+                    )
+                    return
+                
+                # Get 3D points directly
+                self.get_logger().info("Processing 3D cone data (X, Y, Z)")
+                cones_xyz = cone_data.reshape(num_points, 3)  # (N,3) array
+                
+                # 9. Project cone points to image plane
+                # Convert to homogeneous coordinates
+                cones_xyz_h = np.hstack((cones_xyz, np.ones((cones_xyz.shape[0], 1), dtype=np.float32)))
+                # Transform from LiDAR to camera coordinate system
+                cones_cam_h = cones_xyz_h @ self.T_lidar_to_cam.T
+                cones_cam = cones_cam_h[:, :3]  # Extract 3D coordinates from homogeneous
+                
+                # Filter points in front of camera
+                mask_cones_front = (cones_cam[:, 2] > 0.0)
+                cones_cam_front = cones_cam[mask_cones_front]
+                
+                if cones_cam_front.shape[0] > 0:
+                    # Project to image plane
+                    rvec = np.zeros((3,1), dtype=np.float64)
+                    tvec = np.zeros((3,1), dtype=np.float64)
+                    cone_image_points, _ = cv2.projectPoints(
+                        cones_cam_front.astype(np.float64),
+                        rvec, tvec,
+                        self.camera_matrix,
+                        self.dist_coeffs
+                    )
+                    cone_image_points = cone_image_points.reshape(-1, 2)
+                    
+                    # 10. Visualize projected cone points on the image
+                    h, w = cv_image.shape[:2]
+                    
+                    # If we have class names, use those for colors
+                    has_class_names = hasattr(cones_msg, 'class_names') and len(cones_msg.class_names) > 0
+                    valid_points_count = mask_cones_front.sum()
+                    
+                    for i, (u, v) in enumerate(cone_image_points):
+                        u_int = int(round(u))
+                        v_int = int(round(v))
+                        if 0 <= u_int < w and 0 <= v_int < h:
+                            # Default color: red
+                            color = (0, 0, 255)
+                            
+                            # If class names are available, use appropriate colors
+                            if has_class_names and i < valid_points_count and i < len(cones_msg.class_names):
+                                class_name = cones_msg.class_names[i] 
+                                color = self.color_mapping.get(class_name, (0, 0, 255))
+                            
+                            # Draw the cone marker
+                            cv2.circle(cv_image, (u_int, v_int), 4, color, -1)  # Filled circle
+                            cv2.circle(cv_image, (u_int, v_int), 6, (255, 255, 255), 1)  # White border
+                            
+                            # Add Z-depth info
+                            z_depth = cones_cam_front[i, 2]
+                            z_text = f"{z_depth:.1f}m"
+                            cv2.putText(cv_image, z_text, (u_int+7, v_int), 
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
             # 11. bounding boxes 메시지 처리
             for i, detection in enumerate(boxes_msg.detections):

@@ -236,15 +236,16 @@ void OutlierFilter::clusterCones(Cloud::Ptr &cloud_out, std::vector<ConeDescript
 // 클러스터된 콘을 정렬
 std::vector<std::vector<double>> OutlierFilter::sortCones(const std::vector<ConeDescriptor> &cones) {
     std::vector<std::vector<double>> sorted_cones;
-    // 각 클러스터의 무게중심 좌표(X, Y)를 벡터에 추가
+    // 각 클러스터의 무게중심 좌표(X, Y, Z)를 벡터에 추가
     for (const auto &cone : cones) {
-        sorted_cones.push_back({cone.mean.x, cone.mean.y}); // sorted_cones는 벡터로 구성된 리스트, 각 클러스터의 중심 좌표(X, Y)를 담음
+        // Include cone.mean.z here
+        sorted_cones.push_back({cone.mean.x, cone.mean.y, cone.mean.z}); // sorted_cones는 이제 각 클러스터의 중심 좌표(X, Y, Z)를 담음
     }
 
-    // x축을 기준으로 정렬
+    // x축을 기준으로 정렬 (This sorting logic remains the same)
     std::sort(sorted_cones.begin(), sorted_cones.end(),
               [](const std::vector<double> &a, const std::vector<double> &b) {
-                  return a[0] < b[0];
+                  return a[0] < b[0]; // Sort based on the first element (X)
               });
 
     return sorted_cones;
@@ -334,7 +335,7 @@ void OutlierFilter::visualizeCones(const std::vector<ConeDescriptor> &cones) {
         marker.action = visualization_msgs::msg::Marker::ADD;
         marker.pose.position.x = cone.mean.x;
         marker.pose.position.y = cone.mean.y;
-        marker.pose.position.z = 0.3;
+        marker.pose.position.z = cone.mean.z;
         marker.scale.x = 0.3;
         marker.scale.y = 0.3;
         marker.scale.z = 0.3;
@@ -378,7 +379,7 @@ void OutlierFilter::publishSortedConesMarkers(const std::vector<std::vector<doub
         // Assign x, y from sorted_cones and set a fixed z value
         marker.pose.position.x = cone[0];
         marker.pose.position.y = cone[1];
-        marker.pose.position.z = 0.3;  // Fixed height for visualization
+        marker.pose.position.z = cone[2];
         marker.scale.x = 0.3;
         marker.scale.y = 0.3;
         marker.scale.z = 0.3;
