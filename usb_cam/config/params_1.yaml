@@ -15,9 +15,25 @@
       saturation: -1
       sharpness: -1
       gain: -1
-      auto_white_balance: true
+      auto_white_balance: false
       white_balance: 4000
-      autoexposure: true
+      autoexposure: false
       exposure: 100
       autofocus: false
       focus: -1
+
+# """
+# This driver supports the following formats:
+# 	rgb8
+# 	yuyv
+# 	yuyv2rgb
+# 	uyvy
+# 	uyvy2rgb
+# 	mono8
+# 	mono16
+# 	y102mono8
+# 	raw_mjpeg
+# 	mjpeg2rgb
+# 	m4202rgb
+
+# """

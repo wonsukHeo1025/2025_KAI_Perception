@@ -24,7 +24,9 @@ setup(
     entry_points={
         'console_scripts': [
             'hungarian_association_node = hungarian_association.yolo_lidar_fusion:main',
-            'kalman_filtering_node = hungarian_association.kalman_filtering:main'
+            'kalman_filtering_node = hungarian_association.kalman_filtering:main',
+            'ukf_imu_filter_node = hungarian_association.ukf_imu_filter:main',
+            'visualize_fused_cones_rviz_marker_node = hungarian_association.visualize_fused_cones_rviz_marker:main',
         ],
     },
 )

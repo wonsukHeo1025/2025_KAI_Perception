@@ -1,0 +1,6 @@
+{
+  "package_name": "cone_detection",
+  "non_idl_tuples": [
+    "/home/user1/ros2_ws/src/cone_detection:msg/ModifiedFloat32MultiArray.msg"
+  ]
+}

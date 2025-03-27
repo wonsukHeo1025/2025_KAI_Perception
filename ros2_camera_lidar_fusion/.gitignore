@@ -1,9 +1,0 @@
-# Ignore files
-
-# Ignore folders
-.vscode
-docker
-resource
-test
-
-

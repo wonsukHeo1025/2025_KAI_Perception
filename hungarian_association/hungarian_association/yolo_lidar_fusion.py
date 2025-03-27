@@ -211,7 +211,7 @@ class YoloLidarFusion(Node):
         # Pad the cost matrix to make it square
         if num_boxes < num_cones:
             # Set cost for dummy YOLO boxes
-            dummy_rows = np.full((num_cones - num_boxes, num_cones), 0.0)
+            dummy_rows = np.full((num_cones - num_boxes, num_cones), 1e6)
             cost_matrix = np.vstack((cost_matrix, dummy_rows))
         elif num_boxes > num_cones:
             # Set cost for dummy LiDAR points

@@ -1,0 +1,11 @@
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/uninstall.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/cone_detection_uninstall.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/cone_detection_library.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/cone_detection_node.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/test.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/edit_cache.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/rebuild_cache.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/list_install_components.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/install.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/install/local.dir
+/home/user1/ros2_ws/src/cone_detection/build/CMakeFiles/install/strip.dir
