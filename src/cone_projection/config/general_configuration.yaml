@@ -1,0 +1,24 @@
+lidar:
+  lidar_topic: /point_cones
+  frame_id: os_sensor
+
+cones:
+  sorted_cones_topic: /sorted_cones_time
+  frame_id: os_lidar
+
+camera:
+  image_topic: /image_raw
+  projected_topic: /cones_projected_image
+  image_size:
+    width: 640
+    height: 360
+  frame_id: camera
+
+general:
+  config_folder: /home/wonsuk1025/kai_ws/src/cone_projection/config
+  camera_intrinsic_calibration: camera_intrinsic_calibration.yaml
+  camera_extrinsic_calibration: camera_extrinsic_calibration.yaml
+  slop: 0.1 
+  keyboard_listener: True
+  get_intrinsics: True
+  get_extrinsics: True

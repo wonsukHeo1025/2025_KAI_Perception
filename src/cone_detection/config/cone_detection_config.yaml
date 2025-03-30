@@ -1,0 +1,28 @@
+cone_detection:
+  ros__parameters:
+    topic_name: "/ouster/points"         
+    frame_id_: "os_lidar" 
+    
+    x_threshold_enable: true       # X축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    y_threshold_enable: true       # Y축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    z_threshold_enable: true        # Z축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    x_threshold_min: -10.0          # X축 최소값 (필터링 기준, 최소 범위) // 전방
+    x_threshold_max: 0.0           # X축 최대값 (필터링 기준, 최대 범위) // 후방
+    y_threshold_min: -3.0          # Y축 최소값 (필터링 기준, 최소 범위)// 왼쪽
+    y_threshold_max: 3.0           # Y축 최대값 (필터링 기준, 최대 범위) // 오른쪽
+    z_threshold_min: -1.2          # Z축 최소값 (필터링 기준, 지면 제거를 위한 값)
+    z_threshold_max: -0.3           # Z축 최대값 (필터링 기준, 최대 높이 제한)
+    min_distance: 1.6               # 최소 거리 필터링 (LIDAR로부터 너무 가까운 점 제거)
+    max_distance: 30.0             # 최대 거리 필터링 (LIDAR로부터 너무 먼 점 제거)
+    intensity_threshold: 5.0       # Intensity 필터링 기준값 (값이 낮은 점 제거)
+    plane_distance_threshold: 0.1  # RANSAC 평면 세그먼테이션의 거리 허용 오차 (어떤 점 is in 평면 판별 기준)
+    
+    # ROI 0도 기준은 라이다 정면이 -90도, 라이다 오른쪽이 0도, 라이다 꼬리가 90도
+    roi_angle_min: -180.0             # ROI(관심 영역)의 최소 각도 (X축 기준, 좌측 범위)
+    roi_angle_max: 0.0            # ROI(관심 영역)의 최대 각도 (X축 기준, 우측 범위)
+
+    voxel_leaf_size: 0.1           # Voxel Grid 필터링의 leaf 크기 (다운샘플링 해상도)
+    
+    ec_cluster_tolerance: 0.25      # 한 군집이 될 점간의 거리 임계값
+    ec_min_cluster_size: 1        # 클러스터로 인정하기 위한 최소 포인트 수 // 증가: 노이즈 제외, 클러스터 수 감소, 감소: 더 작은 클러스터 인정
+    ec_max_cluster_size: 25       # 클러스터로 인정하기 위한 최대 포인트 수 // 증가: 매우 큰 클러스터도 유지, 감소: 일정 크기 이상 클러스터 제외

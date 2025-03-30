@@ -1,0 +1,13 @@
+train: /home/wonsuk1025/yolo_ws/src/yolo/train/images
+val: /home/wonsuk1025/yolo_ws/src/yolo/valid/images
+test: /home/wonsuk1025/yolo_ws/src/yolo/test/images
+
+nc: 3
+names: ['blue cone', 'red cone', 'yellow cone']
+
+roboflow:
+  workspace: kaiws
+  project: kai_ws-3
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/kaiws/kai_ws-3/dataset/1
