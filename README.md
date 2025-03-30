@@ -1,8 +1,10 @@
-2025 KAI Perception
+# KAI Driverless car Perception part
+2025년 건국대학교 자작자동차 동아리 Team K.A.I. 자율주행팀 인지파트에서 수행하는 카메라-Lidar 센서 퓨전 프로젝트
 
-2025년 건국대학교 자작자동차 동아리 Team K.A.I. 자율주행팀 인지파트에서 수행하는 카메라-Lidar 센서 퓨전 프로젝트에 관한 내용을 담고 있습니다.
+![image](https://github.com/user-attachments/assets/bcd8d80c-b775-45ca-acee-663a4a0505c6)
 
-주요 기능
+
+## 주요 기능
 
 센서 데이터 통합 처리
 
@@ -12,7 +14,13 @@
 
 모듈화된 소프트웨어 아키텍처
 
-폴더 구조 및 설명
+![image](https://github.com/user-attachments/assets/7994dcb9-d394-47d4-9ba4-cea586f759c8)
+
+![image](https://github.com/user-attachments/assets/ed3515d1-219f-4d4a-ba44-c4e17d99bb89)
+
+
+
+## 각 패키지 설명
 
 src/
 
