@@ -2,6 +2,7 @@
 2025년 건국대학교 자작자동차 동아리 Team K.A.I. 자율주행팀 인지파트에서 수행하는 카메라-Lidar 센서 퓨전 프로젝트
 
 25년 11월까지 진행하는 대회로 계속해서 수정, 보완을 거쳐나가야함
+( 현재 프로토타입 초기 버전 )
 
 ![image](https://github.com/user-attachments/assets/bcd8d80c-b775-45ca-acee-663a4a0505c6)
 
