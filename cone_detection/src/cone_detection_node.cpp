@@ -141,7 +141,7 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
     // 콘 데이터를 기반으로 MarkerArray 발행
     // publishSortedConesMarkers(sorted_cones, params_.frame_id_);
-    visualizeCones(validated_cones, params_.frame_id_);
+    visualizeCones(validated_cones, "os_sensor");
 }
 
 
