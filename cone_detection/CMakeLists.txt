@@ -1,104 +1,78 @@
-cmake_minimum_required(VERSION 3.5)
-
-# 시스템 라이브러리와 콘다 환경 충돌 방지
-list(REMOVE_ITEM CMAKE_SYSTEM_PREFIX_PATH /home/user1/miniforge3/envs/yolo /home/user1/miniforge3)
-cmake_policy(SET CMP0074 NEW)
+cmake_minimum_required(VERSION 3.8)
 project(cone_detection)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-# Find dependencies
+# find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(pcl_conversions REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common io visualization filters)
-find_package(Boost REQUIRED COMPONENTS thread)
-find_package(rosidl_default_generators REQUIRED)
+find_package(PCL REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(custom_interface REQUIRED)
 
-# Add PCL definitions
-add_definitions(${PCL_DEFINITIONS})
-
-# Include directories
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
+  /usr/include/pcl-1.12
 )
 
-# Add library
-add_library(${PROJECT_NAME}_library
+link_directories(
+${PCL_LIBRARY_DIRS}
+)
+
+add_definitions(
+${PCL_DEFINITIONS}
+)
+
+# 소스 파일 목록 설정
+set(SOURCES
   src/cone_detection_node.cpp
 )
 
+# 실행 파일 생성
+add_executable(cone_detection_node ${SOURCES})
+
 # Link libraries (custom_interface 제거, ament_target_dependencies로 처리)
-target_link_libraries(${PROJECT_NAME}_library
-  ${PCL_LIBRARIES}
-  ${Boost_LIBRARIES}
+target_link_libraries(cone_detection_node 
+  ${PCL_LIBRARIES} 
+  Eigen3::Eigen
 )
 
-# Add dependencies for the library
-ament_target_dependencies(${PROJECT_NAME}_library
+# ROS2 의존성 연결
+ament_target_dependencies(cone_detection_node
   rclcpp
-  sensor_msgs
   std_msgs
-  pcl_conversions
+  sensor_msgs
   visualization_msgs
+  pcl_conversions
   custom_interface
 )
 
-# Add executable
-set(CMAKE_SKIP_BUILD_RPATH TRUE)
-add_executable(${PROJECT_NAME}_node
-  src/cone_detection_node.cpp  # main 함수가 있는 파일로 가정, 필요 시 수정
-)
-
-# Link the library to the executable
-target_link_libraries(${PROJECT_NAME}_node
-  ${PROJECT_NAME}_library
-)
-
-# Add dependencies for the executable
-ament_target_dependencies(${PROJECT_NAME}_node
-  rclcpp
-  sensor_msgs
-  std_msgs
-  pcl_conversions
-  visualization_msgs
-  custom_interface
-)
-
-# Install targets
-install(TARGETS ${PROJECT_NAME}_node ${PROJECT_NAME}_library
+# 설치 규칙
+install(TARGETS
+  cone_detection_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install include directory
-install(DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
-)
-
-# Install msg files
-install(
-  DIRECTORY msg/
+install(DIRECTORY
+  launch
+  config
+  include
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Install launch files
-install(
-  DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
-# Install config files
-install(
-  DIRECTORY config/
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
-# Export package
 ament_package()

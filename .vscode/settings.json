@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/user1/ros2_ws/src/cone_detection"
+    "cmake.sourceDirectory": "/home/user1/ros2_ws/src/cone_detection",
+    "cmake.ignoreCMakeListsMissing": true
 }

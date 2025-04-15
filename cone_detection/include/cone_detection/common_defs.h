@@ -1,42 +1,16 @@
 #pragma once
 
 #include <pcl/common/common_headers.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <memory>
 #include <vector>
 #include <cmath>
 
-// PCL Viewer 타입 정의
-using Viewer = std::shared_ptr<pcl::visualization::PCLVisualizer>;
 using Point = pcl::PointXYZI;       // XYZ + Intensity 포인트 타입
 using Cloud = pcl::PointCloud<Point>;
 using PointC = pcl::PointXYZRGB;   // XYZ + RGB 포인트 타입
 using CloudC = pcl::PointCloud<PointC>;
 
 namespace LIDAR {
-
-    // 포인트 클래스 정의
-    namespace PointClasses {
-        static const int n_classes = 5;  // 클래스 수
-
-        enum PointClass : uint8_t {
-            inlier = 0,  // 내부 점
-            ground,      // 지면
-            too_high,    // 너무 높은 점
-            too_far,     // 너무 먼 점
-            too_close    // 너무 가까운 점
-        };
-
-        // 각 클래스의 색상 정의
-        static constexpr uint8_t colors[n_classes][3] = {
-            {0, 255, 0},    // inlier - green
-            {0, 0, 255},    // ground - blue
-            {255, 0, 255},  // too_high - magenta
-            {255, 0, 0},    // too_far - red
-            {255, 255, 0}   // too_close - yellow
-        };
-    }
-
     // 콘 정보 디스크립터 클래스
     class ConeDescriptor {
     public:
@@ -81,8 +55,4 @@ namespace LIDAR {
             valid = (radius < 0.3) && (stddev.x < 0.2) && (stddev.y < 0.2) && (stddev.z < 0.2);
         }
     };
-
-    // 세그먼테이션 결과 타입 정의
-    using Segmentation = std::vector<PointClasses::PointClass>;
-
 }  // namespace LIDAR

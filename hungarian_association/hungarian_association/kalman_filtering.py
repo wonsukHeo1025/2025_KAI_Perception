@@ -27,9 +27,13 @@ class Track:
                  Q_process_diag_pos=0.1, Q_process_diag_vel=0.5):
         self.track_id = track_id
         self.initial_dt = dt
+        # Store the transformation matrix from IMU frame to sensor frame
+        # T_imu_to_sensor is a 4x4 homogeneous transformation matrix: 
+        # [ R_imu_to_sensor  t_imu_to_sensor ]
+        # [       0                1         ]
         self.T_imu_to_sensor = np.array(T_imu_to_sensor).reshape(4, 4)
-        self.R_imu_to_sensor = self.T_imu_to_sensor[:3, :3]
-        self.t_imu_to_sensor = self.T_imu_to_sensor[:3, 3]
+        self.R_imu_to_sensor = self.T_imu_to_sensor[:3, :3]  # 3x3 rotation matrix
+        self.t_imu_to_sensor = self.T_imu_to_sensor[:3, 3]   # 3x1 translation vector
 
         # State Vector: [cone_x, cone_y, cone_z, sensor_vx, sensor_vy, sensor_vz]
         dim_x = 6
@@ -64,13 +68,16 @@ class Track:
     @staticmethod
     def static_fx(x, dt, fx_args=None):
         """
-        Augmented State Transition Function (Static Method). unchanged.
+        Augmented State Transition Function (Static Method).
         Predicts the next state [cone_pos_sensor, sensor_vel_sensor]
         based on sensor motion (IMU).
 
         x: Current state [px, py, pz, vx, vy, vz]
         dt: Time interval
         fx_args: (R_imu_to_sensor, omega_imu_vec, accel_imu_vec) tuple
+            - R_imu_to_sensor: 3x3 rotation matrix from IMU to sensor frame
+            - omega_imu_vec: Angular velocity in IMU frame [wx, wy, wz]
+            - accel_imu_vec: Linear acceleration in IMU frame [ax, ay, az]
         """
         if fx_args is None:
              # Should not happen if called correctly from predict
@@ -82,6 +89,8 @@ class Track:
         current_vel_sensor = x[3:6]
 
         # 1. Transform IMU readings to Sensor Frame
+        # Apply rotation from IMU frame to sensor frame
+        # Note: Translation is not needed for angular velocity and acceleration as they are vectors, not points
         omega_sensor = R_imu_to_sensor @ omega_imu_vec
         accel_sensor = R_imu_to_sensor @ accel_imu_vec
 
@@ -97,7 +106,7 @@ class Track:
         R_compensation = R_delta.T
 
         # 3. Predict Sensor Velocity at k+1 (expressed in frame k+1)
-        vel_kplus1_in_k = current_vel_sensor + accel_sensor * dt
+        vel_kplus1_in_k = current_vel_sensor + accel_sensor * dt * -1 # -1을 곱해서 상대운동 효과를 내긴 했는데 일단 뭐가 문제인지는 더 파 봐야함...
         predicted_vel_sensor = R_compensation @ vel_kplus1_in_k
 
         # 4. Predict Cone Position at k+1 (expressed in frame k+1)
@@ -118,17 +127,27 @@ class Track:
         return x[0:3] # Return the x, y, z position of the cone
 
     def predict(self, dt, imu_msg):
-        """UKF 예측 단계 실행 (unchanged logic)"""
+        """
+        UKF 예측 단계 실행
+        
+        Args:
+            dt: Time delta since last prediction
+            imu_msg: IMU message containing angular velocity and linear acceleration data
+        """
+        # Extract angular velocity from IMU message if available
         use_angular_vel = imu_msg.angular_velocity_covariance[0] != -1.0
         omega_imu = np.zeros(3, dtype=np.float64)
         if use_angular_vel:
+             # Angular velocity in IMU frame
              omega_imu = np.array([imu_msg.angular_velocity.x,
                                    imu_msg.angular_velocity.y,
                                    imu_msg.angular_velocity.z], dtype=np.float64)
 
+        # Extract linear acceleration from IMU message if available
         use_linear_accel = imu_msg.linear_acceleration_covariance[0] != -1.0
         accel_imu = np.zeros(3, dtype=np.float64)
         if use_linear_accel:
+            # Linear acceleration in IMU frame
             accel_imu = np.array([imu_msg.linear_acceleration.x,
                                   imu_msg.linear_acceleration.y,
                                   imu_msg.linear_acceleration.z], dtype=np.float64)
@@ -167,6 +186,13 @@ class Track:
                 print("[Track.predict] No orientation data - using simplified gravity compensation")
                 accel_imu[2] = 0.0  # z방향 가속도는 없다고 가정
 
+        # Pass IMU data to the UKF prediction step
+        # R_imu_to_sensor will transform the IMU measurements to the sensor frame
+        # The transformation applies the specific os_imu to os_sensor transform matrix:
+        # [ 1  0  0  0.006253 ]  // X_sensor = X_imu + 6.253 mm
+        # [ 0  1  0 -0.011775 ]  // Y_sensor = Y_imu - 11.775 mm
+        # [ 0  0  1  0.007645 ]  // Z_sensor = Z_imu + 7.645 mm
+        # [ 0  0  0  1        ]
         fx_args_tuple = (self.R_imu_to_sensor, omega_imu, accel_imu)
         self.ukf.predict(dt=dt, fx_args=fx_args_tuple)
 
@@ -237,7 +263,7 @@ class ConeTracker(Node):
         super().__init__('cone_tracker_ukf')
 
         # Parameters (R_measurement now applies to 3x3)
-        self.declare_parameter('max_missed_detections', 9)
+        self.declare_parameter('max_missed_detections', 4)
         self.declare_parameter('distance_threshold', 0.7) # Threshold now applies to 3D distance
         # cone_z_offset might be less critical if input Z is reliable, but keep for potential use/fallback
         self.declare_parameter('cone_z_offset', -0.6)
@@ -247,7 +273,14 @@ class ConeTracker(Node):
         self.declare_parameter('ukf.Q_process_diag_pos', 0.1)
         self.declare_parameter('ukf.Q_process_diag_vel', 0.5)
         self.declare_parameter('fixed_dt', 0.056)
-        default_transform = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        # Transform from IMU frame to sensor frame (os_imu to os_sensor)
+        # Convert millimeters to meters (divide by 1000)
+        default_transform = [
+            1.0, 0.0, 0.0, 0.006253,    # X_sensor = X_imu + 6.253 mm (converted to m)
+            0.0, 1.0, 0.0, -0.011775,   # Y_sensor = Y_imu - 11.775 mm (converted to m)
+            0.0, 0.0, 1.0, 0.007645,    # Z_sensor = Z_imu + 7.645 mm (converted to m)
+            0.0, 0.0, 0.0, 1.0
+        ]
         self.declare_parameter('imu_to_sensor_transform', default_transform)
 
         # Get parameters
@@ -271,9 +304,22 @@ class ConeTracker(Node):
         # Log parameters
         self.get_logger().info("--- Cone Tracker UKF (3D Input) Parameters ---")
         self.get_logger().info(f" Distance Threshold (3D): {self.distance_threshold}")
-        # ... (log other parameters as before) ...
-        self.get_logger().info(f" UKF R_measurement (per axis): {self.R_measurement}")
-        self.get_logger().info(f" IMU to Sensor Transform:\n{self.T_imu_to_sensor}")
+        self.get_logger().info(f" Max Missed Detections: {self.max_missed_detections}")
+        self.get_logger().info(f" Cone Z Offset: {self.cone_z_offset}")
+        self.get_logger().info(f" UKF Parameters:")
+        self.get_logger().info(f"   P_initial_pos: {self.P_initial_pos}")
+        self.get_logger().info(f"   P_initial_vel: {self.P_initial_vel}")
+        self.get_logger().info(f"   R_measurement (per axis): {self.R_measurement}")
+        self.get_logger().info(f"   Q_process_diag_pos: {self.Q_process_diag_pos}")
+        self.get_logger().info(f"   Q_process_diag_vel: {self.Q_process_diag_vel}")
+        self.get_logger().info(f" Fixed dt: {self.fixed_dt}")
+        self.get_logger().info(f" IMU to Sensor Transform (os_imu to os_sensor):")
+        # Format the transformation matrix nicely for logging
+        t_mm = self.T_imu_to_sensor[:3, 3] * 1000.0  # Convert to mm for display
+        self.get_logger().info(f"   [ {self.T_imu_to_sensor[0,0]:.1f}  {self.T_imu_to_sensor[0,1]:.1f}  {self.T_imu_to_sensor[0,2]:.1f}  {t_mm[0]:.3f} mm ]")
+        self.get_logger().info(f"   [ {self.T_imu_to_sensor[1,0]:.1f}  {self.T_imu_to_sensor[1,1]:.1f}  {self.T_imu_to_sensor[1,2]:.1f}  {t_mm[1]:.3f} mm ]")
+        self.get_logger().info(f"   [ {self.T_imu_to_sensor[2,0]:.1f}  {self.T_imu_to_sensor[2,1]:.1f}  {self.T_imu_to_sensor[2,2]:.1f}  {t_mm[2]:.3f} mm ]")
+        self.get_logger().info(f"   [ {self.T_imu_to_sensor[3,0]:.1f}  {self.T_imu_to_sensor[3,1]:.1f}  {self.T_imu_to_sensor[3,2]:.1f}  {self.T_imu_to_sensor[3,3]:.1f} ]")
         self.get_logger().info("---------------------------------------------")
 
         self.add_on_set_parameters_callback(self.parameters_callback)

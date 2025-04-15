@@ -11,6 +11,9 @@
 #include <pcl/filters/voxel_grid.h>
 #include <Eigen/Dense>
 #include <pcl/common/transforms.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/common/pca.h>
+#include <pcl/filters/passthrough.h>
 
 #include "common_defs.h"
 #include "custom_interface/msg/modified_float32_multi_array.hpp"
@@ -42,6 +45,9 @@ public:
         float ec_cluster_tolerance;   // 클러스터링 거리 허용치
         int ec_min_cluster_size;      // 클러스터 최소 크기
         int ec_max_cluster_size;      // 클러스터 최대 크기
+        float pca_orientation_threshold; // PCA 방향 임계값
+        float min_cone_height;        // 최소 콘 높이
+        float max_cone_height;        // 최대 콘 높이
     };
 
     OutlierFilter();  // 생성자
@@ -49,6 +55,9 @@ public:
 protected:
     // 파라미터
     Params params_;
+
+    // 지면 계수 멤버 변수 추가
+    pcl::ModelCoefficients::Ptr last_plane_coefs_; // 마지막으로 검출된 지면 계수
     
     // ROS2 퍼블리셔
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
@@ -62,17 +71,23 @@ protected:
     // 콜백 함수: 포인트 클라우드 데이터 수신 및 처리
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-    // 포인트 클라우드 필터링
+    // 포인트 클라우드 필터링(plane_coefs 저장 로직 추가)
     void filterPointCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out);
 
-    // 180도 회전 보정
-    void correctYawRotation(Cloud::Ptr &cloud);
+    // LiDAR 좌표계를 센서 좌표계로 변환 (os_lidar to os_sensor)
+    void lidarToSensorTransform(Cloud::Ptr &cloud);
 
     // Voxelization (다운샘플링)
     void voxelizeCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out, float leaf_size);
 
     // 클러스터링을 통한 콘 추출
-    void clusterCones(Cloud::Ptr &cloud_out, std::vector<ConeDescriptor> &cones);
+    void clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones);
+
+    // 검증 함수 추가
+    void validateCones(
+        const std::vector<ConeDescriptor> &initial_cones,
+        std::vector<ConeDescriptor> &validated_cones,
+        const pcl::ModelCoefficients::ConstPtr &plane_coefs);
 
     // 클러스터링된 콘 데이터를 정렬
     std::vector<std::vector<double>> sortCones(const std::vector<ConeDescriptor> &cones);
@@ -81,7 +96,8 @@ protected:
     void publishCloud(
         const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr &publisher,
         Cloud::Ptr &cloud,
-        const rclcpp::Time &timestamp);
+        const rclcpp::Time &timestamp,
+        const std::string& frame_id = "os_sensor");
 
     // 정렬된 콘 데이터를 퍼블리싱
     void publishArray(
@@ -92,16 +108,17 @@ protected:
     void publishArrayWithTimestamp(
         const rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr &publisher,
         const std::vector<std::vector<double>> &array,
-        const rclcpp::Time &timestamp);
+        const rclcpp::Time &timestamp,
+        const std::string& frame_id = "os_sensor");
 
     // 클러스터링된 콘 시각화
-    void visualizeCones(const std::vector<ConeDescriptor> &cones);
+    void visualizeCones(const std::vector<ConeDescriptor> &cones, const std::string& frame_id = "os_sensor");
     int previous_marker_count_ = 0;
 
     // ROI 영역 각도 계산
     float ROI_theta(float x, float y);
     
-    void publishSortedConesMarkers(const std::vector<std::vector<double>> &sorted_cones);
+    void publishSortedConesMarkers(const std::vector<std::vector<double>> &sorted_cones, const std::string& frame_id = "os_sensor");
 
 };
 

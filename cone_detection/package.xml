@@ -1,28 +1,24 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>cone_detection</name>
-  <version>0.1.0</version>
-  <description>Cone detection package for ROS2</description>
-
-  <maintainer email="kikiws70@konkuk.ac.kr">lhj</maintainer>
-  <license>Apache-2.0</license>
+  <version>0.0.0</version>
+  <description>콘 감지용 LiDAR 프로세싱 패키지</description>
+  <maintainer email="user@todo.todo">user1</maintainer>
+  <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>rclcpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>pcl_conversions</build_depend>
-  <build_depend>rosidl_default_generators</build_depend>
-  <build_depend>PCL</build_depend>
-  <build_depend>Boost</build_depend>
-  <build_depend>custom_interface</build_depend>
 
-  <exec_depend>rclcpp</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>pcl_conversions</exec_depend>
-  <exec_depend>custom_interface</exec_depend>
-  <member_of_group>rosidl_interface_packages</member_of_group>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>libpcl-all-dev</depend>
+  <depend>custom_interface</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

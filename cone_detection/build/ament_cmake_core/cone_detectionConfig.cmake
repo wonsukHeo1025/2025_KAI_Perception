@@ -16,7 +16,7 @@ set(_cone_detection_CONFIG_INCLUDED TRUE)
 
 # output package information
 if(NOT cone_detection_FIND_QUIETLY)
-  message(STATUS "Found cone_detection: 0.1.0 (${cone_detection_DIR})")
+  message(STATUS "Found cone_detection: 0.0.0 (${cone_detection_DIR})")
 endif()
 
 # warn when using a deprecated package

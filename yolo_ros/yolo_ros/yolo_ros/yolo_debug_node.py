@@ -32,7 +32,7 @@ class YoloDebugNode(Node):
         self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
 
         # YOLO 모델 로드 (모델 경로는 실제 환경에 맞게 수정)
-        model_path = "/home/user1/YOLO/pretrained_models/best.pt"
+        model_path = "/home/user1/ROS2_Workspace/ros2_ws/src/yolo_ros/best.pt"
         self.get_logger().info(f"YOLO 모델 로드 중: {model_path}")
         self.model = YOLO(model_path)
 
