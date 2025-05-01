@@ -21,6 +21,7 @@
   <depend>tf2_geometry_msgs</depend> <!-- For do_transform_point -->
   <depend>tf2_msgs</depend>
   <depend>custom_interface</depend> <!-- Depends on your custom message package -->
+  <depend>message_filters</depend> <!-- Added for time synchronization -->
 
 
   <test_depend>ament_copyright</test_depend>

@@ -49,14 +49,18 @@ class CameraCalibrationNode(Node):
         self.objp[:, :2] = np.mgrid[0:self.chessboard_cols, 0:self.chessboard_rows].T.reshape(-1, 2)
         self.objp *= self.square_size
 
+        # 타이머 대신 키보드 입력 처리를 위한 설정
+        self.display_window = "Image"
+        cv2.namedWindow(self.display_window)
+        
+        # 타이머 생성 (이미지 표시용)
+        self.timer = self.create_timer(0.1, self.display_image)
 
-        # 1초에 한 번 실행되는 타이머 설정
-        self.timer = self.create_timer(0.3, self.process_latest_image)
-
-        self.get_logger().info("Camera calibration node initialized. Waiting for images...")
+        self.get_logger().info("카메라 캘리브레이션 노드 초기화 완료. 이미지 대기 중...")
+        self.get_logger().info("스페이스바나 엔터 키를 눌러 현재 이미지를 처리하세요.")
 
     def image_callback(self, msg):
-        """이미지 콜백: 최신 이미지만 저장하고, 처리 로직은 타이머에서 실행"""
+        """이미지 콜백: 최신 이미지만 저장하고, 처리 로직은 키보드 입력에서 실행"""
         try:
             # Check if image message has data
             if not msg.data:
@@ -74,8 +78,33 @@ class CameraCalibrationNode(Node):
         except Exception as e:
             self.get_logger().error(f"이미지 변환 실패: {e} (encoding: {msg.encoding})")
 
+    def display_image(self):
+        """이미지를 표시하고 키보드 입력을 처리하는 함수"""
+        if self.latest_image is None:
+            return
+            
+        # 이미지 복사본 생성
+        display_image = self.latest_image.copy()
+        
+        # 캡처된 이미지 수를 이미지에 표시
+        cv2.putText(display_image, f"캡처된 이미지: {len(self.obj_points)}", (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(display_image, "스페이스바/엔터: 이미지 처리, Q: 종료", (10, 70),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                   
+        cv2.imshow(self.display_window, display_image)
+        key = cv2.waitKey(1) & 0xFF
+        
+        # 키보드 입력 처리
+        if key == ord(' ') or key == 13:  # 스페이스바 또는 엔터키
+            self.process_latest_image()
+        elif key == ord('q'):  # q 키
+            self.save_calibration()
+            self.get_logger().info("캘리브레이션 저장 후 노드를 종료합니다.")
+            rclpy.shutdown()
+
     def process_latest_image(self):
-        """타이머에서 호출: 최신 이미지를 처리"""
+        """키보드 입력에 의해 호출: 최신 이미지를 처리"""
         if self.latest_image is None:
             self.get_logger().warn("아직 수신된 이미지가 없습니다.")
             return
@@ -101,16 +130,11 @@ class CameraCalibrationNode(Node):
         else:
             self.get_logger().warn("체스보드가 이미지에서 감지되지 않았습니다.")
 
-        # 캡처된 이미지 수를 이미지에 표시
-        cv2.putText(display_image, f"Captured Images: {len(self.obj_points)}", (10, 30),
+        # 처리된 이미지 표시 (체스보드 코너 시각화)
+        cv2.putText(display_image, f"캡처된 이미지: {len(self.obj_points)}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        cv2.imshow("Image", display_image)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            self.save_calibration()
-            self.get_logger().info("캘리브레이션 저장 후 노드를 종료합니다.")
-            rclpy.shutdown()
+        cv2.imshow("처리된 이미지", display_image)
+        cv2.waitKey(500)  # 잠시 처리된 이미지 표시
 
     def save_calibration(self):
         if len(self.obj_points) < 10:  # 최소 10장 이상 캘리브레이션 이미지

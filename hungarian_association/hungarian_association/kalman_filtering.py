@@ -8,6 +8,7 @@ import traceback # 예외 로깅을 위해 추가
 
 # 메시지 타입 임포트
 from custom_interface.msg import ModifiedFloat32MultiArray
+from custom_interface.msg import TrackedCone, TrackedConeArray # NEW: Import new message types
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3 # For angular_velocity, linear_acceleration
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
@@ -183,7 +184,7 @@ class Track:
                     accel_imu[2] = 0.0  # z방향 가속도는 없다고 가정
             else:
                 # Orientation 정보가 없는 경우 간단한 대체 방법 적용
-                print("[Track.predict] No orientation data - using simplified gravity compensation")
+                # print("[Track.predict] No orientation data - using simplified gravity compensation")
                 accel_imu[2] = 0.0  # z방향 가속도는 없다고 가정
 
         # Pass IMU data to the UKF prediction step
@@ -344,9 +345,9 @@ class ConeTracker(Node):
         )
         self.ts.registerCallback(self.listener_callback)
 
-        # Publisher (OUTPUT topic '/fused_sorted_cones_ukf' will now publish X, Y, Z)
+        # Publisher (OUTPUT topic '/fused_sorted_cones_ukf' will now publish TrackedConeArray)
         self.publisher_ = self.create_publisher(
-            ModifiedFloat32MultiArray,
+            TrackedConeArray, # CHANGED: Publish TrackedConeArray
             '/fused_sorted_cones_ukf',
             qos_profile)
 
@@ -569,54 +570,29 @@ class ConeTracker(Node):
                      self.get_logger().error(f"Error creating new track for detection {i}: {e}\n{traceback.format_exc()}")
 
 
-        # --- MODIFIED: Publish Results (Filtered XYZ) ---
-        filtered_msg = ModifiedFloat32MultiArray()
-        filtered_msg.header = cone_msg.header # Preserve timestamp/frame_id from input cones
-        filtered_msg.layout.dim = []
-        filtered_msg.layout.data_offset = 0
+        # --- MODIFIED: Publish Results (Filtered XYZ using TrackedConeArray) ---
+        tracked_cones_msg = TrackedConeArray() # NEW: Create TrackedConeArray message
+        tracked_cones_msg.header = cone_msg.header # Preserve timestamp/frame_id
 
-        output_data = []
-        output_colors = []
-
+        cones_list = []
         sorted_track_ids = sorted(list(self.tracks.keys()))
         for track_id in sorted_track_ids:
             if track_id in self.tracks:
                 track = self.tracks[track_id]
                 pos_xyz = track.get_predicted_position_xyz() # Get filtered XYZ
                 color = track.get_smoothed_color()
-                output_data.extend(pos_xyz.tolist()) # Add [x, y, z]
-                output_colors.append(color)
 
-        filtered_msg.data = output_data
-        filtered_msg.class_names = output_colors
+                cone = TrackedCone()
+                cone.track_id = track.track_id # Use the internal track_id
+                cone.position.x = pos_xyz[0]
+                cone.position.y = pos_xyz[1]
+                cone.position.z = pos_xyz[2]
+                cone.color = color
+                cones_list.append(cone)
 
-        # Update layout info for 3D data
-        from std_msgs.msg import MultiArrayDimension
-        num_tracked_cones = len(output_colors)
-        if num_tracked_cones > 0:
-             dim_cones = MultiArrayDimension()
-             dim_cones.label = "tracked_cones"
-             dim_cones.size = num_tracked_cones
-             dim_cones.stride = len(output_data) # Total number of floats
-             filtered_msg.layout.dim.append(dim_cones)
+        tracked_cones_msg.cones = cones_list
 
-             dim_coords = MultiArrayDimension()
-             dim_coords.label = "xyz" # Label indicates 3D coords
-             dim_coords.size = 3       # We have 3 values per cone
-             dim_coords.stride = 3     # Each cone block has size 3
-             filtered_msg.layout.dim.append(dim_coords)
-        else: # Handle case of no tracks
-             dim_cones = MultiArrayDimension()
-             dim_cones.label = "tracked_cones"
-             dim_cones.size = 0
-             dim_cones.stride = 0
-             filtered_msg.layout.dim.append(dim_cones)
-             # Optionally add the xyz dim even if size is 0
-             # dim_coords = MultiArrayDimension(label="xyz", size=3, stride=3)
-             # filtered_msg.layout.dim.append(dim_coords)
-
-
-        self.publisher_.publish(filtered_msg)
+        self.publisher_.publish(tracked_cones_msg) # Publish the new message type
 
 
 # --- main 함수 (unchanged) ---

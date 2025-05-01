@@ -100,9 +100,23 @@ class FusionProjectionNode(Node):
         camera_yaml = os.path.join(config_folder, config_file['general']['camera_intrinsic_calibration'])
         self.camera_matrix, self.dist_coeffs = load_camera_calibration(camera_yaml)
 
-        self.get_logger().info("Loaded extrinsic:\n{}".format(self.T_lidar_to_cam))
-        self.get_logger().info("Camera matrix:\n{}".format(self.camera_matrix))
-        self.get_logger().info("Distortion coeffs:\n{}".format(self.dist_coeffs))
+        # Define T_sensor_to_lidar matrix (inverse of the provided T_lidar_to_sensor)
+        # Z offset converted from mm to meters
+        self.T_sensor_to_lidar = np.array([
+            [-1,  0,  0,  0],
+            [ 0, -1,  0,  0],
+            [ 0,  0,  1, -0.038195], # Z_lidar = Z_sensor - 38.195mm
+            [ 0,  0,  0,  1]
+        ], dtype=np.float64)
+
+        # Calculate T_sensor_to_cam = T_lidar_to_cam @ T_sensor_to_lidar
+        self.T_sensor_to_cam = self.T_lidar_to_cam @ self.T_sensor_to_lidar
+
+        self.get_logger().info("Loaded T_lidar_to_cam:\\n{}".format(self.T_lidar_to_cam))
+        self.get_logger().info("Calculated T_sensor_to_lidar:\\n{}".format(self.T_sensor_to_lidar))
+        self.get_logger().info("Calculated T_sensor_to_cam:\\n{}".format(self.T_sensor_to_cam))
+        self.get_logger().info("Camera matrix:\\n{}".format(self.camera_matrix))
+        self.get_logger().info("Distortion coeffs:\\n{}".format(self.dist_coeffs))
 
         lidar_topic = config_file['lidar']['lidar_topic']
         image_topic = config_file['camera']['image_topic']
@@ -239,13 +253,13 @@ class FusionProjectionNode(Node):
                 
                 # 9. Project cone points to image plane
                 # Convert to homogeneous coordinates
-                cones_xyz_h = np.hstack((cones_xyz, np.ones((cones_xyz.shape[0], 1), dtype=np.float32)))
-                # Transform from LiDAR to camera coordinate system
-                cones_cam_h = cones_xyz_h @ self.T_lidar_to_cam.T
+                cones_xyz_h = np.hstack((cones_xyz.astype(np.float64), np.ones((cones_xyz.shape[0], 1), dtype=np.float64)))
+                # Transform from os_sensor to camera coordinate system using T_sensor_to_cam
+                cones_cam_h = cones_xyz_h @ self.T_sensor_to_cam.T # Use the correct transformation matrix
                 cones_cam = cones_cam_h[:, :3]  # Extract 3D coordinates from homogeneous
                 
                 # Filter points in front of camera
-                mask_cones_front = (cones_cam[:, 2] > 0.0)
+                mask_cones_front = (cones_cam[:, 2] > 0.0) # This filtering should now be correct
                 cones_cam_front = cones_cam[mask_cones_front]
                 
                 if cones_cam_front.shape[0] > 0:
@@ -265,20 +279,24 @@ class FusionProjectionNode(Node):
                     
                     # If we have class names, use those for colors
                     has_class_names = hasattr(cones_msg, 'class_names') and len(cones_msg.class_names) > 0
-                    valid_points_count = mask_cones_front.sum()
-                    
+                    # Get the class names corresponding to the points that are in front of the camera
+                    cones_in_front_indices = np.where(mask_cones_front)[0]
+                    valid_class_names = []
+                    if has_class_names:
+                       valid_class_names = [cones_msg.class_names[i] for i in cones_in_front_indices if i < len(cones_msg.class_names)]
+
                     for i, (u, v) in enumerate(cone_image_points):
                         u_int = int(round(u))
                         v_int = int(round(v))
                         if 0 <= u_int < w and 0 <= v_int < h:
                             # Default color: red
                             color = (0, 0, 255)
-                            
-                            # If class names are available, use appropriate colors
-                            if has_class_names and i < valid_points_count and i < len(cones_msg.class_names):
-                                class_name = cones_msg.class_names[i] 
-                                color = self.color_mapping.get(class_name, (0, 0, 255))
-                            
+
+                            # If class names are available and valid for this front point, use appropriate colors
+                            if i < len(valid_class_names):
+                                class_name = valid_class_names[i]
+                                color = self.color_mapping.get(class_name, (0, 0, 255)) # Use mapped color, default red
+
                             # Draw the cone marker
                             cv2.circle(cv_image, (u_int, v_int), 4, color, -1)  # Filled circle
                             cv2.circle(cv_image, (u_int, v_int), 6, (255, 255, 255), 1)  # White border

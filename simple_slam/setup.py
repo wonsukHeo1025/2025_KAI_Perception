@@ -27,7 +27,8 @@ setup(
         'tf2_ros_py',
         'tf2_geometry_msgs',
         'tf2_msgs',
-        'custom_interface', 
+        'custom_interface',
+        'message_filters',
     ],
     zip_safe=True,
     maintainer='user',
@@ -39,6 +40,7 @@ setup(
         'console_scripts': [
             'imu_odometry = simple_slam.imu_odometry_node:main',
             'cone_mapper = simple_slam.cone_mapper_node:main',
+            'lio_node = simple_slam.lio_node:main',
         ],
     },
 )

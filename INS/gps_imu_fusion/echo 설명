@@ -1,9 +1,6 @@
 📍 1. /ublox_gps_node/fix_velocity
 속도 정보 (linear & angular) + 공분산
 
-yaml
-Copy
-Edit
 header:           # 메시지 시간 및 frame 정보
   stamp:          # timestamp
   frame_id: gps   # 기준 좌표계 (여기선 gps 기준)
@@ -19,12 +16,11 @@ twist:            # 속도 정보
       y:
       z:
   covariance:     # 속도 값의 신뢰도 (공분산 행렬 6x6 → 36개)
+
+
 📍 2. /ublox_gps_node/fix
 위치 정보 (경도, 위도, 고도) + 공분산
 
-yaml
-Copy
-Edit
 header:
   stamp:
   frame_id: gps     # GPS 센서의 frame
@@ -39,12 +35,11 @@ altitude:           # 고도 (미터)
 
 position_covariance:        # 위치 오차에 대한 공분산 행렬 3x3 → 9개
 position_covariance_type:   # 공분산 해석 타입 (2면 Horizontal Only)
+
+
 📍 3. /imu/data
 IMU 센서의 자세 + 속도 + 가속도
 
-yaml
-Copy
-Edit
 header:
   stamp:
   frame_id: imu_link   # IMU 센서의 frame
@@ -60,12 +55,11 @@ angular_velocity_covariance:
 linear_acceleration:   # 선형 가속도 (m/s²)
   x, y, z
 linear_acceleration_covariance:
+
+
 📍 4. /pose/filtered
 EKF로 필터링된 위치 + 자세 정보
 
-yaml
-Copy
-Edit
 header:
   stamp:
   frame_id: map         # 맵 좌표계 기준
@@ -86,12 +80,11 @@ twist:
     angular:            # 각속도
       x, y, z
   covariance:           # 속도 관련 공분산
+
+
 📍 5. /odometry/filtered
 /pose/filtered와 거의 같고, Odometry 메시지 타입 사용
 
-yaml
-Copy
-Edit
 header:
   stamp:
   frame_id: map
@@ -104,5 +97,6 @@ pose:
 twist:
   twist: linear + angular
   covariance:
+
 📝 즉, /pose/filtered는 geometry_msgs/PoseWithCovarianceStamped 타입이고,
 /odometry/filtered는 nav_msgs/Odometry 타입이야. 구조는 거의 비슷해.

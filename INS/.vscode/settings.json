@@ -49,5 +49,6 @@
         "/opt/ros/humble/lib/python3.10/site-packages",
         "/opt/ros/humble/local/lib/python3.10/dist-packages"
     ],
-    "cmake.sourceDirectory": "/home/user1/ros2_ws/src/INS/gps_imu_fusion"
+    "cmake.sourceDirectory": "/home/user1/ros2_ws/src/INS/gps_imu_fusion",
+    "cmake.ignoreCMakeListsMissing": true
 }
