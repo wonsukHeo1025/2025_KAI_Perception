@@ -25,7 +25,8 @@ setup(
         'console_scripts': [
             'hungarian_association_node = hungarian_association.yolo_lidar_fusion:main',
             'kalman_filtering_node = hungarian_association.kalman_filtering:main',
-            'visualize_fused_cones_rviz_marker_node = hungarian_association.visualize_fused_cones_rviz_marker:main'
+            'visualize_fused_cones_rviz_marker_node = hungarian_association.visualize_fused_cones_rviz_marker:main',
+            'yolo_lidar_multicam_fusion_node = hungarian_association.yolo_lidar_multicam_fusion:main'
         ],
     },
 )

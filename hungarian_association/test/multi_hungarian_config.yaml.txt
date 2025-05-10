@@ -1,0 +1,17 @@
+hungarian_association:
+  cones_topic: "/sorted_cones_time"
+  boxes_topic: "/detections"
+  output_topic: "/fused_sorted_cones"
+
+  max_matching_distance: 25.0 # 픽셀 단위로 15~25 정도에서 왔다갔다하면 쓸만한 범위인듯? 
+  cone_z_offset: -0.4
+  
+  calibration:
+    config_folder: "/home/user1/ROS2_Workspace/ros2_ws/src/hungarian_association/config/"
+    camera_extrinsic_calibration: "multi_camera_extrinsic_calibration.yaml"
+    camera_intrinsic_calibration: "multi_camera_intrinsic_calibration.yaml"
+  
+  qos:
+    history_depth: 1
+    sync_slop: 0.1
+    sync_queue_size: 10 

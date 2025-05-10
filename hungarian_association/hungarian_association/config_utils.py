@@ -7,7 +7,7 @@ def load_hungarian_config():
     config_file = os.path.join(
         get_package_share_directory('hungarian_association'),
         'config',
-        'hungarian_config.yaml'
+        'multi_hungarian_config.yaml'
     )
 
     try:
