@@ -226,14 +226,13 @@ class ConeTracker(Node):
         super().__init__('cone_tracker_ukf')
 
         # 파라미터 선언
-        self.declare_parameter('max_missed_detections', 4)
+        self.declare_parameter('max_missed_detections', 4) 
         self.declare_parameter('distance_threshold', 0.7)
-        self.declare_parameter('cone_z_offset', -0.6)
-        self.declare_parameter('ukf.P_initial_pos', 5.0)
-        self.declare_parameter('ukf.P_initial_vel', 1.0)
-        self.declare_parameter('ukf.R_measurement', 0.5)
+        self.declare_parameter('ukf.P_initial_pos', 0.001)
+        self.declare_parameter('ukf.P_initial_vel', 100.0)
+        self.declare_parameter('ukf.R_measurement', 0.1)
         self.declare_parameter('ukf.Q_process_diag_pos', 0.1)
-        self.declare_parameter('ukf.Q_process_diag_vel', 0.5)
+        self.declare_parameter('ukf.Q_process_diag_vel', 0.1)
         self.declare_parameter('fixed_dt', 0.056)
         
         # IMU 프레임에서 센서 프레임으로의 변환 (os_imu -> os_sensor)
@@ -248,7 +247,6 @@ class ConeTracker(Node):
         # 파라미터 가져오기
         self.max_missed_detections = self.get_parameter('max_missed_detections').value
         self.distance_threshold = self.get_parameter('distance_threshold').value
-        self.cone_z_offset = self.get_parameter('cone_z_offset').value
         self.P_initial_pos = self.get_parameter('ukf.P_initial_pos').value
         self.P_initial_vel = self.get_parameter('ukf.P_initial_vel').value
         self.R_measurement = self.get_parameter('ukf.R_measurement').value
@@ -267,7 +265,6 @@ class ConeTracker(Node):
         self.get_logger().info("--- 콘 트래커 UKF (3D 입력) 파라미터 ---")
         self.get_logger().info(f" 거리 임계값 (3D): {self.distance_threshold}")
         self.get_logger().info(f" 최대 검출 누락 횟수: {self.max_missed_detections}")
-        self.get_logger().info(f" 콘 Z 오프셋: {self.cone_z_offset}")
         self.get_logger().info(f" UKF 파라미터:")
         self.get_logger().info(f"   P_initial_pos: {self.P_initial_pos}")
         self.get_logger().info(f"   P_initial_vel: {self.P_initial_vel}")
@@ -326,7 +323,6 @@ class ConeTracker(Node):
             # 노드 파라미터 업데이트
             if 'max_missed_detections' in param_dict: self.max_missed_detections = param_dict['max_missed_detections']
             if 'distance_threshold' in param_dict: self.distance_threshold = param_dict['distance_threshold']
-            if 'cone_z_offset' in param_dict: self.cone_z_offset = param_dict['cone_z_offset']
             if 'ukf.P_initial_pos' in param_dict: self.P_initial_pos = param_dict['ukf.P_initial_pos']
             if 'ukf.P_initial_vel' in param_dict: self.P_initial_vel = param_dict['ukf.P_initial_vel']
             if 'ukf.R_measurement' in param_dict: self.R_measurement = param_dict['ukf.R_measurement']

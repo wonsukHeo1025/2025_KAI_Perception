@@ -12,9 +12,9 @@ cone_detection:
     z_threshold_min: -1.2          # Z축 최소값 (필터링 기준, 지면 제거를 위한 값)
     z_threshold_max: -0.3           # Z축 최대값 (필터링 기준, 최대 높이 제한)
     min_distance: 0.5               # 최소 거리 필터링 (LIDAR로부터 너무 가까운 점 제거)
-    max_distance: 30.0             # 최대 거리 필터링 (LIDAR로부터 너무 먼 점 제거)
-    intensity_threshold: 5.0       # Intensity 필터링 기준값 (값이 낮은 점 제거)
-    plane_distance_threshold: 0.08  # RANSAC 평면 세그먼테이션의 거리 허용 오차 (어떤 점 is in 평면 판별 기준)
+    max_distance: 25.0             # 최대 거리 필터링 (LIDAR로부터 너무 먼 점 제거)
+    intensity_threshold: 0.1       # Intensity 필터링 기준값 (값이 낮은 점 제거)
+    plane_distance_threshold: 0.10  # RANSAC 평면 세그먼테이션의 거리 허용 오차 (어떤 점 is in 평면 판별 기준)
     
     # ROI 0도 기준은 라이다 왼쪽이 0도, 라이다 오른쪽이 180도, 라이다 정면이 90도
     roi_angle_min: 0.0             # ROI(관심 영역)의 최소 각도 (X축 기준, 좌측 범위)
@@ -22,11 +22,33 @@ cone_detection:
 
     voxel_leaf_size: 0.1           # Voxel Grid 필터링의 leaf 크기 (다운샘플링 해상도)
     
-    ec_cluster_tolerance: 0.4      # 한 군집이 될 점간의 거리 임계값
-    ec_min_cluster_size: 4        # 클러스터로 인정하기 위한 최소 포인트 수 // 증가: 노이즈 제외, 클러스터 수 감소, 감소: 더 작은 클러스터 인정
+    ec_cluster_tolerance: 0.30      # 한 군집이 될 점간의 거리 임계값
+    ec_min_cluster_size: 3        # 클러스터로 인정하기 위한 최소 포인트 수 // 증가: 노이즈 제외, 클러스터 수 감소, 감소: 더 작은 클러스터 인정
     ec_max_cluster_size: 35       # 클러스터로 인정하기 위한 최대 포인트 수 // 증가: 매우 큰 클러스터도 유지, 감소: 일정 크기 이상 클러스터 제외
 
-    # 검증 단계 파라미터
-    pca_orientation_threshold: 0.0 # 클러스터 주축과 지면 노말벡터 내적 임계값
-    min_cone_height: 0.2           # 콘으로 인정할 최소 높이(m)
-    max_cone_height: 1.0           # 콘으로 인정할 최대 높이(m)
+    # 검증 단계 파라미터 (최종)
+    min_cone_height: 0.1           # 최종 콘으로 인정할 최소 높이(m)
+    max_cone_height: 0.6           # 최종 콘으로 인정할 최대 높이(m)
+
+    # 2단계 검증 파라미터
+    enable_stage2_validation: false # 2단계 검증 활성화 여부
+    
+    # 1단계 클러스터링 관대 파라미터 (enable_stage2_validation = true 시 사용)
+    s1_ec_cluster_tolerance: 0.3
+    s1_ec_min_cluster_size: 3
+    s1_ec_max_cluster_size: 35
+
+    # 2단계 ROI 및 검증 파라미터 (enable_stage2_validation = true 시 사용)
+    s2_roi_cylinder_radius: 0.30          # 1단계 후보 중심 기준 원통 반경 (m)
+    s2_roi_cylinder_bottom_offset: -0.3   # 후보 중심 Z 좌표 기준 원통 하단 오프셋 (m)
+    s2_roi_cylinder_top_offset: 0.5       # 후보 중심 Z 좌표 기준 원통 상단 오프셋 (m)
+    s2_min_points_in_reconstructed_roi: 5 # 재구성된 ROI 내 최소 포인트 수
+    s2_max_points_in_reconstructed_roi: 60 # 재구성된 ROI 내 최대 포인트 수
+    
+    # 방법론 3: 높이별 포인트 밀도 변화율 분석 파라미터
+    s2_height_histogram_bins: 5          # ROI 내 포인트 높이 히스토그램 빈 개수 (3~5 권장)
+    s2_max_uphill_transitions_allowed: 3 # 포인트 수가 증가하는(uphill) 빈 전이의 최대 허용 횟수 (예: 0 또는 1)
+    s2_bottom_heavy_ratio_threshold: 0.1 # 하단 N개 빈에 있어야 하는 최소 포인트 비율 (예: 0.5-0.7)
+    s2_bottom_bins_count_for_heavy_check: 2 # 하단 집중도 검사를 위한 빈 개수 (s2_height_histogram_bins/2 보다 작거나 같게)
+    s2_top_sparse_max_point_ratio_per_bin: 0.45 # 상단 N개 각 빈에 허용되는 최대 포인트 비율(전체 ROI 포인트 대비) (예: 0.1-0.3)
+    s2_num_top_bins_for_sparsity_check: 1    # 상단 희소성 검사를 위한 빈 개수 (예: 1 또는 2)

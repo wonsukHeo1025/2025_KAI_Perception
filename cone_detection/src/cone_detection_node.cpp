@@ -14,11 +14,20 @@ OutlierFilter::OutlierFilter()
     std::vector<std::pair<std::string, bool*>> bool_params = {
         {"x_threshold_enable", &params_.x_threshold_enable},
         {"y_threshold_enable", &params_.y_threshold_enable},
-        {"z_threshold_enable", &params_.z_threshold_enable}
+        {"z_threshold_enable", &params_.z_threshold_enable},
+        {"enable_stage2_validation", &params_.enable_stage2_validation}
     };
     std::vector<std::pair<std::string, int*>> int_params = {
         {"ec_min_cluster_size", &params_.ec_min_cluster_size},
-        {"ec_max_cluster_size", &params_.ec_max_cluster_size}
+        {"ec_max_cluster_size", &params_.ec_max_cluster_size},
+        {"s1_ec_min_cluster_size", &params_.s1_ec_min_cluster_size},
+        {"s1_ec_max_cluster_size", &params_.s1_ec_max_cluster_size},
+        {"s2_min_points_in_reconstructed_roi", &params_.s2_min_points_in_reconstructed_roi},
+        {"s2_max_points_in_reconstructed_roi", &params_.s2_max_points_in_reconstructed_roi},
+        {"s2_height_histogram_bins", &params_.s2_height_histogram_bins},
+        {"s2_max_uphill_transitions_allowed", &params_.s2_max_uphill_transitions_allowed},
+        {"s2_bottom_bins_count_for_heavy_check", &params_.s2_bottom_bins_count_for_heavy_check},
+        {"s2_num_top_bins_for_sparsity_check", &params_.s2_num_top_bins_for_sparsity_check}
     };
     std::vector<std::pair<std::string, float*>> float_params = {
         {"x_threshold_min", &params_.x_threshold_min},
@@ -35,9 +44,14 @@ OutlierFilter::OutlierFilter()
         {"roi_angle_max", &params_.roi_angle_max},
         {"voxel_leaf_size", &params_.voxel_leaf_size},
         {"ec_cluster_tolerance", &params_.ec_cluster_tolerance},
-        {"pca_orientation_threshold", &params_.pca_orientation_threshold},
         {"min_cone_height", &params_.min_cone_height},
-        {"max_cone_height", &params_.max_cone_height}
+        {"max_cone_height", &params_.max_cone_height},
+        {"s1_ec_cluster_tolerance", &params_.s1_ec_cluster_tolerance},
+        {"s2_roi_cylinder_radius", &params_.s2_roi_cylinder_radius},
+        {"s2_roi_cylinder_bottom_offset", &params_.s2_roi_cylinder_bottom_offset},
+        {"s2_roi_cylinder_top_offset", &params_.s2_roi_cylinder_top_offset},
+        {"s2_bottom_heavy_ratio_threshold", &params_.s2_bottom_heavy_ratio_threshold},
+        {"s2_top_sparse_max_point_ratio_per_bin", &params_.s2_top_sparse_max_point_ratio_per_bin}
     };
 
     for (const auto& [name, value_ptr] : str_params) {
@@ -69,6 +83,7 @@ OutlierFilter::OutlierFilter()
     cones_time_pub = this->create_publisher<custom_interface::msg::ModifiedFloat32MultiArray>("/sorted_cones_time", 10);
     pub_cones_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cones", 10);
     pub_points_fixed_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/ouster/points_fixed", 10);
+    pub_reconstructed_cones_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cones_rec", 10);
 
     // 서브스크라이버 초기화 (포인트 클라우드 데이터 수신)
     point_cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -104,6 +119,9 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
         // LiDAR 좌표계를 센서 좌표계로 변환
         lidarToSensorTransform(cloud_in);
+
+        // Stage 2 활성화 여부와 관계없이 필터링 전 원본 포인트 클라우드 저장
+        original_cloud_for_stage2_.reset(new Cloud(*cloud_in));
 
         // X축 필터링: x >= 0 인 포인트만 남김
         Cloud::Ptr cloud_positive_x(new Cloud);
@@ -144,16 +162,21 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         }
 
         // 초기 클러스터링 수행
-        std::vector<ConeDescriptor> initial_cones;
+        std::vector<ConeDescriptor> stage1_candidate_cones;
         try {
-            if (cloud_filtered->size() < params_.ec_min_cluster_size) {
+            if (cloud_filtered->size() < 
+                (params_.enable_stage2_validation ? params_.s1_ec_min_cluster_size : params_.ec_min_cluster_size)) {
                 RCLCPP_WARN(this->get_logger(), "Too few points for clustering: %zu", cloud_filtered->size());
                 return;
             }
-            clusterCones(cloud_filtered, initial_cones);
+            clusterCones(cloud_filtered, stage1_candidate_cones, params_.enable_stage2_validation);
             
-            if (initial_cones.empty()) {
-                RCLCPP_INFO(this->get_logger(), "No cones detected");
+            if (stage1_candidate_cones.empty()) {
+                RCLCPP_INFO(this->get_logger(), "No cones detected after stage 1 clustering");
+                // 2단계 검증 비활성화 시 또는 stage1_candidate_cones가 비었으면 마커 삭제 로직 추가
+                if (!params_.enable_stage2_validation || stage1_candidate_cones.empty()) {
+                    visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
+                }
                 return;
             }
         } catch (const std::exception& e) {
@@ -161,34 +184,76 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             return;
         }
 
-        // 검증 단계 수행
-        std::vector<ConeDescriptor> validated_cones;
+        // 2단계 검증 및 재구성 (활성화된 경우)
+        std::vector<ConeDescriptor> intermediate_cones;
+        if (params_.enable_stage2_validation) {
+            try {
+                validateAndReconstructConesStage2(stage1_candidate_cones, original_cloud_for_stage2_, intermediate_cones, msg->header.stamp);
+                if (intermediate_cones.empty()) {
+                    RCLCPP_INFO(this->get_logger(), "No cones passed stage 2 validation");
+                     visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
+                    return;
+                }
+            } catch (const std::exception& e) {
+                RCLCPP_ERROR(this->get_logger(), "Exception in stage 2 validation: %s", e.what());
+                intermediate_cones = stage1_candidate_cones; // 오류 시 1단계 결과 사용 (선택적)
+            }
+        } else {
+            intermediate_cones = stage1_candidate_cones;
+        }
+
+        // 최종 검증 단계 수행 (예: 높이, 지면과의 관계 등)
+        std::vector<ConeDescriptor> final_validated_cones;
+        Cloud::Ptr final_reconstructed_points_for_pub(new Cloud); // 최종 재구성된 포인트를 담을 클라우드
+
         try {
-            // 지면 계수가 유효할 때만 검증 수행
             if (last_plane_coefs_ && !last_plane_coefs_->values.empty()) {
-                validateCones(initial_cones, validated_cones, 
+                validateConesFinalChecks(intermediate_cones, final_validated_cones, 
                             pcl::ModelCoefficients::ConstPtr(last_plane_coefs_));
             } else {
-                RCLCPP_WARN_ONCE(this->get_logger(), "Ground plane coefficients not valid, skipping validation");
-                validated_cones = initial_cones;
+                RCLCPP_WARN_ONCE(this->get_logger(), "Ground plane coefficients not valid, skipping final validation checks");
+                final_validated_cones = intermediate_cones; // 지면 정보 없으면 중간 결과 그대로 사용
             }
             
-            if (validated_cones.empty()) {
-                RCLCPP_INFO(this->get_logger(), "No validated cones");
+            if (final_validated_cones.empty()) {
+                RCLCPP_INFO(this->get_logger(), "No cones passed final validation checks");
+                // 최종 콘이 없으므로 빈 재구성 클라우드 발행
+                if (pub_reconstructed_cones_cloud_ && pub_reconstructed_cones_cloud_->get_subscription_count() > 0) {
+                    publishCloud(pub_reconstructed_cones_cloud_, final_reconstructed_points_for_pub, msg->header.stamp, "os_sensor");
+                }
+                visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
                 return;
             }
         } catch (const std::exception& e) {
-            RCLCPP_ERROR(this->get_logger(), "Exception in cone validation: %s", e.what());
+            RCLCPP_ERROR(this->get_logger(), "Exception in final cone validation: %s", e.what());
+            // 예외 발생 시에도 빈 재구성 클라우드 발행 시도
+            if (pub_reconstructed_cones_cloud_ && pub_reconstructed_cones_cloud_->get_subscription_count() > 0) {
+                 publishCloud(pub_reconstructed_cones_cloud_, final_reconstructed_points_for_pub, msg->header.stamp, "os_sensor");
+            }
             return;
+        }
+
+        // final_validated_cones가 있다면, 이를 기반으로 포인트 재구성
+        if (original_cloud_for_stage2_ && !original_cloud_for_stage2_->empty()) {
+            reconstructPointsAroundCones(final_validated_cones, original_cloud_for_stage2_, final_reconstructed_points_for_pub, "final_cones");
+            RCLCPP_INFO(this->get_logger(), "Reconstructed %zu points around %zu final_validated_cones for publishing.",
+                        final_reconstructed_points_for_pub->size(), final_validated_cones.size());
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Original cloud for stage 2 is not available. Cannot reconstruct points for final_validated_cones.");
+            // final_reconstructed_points_for_pub는 비어있는 상태로 유지됨
+        }
+
+        // 재구성된 포인트 클라우드 발행 (비어있을 수도 있음)
+        if (pub_reconstructed_cones_cloud_ && pub_reconstructed_cones_cloud_->get_subscription_count() > 0) {
+            publishCloud(pub_reconstructed_cones_cloud_, final_reconstructed_points_for_pub, msg->header.stamp, "os_sensor");
         }
 
         // 검증된 콘 정렬 및 결과 퍼블리싱
         try {
-            std::vector<std::vector<double>> sorted_cones = sortCones(validated_cones);
+            std::vector<std::vector<double>> sorted_cones = sortCones(final_validated_cones);
             publishArrayWithTimestamp(cones_time_pub, sorted_cones, msg->header.stamp, "os_sensor");
 
-            // 콘 데이터를 기반으로 MarkerArray 발행
-            visualizeCones(validated_cones, "os_sensor");
+            visualizeCones(final_validated_cones, "os_sensor");
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Exception in result publishing: %s", e.what());
         }
@@ -382,7 +447,7 @@ void OutlierFilter::lidarToSensorTransform(Cloud::Ptr &cloud) {
 }
 
 // 클러스터링 수행 (콘 클러스터 식별)
-void OutlierFilter::clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones) {
+void OutlierFilter::clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones, bool use_s1_params) {
     cones.clear();
     
     if (!cloud_in || cloud_in->empty()) {
@@ -390,9 +455,14 @@ void OutlierFilter::clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescripto
     }
 
     try {
+        // 사용할 파라미터 결정
+        float cluster_tolerance = use_s1_params ? params_.s1_ec_cluster_tolerance : params_.ec_cluster_tolerance;
+        int min_cluster_size = use_s1_params ? params_.s1_ec_min_cluster_size : params_.ec_min_cluster_size;
+        int max_cluster_size = use_s1_params ? params_.s1_ec_max_cluster_size : params_.ec_max_cluster_size;
+
         // 최소 포인트 수 검사
-        if (cloud_in->points.size() < static_cast<size_t>(params_.ec_min_cluster_size)) {
-            RCLCPP_WARN(this->get_logger(), "Too few points for clustering: %zu", cloud_in->points.size());
+        if (cloud_in->points.size() < static_cast<size_t>(min_cluster_size)) {
+            RCLCPP_WARN(this->get_logger(), "Too few points for clustering: %zu (min_required: %d)", cloud_in->points.size(), min_cluster_size);
             return;
         }
         
@@ -402,9 +472,9 @@ void OutlierFilter::clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescripto
 
         std::vector<pcl::PointIndices> cluster_indices;
         pcl::EuclideanClusterExtraction<Point> ec;
-        ec.setClusterTolerance(params_.ec_cluster_tolerance);
-        ec.setMinClusterSize(params_.ec_min_cluster_size);
-        ec.setMaxClusterSize(params_.ec_max_cluster_size);
+        ec.setClusterTolerance(cluster_tolerance);
+        ec.setMinClusterSize(min_cluster_size);
+        ec.setMaxClusterSize(max_cluster_size);
         ec.setSearchMethod(tree);
         ec.setInputCloud(cloud_in);
         ec.extract(cluster_indices);
@@ -624,63 +694,56 @@ float OutlierFilter::ROI_theta(float x, float y) {
     return std::atan2(y, x) * 180.0f / M_PI;
 }
 
-// 콘 클러스터 검증 함수
-void OutlierFilter::validateCones(
+// 콘 클러스터 최종 검증 함수 (기존 validateCones에서 이름 변경 및 로직 일부 이전)
+void OutlierFilter::validateConesFinalChecks(
     const std::vector<ConeDescriptor>& initial_cones,
     std::vector<ConeDescriptor>& validated_cones,
-    const pcl::ModelCoefficients::ConstPtr& plane_coefs)
+    const pcl::ModelCoefficients::ConstPtr& plane_coefs) // plane_coefs는 이제 사용 안 함, 향후 지면기반 높이 검증 등에 사용 가능
 {
     validated_cones.clear();
-    if (!plane_coefs || plane_coefs->values.size() < 4) {
-        RCLCPP_ERROR(this->get_logger(), "Invalid plane coefficients for validation.");
-        return;
-    }
+    // if (!plane_coefs || plane_coefs->values.size() < 4) { // 지면 계수는 이 함수에서 필수는 아님
+    //     RCLCPP_WARN(this->get_logger(), "Invalid plane coefficients for final validation. Skipping some checks or using all cones.");
+    //     // validated_cones = initial_cones; // 필요 시 모든 콘을 통과시킬 수 있음
+    //     // return;
+    // }
     
     if (initial_cones.empty()) {
         return;
     }
 
     try {
-        // 지면 법선 벡터 추출
-        Eigen::Vector3f ground_normal(plane_coefs->values[0], plane_coefs->values[1], plane_coefs->values[2]);
-        
-        // 법선 벡터가 유효한지 확인 (매우 작은 값이 아닌지)
-        const float MIN_NORMAL_LENGTH = 1e-6f;
-        if (ground_normal.norm() < MIN_NORMAL_LENGTH) {
-            RCLCPP_WARN(this->get_logger(), "Ground normal vector too small, skipping validation");
-            validated_cones = initial_cones;
-            return;
-        }
+        // 지면 법선 벡터는 Stage2 또는 다른 곳에서 사용될 수 있으므로 일단 남겨둠
+        // Eigen::Vector3f ground_normal(plane_coefs->values[0], plane_coefs->values[1], plane_coefs->values[2]);
+        // const float MIN_NORMAL_LENGTH = 1e-6f;
+        // if (ground_normal.norm() < MIN_NORMAL_LENGTH) {
+        //     RCLCPP_WARN(this->get_logger(), "Ground normal vector too small for final checks, using all cones.");
+        //     validated_cones = initial_cones;
+        //     return;
+        // }
 
         validated_cones.reserve(initial_cones.size());
         
         for (const auto& cone : initial_cones) {
             try {
-                if (!cone.cloud || cone.cloud->empty() || cone.cloud->size() < 3) {
-                    continue;  // PCA는 최소 3점 필요
+                // Stage2를 거친 콘은 이미 기본적인 cloud 유효성 검사는 되었다고 가정
+                // 또는 ConeDescriptor의 valid 플래그를 여기서 한번 더 확인할 수 있음
+                if(!cone.valid) { // ConeDescriptor.calculate() 에서 설정된 valid 플래그 확인
+                    RCLCPP_DEBUG(this->get_logger(), "Cone not valid based on initial descriptor calculation.");
+                    continue;
                 }
 
-                // 1. PCA 방향성 검증
-                pcl::PCA<Point> pca;
-                pca.setInputCloud(cone.cloud);
-                Eigen::Vector3f cluster_axis = pca.getEigenVectors().col(2);  // 가장 분산이 작은 축
-                
-                // NaN 체크
-                if (std::isnan(cluster_axis(0)) || std::isnan(cluster_axis(1)) || std::isnan(cluster_axis(2))) {
+                // 높이 검증 - 포인트 사이의 Z 차이 계산
+                // 이 높이 계산은 ConeDescriptor::calculate()에서 이미 수행되었을 수 있음.
+                // 여기서는 최종적인 min/max_cone_height 파라미터와 비교.
+                float min_z = std::numeric_limits<float>::max();
+                float max_z = std::numeric_limits<float>::lowest();
+                bool has_valid_points = false;
+
+                if (!cone.cloud || cone.cloud->empty()) {
+                    RCLCPP_WARN(this->get_logger(), "Cone cloud is empty in final checks.");
                     continue;
                 }
                 
-                double dot_product_abs = std::abs(cluster_axis.dot(ground_normal));
-
-                if (dot_product_abs < params_.pca_orientation_threshold) {
-                    continue;  // 방향성 임계값 미달
-                }
-
-                // 2. 높이 검증 - 포인트 사이의 Z 차이 계산
-                float min_z = std::numeric_limits<float>::max();
-                float max_z = std::numeric_limits<float>::lowest();
-                
-                bool has_valid_points = false;
                 for(const auto& pt : cone.cloud->points) {
                     if (!std::isnan(pt.z)) {
                         min_z = std::min(min_z, pt.z);
@@ -690,28 +753,249 @@ void OutlierFilter::validateCones(
                 }
                 
                 if (!has_valid_points) {
-                    continue;  // 유효 z값 없음
+                    RCLCPP_WARN(this->get_logger(), "No valid Z points in cone for height check.");
+                    continue;
                 }
                 
                 float height = max_z - min_z;
 
                 if (height < params_.min_cone_height || height > params_.max_cone_height) {
-                    continue;  // 높이 범위 벗어남
+                    RCLCPP_DEBUG(this->get_logger(), "Cone height %.2f not in range [%.2f, %.2f]", 
+                                height, params_.min_cone_height, params_.max_cone_height);
+                    continue;
                 }
 
                 // 모든 검증 통과
                 validated_cones.push_back(cone);
             } catch (const std::exception& e) {
-                RCLCPP_WARN(this->get_logger(), "Exception in cone validation: %s", e.what());
-                // 개별 콘 검증에 실패해도 계속 진행
+                RCLCPP_WARN(this->get_logger(), "Exception in individual cone final validation: %s", e.what());
             }
         }
         
-        RCLCPP_INFO(this->get_logger(), "Validation finished: %zu / %zu cones passed.", validated_cones.size(), initial_cones.size());
+        RCLCPP_INFO(this->get_logger(), "Final Validation: %zu / %zu cones passed.", validated_cones.size(), initial_cones.size());
     } catch (const std::exception& e) {
-        RCLCPP_ERROR(this->get_logger(), "Exception in validateCones: %s", e.what());
-        validated_cones = initial_cones;  // 에러 발생 시 초기 콘 그대로 반환
+        RCLCPP_ERROR(this->get_logger(), "Exception in validateConesFinalChecks: %s", e.what());
+        validated_cones = initial_cones;  // 에러 발생 시 중간 콘 그대로 반환 (선택적)
     }
+}
+
+// 새로운 함수: 2단계 검증 및 포인트 재구성
+void OutlierFilter::validateAndReconstructConesStage2(
+    const std::vector<ConeDescriptor>& stage1_cones,
+    const Cloud::Ptr& original_cloud, // 센서 좌표계로 변환된, 필터링 전 원본 포인트 클라우드
+    std::vector<ConeDescriptor>& out_validated_cones,
+    const rclcpp::Time& timestamp)
+{
+    out_validated_cones.clear();
+    if (!original_cloud || original_cloud->empty()) {
+        RCLCPP_WARN(this->get_logger(), "Original cloud for Stage 2 is empty.");
+        return;
+    }
+    if (stage1_cones.empty()) {
+        RCLCPP_INFO(this->get_logger(), "No stage 1 cones to validate in Stage 2.");
+        return;
+    }
+
+    Cloud::Ptr all_reconstructed_points_for_publishing(new Cloud);
+    out_validated_cones.reserve(stage1_cones.size());
+
+    for (const auto& s1_cone : stage1_cones) {
+        if (!s1_cone.valid) { // 1단계에서 ConeDescriptor.calculate() 결과가 false이면 건너뛰기
+            RCLCPP_DEBUG(this->get_logger(), "Skipping stage 2 for s1_cone not marked valid.");
+            continue;
+        }
+
+        Point s1_center = s1_cone.mean; // 1단계 클러스터의 중심
+        Cloud::Ptr current_cylinder_points(new Cloud);
+
+        // 원통형 ROI 정의
+        float cylinder_bottom_z = s1_center.z + params_.s2_roi_cylinder_bottom_offset;
+        float cylinder_top_z = s1_center.z + params_.s2_roi_cylinder_top_offset;
+
+        // 원본 포인트 클라우드에서 ROI 내 포인트 추출 (PassThrough 및 거리 기반)
+        Cloud::Ptr roi_z_filtered(new Cloud);
+        pcl::PassThrough<Point> pass_z;
+        pass_z.setInputCloud(original_cloud);
+        pass_z.setFilterFieldName("z");
+        pass_z.setFilterLimits(cylinder_bottom_z, cylinder_top_z);
+        pass_z.filter(*roi_z_filtered);
+
+        if (roi_z_filtered->empty()) continue;
+
+        for (const auto& pt : roi_z_filtered->points) {
+            float dist_sq = (pt.x - s1_center.x) * (pt.x - s1_center.x) + 
+                            (pt.y - s1_center.y) * (pt.y - s1_center.y);
+            if (dist_sq <= (params_.s2_roi_cylinder_radius * params_.s2_roi_cylinder_radius)) {
+                current_cylinder_points->points.push_back(pt);
+            }
+        }
+        current_cylinder_points->width = current_cylinder_points->points.size();
+        current_cylinder_points->height = 1;
+        current_cylinder_points->is_dense = true;
+
+        // 포인트 수 검증
+        if (current_cylinder_points->size() < static_cast<size_t>(params_.s2_min_points_in_reconstructed_roi) ||
+            current_cylinder_points->size() > static_cast<size_t>(params_.s2_max_points_in_reconstructed_roi)) {
+            RCLCPP_DEBUG(this->get_logger(), "Reconstructed ROI for cone at (%.2f, %.2f) has %zu points, not in range [%d, %d].",
+                s1_center.x, s1_center.y, current_cylinder_points->size(), params_.s2_min_points_in_reconstructed_roi, params_.s2_max_points_in_reconstructed_roi);
+            continue;
+        }
+
+        // 높이 히스토그램 기반 검증
+        float min_z_roi = std::numeric_limits<float>::max();
+        float max_z_roi = std::numeric_limits<float>::lowest();
+        for(const auto& pt : current_cylinder_points->points) {
+            if (!std::isnan(pt.z)) {
+                min_z_roi = std::min(min_z_roi, pt.z);
+                max_z_roi = std::max(max_z_roi, pt.z);
+            }
+        }
+        if (max_z_roi <= min_z_roi) continue; // 유효한 높이 범위 없음
+
+        float roi_actual_height = max_z_roi - min_z_roi;
+
+        // 방법론 3: 높이별 포인트 밀도 변화율 분석 로직으로 대체
+        // 기존 높이 검사, 피크 비율 검사 로직 삭제
+
+        std::vector<int> histogram(params_.s2_height_histogram_bins, 0);
+        float bin_size = roi_actual_height / params_.s2_height_histogram_bins;
+        if (bin_size <= 1e-3) {
+            RCLCPP_DEBUG(this->get_logger(), "Cone at (%.2f, %.2f) has too small bin size for histogram.", s1_center.x, s1_center.y);
+            continue; 
+        }
+
+        int total_points_in_roi = current_cylinder_points->size();
+        for (const auto& pt : current_cylinder_points->points) {
+            if (!std::isnan(pt.z)) {
+                int bin_idx = static_cast<int>((pt.z - min_z_roi) / bin_size);
+                bin_idx = std::max(0, std::min(bin_idx, params_.s2_height_histogram_bins - 1));
+                histogram[bin_idx]++;
+            }
+        }
+
+        // 1. 밀도 감소 경향 검사 (Uphill transitions)
+        int uphill_transitions = 0;
+        for (int i = 0; i < params_.s2_height_histogram_bins - 1; ++i) {
+            if (histogram[i] < histogram[i+1]) { // 현재 빈보다 다음 빈(더 높은 쪽)에 포인트가 많으면 uphill
+                uphill_transitions++;
+            }
+        }
+        if (uphill_transitions > params_.s2_max_uphill_transitions_allowed) {
+            RCLCPP_DEBUG(this->get_logger(), "Cone at (%.2f, %.2f) failed uphill transition check: %d > %d",
+                s1_center.x, s1_center.y, uphill_transitions, params_.s2_max_uphill_transitions_allowed);
+            continue;
+        }
+
+        // 2. 하단 집중도 검사
+        int points_in_bottom_bins = 0;
+        int num_bottom_bins_to_check = std::min(params_.s2_bottom_bins_count_for_heavy_check, params_.s2_height_histogram_bins);
+        for (int i = 0; i < num_bottom_bins_to_check; ++i) {
+            points_in_bottom_bins += histogram[i];
+        }
+        if (static_cast<float>(points_in_bottom_bins) / total_points_in_roi < params_.s2_bottom_heavy_ratio_threshold) {
+            RCLCPP_DEBUG(this->get_logger(), "Cone at (%.2f, %.2f) failed bottom heavy check: %.2f < %.2f",
+                s1_center.x, s1_center.y, static_cast<float>(points_in_bottom_bins) / total_points_in_roi, params_.s2_bottom_heavy_ratio_threshold);
+            continue;
+        }
+
+        // 3. 상단 희소성 검사
+        bool top_sparsity_failed = false;
+        int num_top_bins_to_check = std::min(params_.s2_num_top_bins_for_sparsity_check, params_.s2_height_histogram_bins);
+        for (int i = 0; i < num_top_bins_to_check; ++i) {
+            // 가장 높은 빈부터 검사
+            int current_top_bin_index = params_.s2_height_histogram_bins - 1 - i;
+            if (current_top_bin_index < 0) break; // 배열 범위 초과 방지
+            if (static_cast<float>(histogram[current_top_bin_index]) / total_points_in_roi > params_.s2_top_sparse_max_point_ratio_per_bin) {
+                top_sparsity_failed = true;
+                RCLCPP_DEBUG(this->get_logger(), "Cone at (%.2f, %.2f) failed top sparsity check for bin %d: %.2f > %.2f",
+                    s1_center.x, s1_center.y, current_top_bin_index, static_cast<float>(histogram[current_top_bin_index]) / total_points_in_roi, params_.s2_top_sparse_max_point_ratio_per_bin);
+                break;
+            }
+        }
+        if (top_sparsity_failed) {
+            continue;
+        }
+
+        // 모든 2단계 검증 통과
+        ConeDescriptor validated_s2_cone = s1_cone; // 1단계 정보를 기반으로 하되,
+        validated_s2_cone.cloud = current_cylinder_points; // 포인트 클라우드는 재구성된 것으로 교체
+        validated_s2_cone.calculate(); // 재구성된 포인트로 mean, stddev 등 다시 계산
+        
+        if (!validated_s2_cone.valid) { // 재계산 후 valid 하지 않으면 제외
+            RCLCPP_DEBUG(this->get_logger(), "Reconstructed cone at (%.2f, %.2f) became invalid after recalculation.", s1_center.x, s1_center.y);
+            continue;
+        }
+
+        out_validated_cones.push_back(validated_s2_cone);
+        *all_reconstructed_points_for_publishing += *current_cylinder_points;
+    }
+
+    if (pub_reconstructed_cones_cloud_ && !all_reconstructed_points_for_publishing->empty()) {
+        publishCloud(pub_reconstructed_cones_cloud_, all_reconstructed_points_for_publishing, timestamp, "os_sensor");
+        RCLCPP_INFO(this->get_logger(), "Published %zu reconstructed cone points.", all_reconstructed_points_for_publishing->size());
+    }
+    RCLCPP_INFO(this->get_logger(), "Stage 2 validation: %zu / %zu cones passed.", out_validated_cones.size(), stage1_cones.size());
+}
+
+// 새로운 private 멤버 함수로 추가 (cone_detection_node.h 에도 선언 필요)
+void OutlierFilter::reconstructPointsAroundCones(
+    const std::vector<ConeDescriptor>& cones_to_reconstruct,
+    const Cloud::Ptr& source_cloud,
+    Cloud::Ptr& out_reconstructed_cloud,
+    const std::string& context_info)
+{
+    out_reconstructed_cloud->clear();
+    if (!source_cloud || source_cloud->empty()) {
+        RCLCPP_WARN(this->get_logger(), "Source cloud for reconstruction (%s) is empty or null.", context_info.c_str());
+        return;
+    }
+    if (cones_to_reconstruct.empty()) {
+        RCLCPP_DEBUG(this->get_logger(), "No cones provided for reconstruction (%s).", context_info.c_str()); // Debug level for empty cones list
+        return;
+    }
+
+    RCLCPP_DEBUG(this->get_logger(), "Reconstructing points for %zu cones (%s) using s2_roi params.", cones_to_reconstruct.size(), context_info.c_str());
+
+    for (const auto& cone : cones_to_reconstruct) {
+        if (!cone.valid && context_info == "final_cones") {
+             RCLCPP_DEBUG(this->get_logger(), "Skipping reconstruction for an invalid final cone descriptor.");
+             continue;
+        }
+
+        Point cone_center = cone.mean;
+
+        float cylinder_bottom_z = cone_center.z + params_.s2_roi_cylinder_bottom_offset;
+        float cylinder_top_z = cone_center.z + params_.s2_roi_cylinder_top_offset;
+
+        Cloud::Ptr roi_z_filtered(new Cloud);
+        pcl::PassThrough<Point> pass_z_reconstruct;
+        pass_z_reconstruct.setInputCloud(source_cloud);
+        pass_z_reconstruct.setFilterFieldName("z");
+        pass_z_reconstruct.setFilterLimits(cylinder_bottom_z, cylinder_top_z);
+        pass_z_reconstruct.filter(*roi_z_filtered);
+
+        if (roi_z_filtered->empty()) {
+            RCLCPP_DEBUG(this->get_logger(), "No points in Z-filtered ROI for cone at (%.2f, %.2f, %.2f) during %s reconstruction.", cone_center.x, cone_center.y, cone_center.z, context_info.c_str());
+            continue;
+        }
+
+        size_t points_added_for_this_cone = 0;
+        for (const auto& pt : roi_z_filtered->points) {
+            if (std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z)) continue;
+
+            float dist_sq = (pt.x - cone_center.x) * (pt.x - cone_center.x) +
+                            (pt.y - cone_center.y) * (pt.y - cone_center.y);
+            if (dist_sq <= (params_.s2_roi_cylinder_radius * params_.s2_roi_cylinder_radius)) {
+                out_reconstructed_cloud->points.push_back(pt);
+                points_added_for_this_cone++;
+            }
+        }
+        RCLCPP_DEBUG(this->get_logger(), "Added %zu points for cone at (%.2f, %.2f, %.2f) during %s reconstruction.", points_added_for_this_cone, cone_center.x, cone_center.y, cone_center.z, context_info.c_str());
+    }
+    out_reconstructed_cloud->width = out_reconstructed_cloud->points.size();
+    out_reconstructed_cloud->height = 1;
+    out_reconstructed_cloud->is_dense = true;
+    RCLCPP_DEBUG(this->get_logger(), "Total %zu points in reconstructed cloud for %s.", out_reconstructed_cloud->size(), context_info.c_str());
 }
 
 }  // namespace LIDAR

@@ -1,14 +1,14 @@
 lidar:
-  lidar_topic: /ouster/points
-  frame_id: os_lidar
+  lidar_topic: /point_cones_rec
+  frame_id: os_sensor
 
 camera:
-  image_topic: /image_raw
-  projected_topic: /point_projected_image
+  image_topic: /camera_1/dbg_image
+  projected_topic: /point_projected_image_l
   image_size:
     width: 640
     height: 360
-  frame_id: camera
+  frame_id: camera_l
 
 chessboard:
   pattern_size:
@@ -19,7 +19,7 @@ chessboard:
 general:
   config_folder: /home/user1/ROS2_Workspace/ros2_ws/src/ros2_camera_lidar_fusion/config
   data_folder: /home/user1/ROS2_Workspace/ros2_ws/src/ros2_camera_lidar_fusion/data
-  correspondence_file: ros2_camera_lidar_fusion_correspondences.txt
+  correspondence_file: ros2_camera_lidar_fusion_l_correspondences.txt
   camera_intrinsic_calibration: camera_intrinsic_calibration.yaml
   camera_extrinsic_calibration: camera_extrinsic_calibration.yaml
   slop: 0.1

@@ -44,9 +44,27 @@ public:
         float ec_cluster_tolerance = 0.02f;   // 클러스터링 거리 허용치
         int ec_min_cluster_size = 10;      // 클러스터 최소 크기
         int ec_max_cluster_size = 100;      // 클러스터 최대 크기
-        float pca_orientation_threshold = 0.01f; // PCA 방향 임계값
         float min_cone_height = 0.0f;        // 최소 콘 높이
         float max_cone_height = 1.0f;        // 최대 콘 높이
+
+        // 2단계 검증 파라미터
+        bool enable_stage2_validation = false;
+        float s1_ec_cluster_tolerance = 0.45f;
+        int s1_ec_min_cluster_size = 3;
+        int s1_ec_max_cluster_size = 250;
+        float s2_roi_cylinder_radius = 0.25f;
+        float s2_roi_cylinder_bottom_offset = -0.1f;
+        float s2_roi_cylinder_top_offset = 0.7f;
+        int s2_min_points_in_reconstructed_roi = 10;
+        int s2_max_points_in_reconstructed_roi = 500;
+        
+        // 방법론 3: 높이별 포인트 밀도 변화율 분석 파라미터
+        int s2_height_histogram_bins = 5; // YAML에서 기본값과 일치시킴
+        int s2_max_uphill_transitions_allowed = 1;
+        float s2_bottom_heavy_ratio_threshold = 0.5f;
+        int s2_bottom_bins_count_for_heavy_check = 2;
+        float s2_top_sparse_max_point_ratio_per_bin = 0.25f;
+        int s2_num_top_bins_for_sparsity_check = 1;
     };
 
     OutlierFilter();  // 생성자
@@ -56,14 +74,15 @@ protected:
     Params params_;
 
     // 지면 계수 멤버 변수
-    pcl::ModelCoefficients::Ptr last_plane_coefs_; 
+    pcl::ModelCoefficients::Ptr last_plane_coefs_;
+    Cloud::Ptr original_cloud_for_stage2_; // 원본 포인트 클라우드 저장용 (Stage2용)
     
     // ROS2 퍼블리셔
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
-    // rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr cones_pub_; // 사용하지 않는 퍼블리셔 주석 처리
     rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr cones_time_pub;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cones_cloud_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_points_fixed_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_reconstructed_cones_cloud_; // Stage2 재구성 콘 발행용
 
     // ROS2 서브스크라이버
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_sub_;
@@ -77,11 +96,21 @@ protected:
     void filterPointCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out);
     void lidarToSensorTransform(Cloud::Ptr &cloud);
     void voxelizeCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out, float leaf_size);
-    void clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones);
-    void validateCones(
+    void clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones, bool use_s1_params);
+    void validateConesFinalChecks(
         const std::vector<ConeDescriptor> &initial_cones,
         std::vector<ConeDescriptor> &validated_cones,
         const pcl::ModelCoefficients::ConstPtr &plane_coefs);
+    void validateAndReconstructConesStage2(
+        const std::vector<ConeDescriptor>& stage1_cones,
+        const Cloud::Ptr& original_cloud,
+        std::vector<ConeDescriptor>& out_validated_cones,
+        const rclcpp::Time& timestamp);
+    void reconstructPointsAroundCones(
+        const std::vector<ConeDescriptor>& cones_to_reconstruct,
+        const Cloud::Ptr& source_cloud,
+        Cloud::Ptr& out_reconstructed_cloud,
+        const std::string& context_info);
     std::vector<std::vector<double>> sortCones(const std::vector<ConeDescriptor> &cones);
 
     // 퍼블리싱 함수들
@@ -90,11 +119,6 @@ protected:
         Cloud::Ptr &cloud,
         const rclcpp::Time &timestamp,
         const std::string& frame_id = "os_sensor");
-
-    // 사용하지 않는 함수 제거
-    // void publishArray(
-    //    const rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr &publisher,
-    //    const std::vector<std::vector<double>> &array);
 
     void publishArrayWithTimestamp(
         const rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr &publisher,
@@ -106,9 +130,6 @@ protected:
     
     // 유틸리티 함수
     float ROI_theta(float x, float y);
-    
-    // 사용하지 않는 함수 제거
-    // void publishSortedConesMarkers(const std::vector<std::vector<double>> &sorted_cones, const std::string& frame_id = "os_sensor");
 };
 
 }  // namespace LIDAR
