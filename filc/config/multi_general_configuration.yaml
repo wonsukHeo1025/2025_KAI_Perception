@@ -1,0 +1,26 @@
+lidar:
+  lidar_topic: /ouster/points
+  frame_id: os_lidar
+
+cameras:
+  camera_1:
+    image_topic: /usb_cam_1/image_raw/uncompressed
+    projected_topic: /camera_1/projected_image
+    image_size:
+      width: 640
+      height: 360
+    frame_id: camera_l
+  camera_2:
+    image_topic: /usb_cam_2/image_raw/uncompressed
+    projected_topic: /camera_2/projected_image
+    image_size:
+      width: 640
+      height: 360
+    frame_id: camera_c
+
+general:
+  config_folder: /home/user1/ROS2_Workspace/ros2_ws/src/filc/config
+  data_folder: /home/user1/ROS2_Workspace/ros2_ws/src/filc/data
+  camera_intrinsic_calibration: multi_camera_intrinsic_calibration.yaml
+  camera_extrinsic_calibration: multi_camera_extrinsic_calibration.yaml
+  slop: 0.1

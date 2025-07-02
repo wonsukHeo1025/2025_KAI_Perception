@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'dead_reckoning_node = dead_reckoning.dead_reckoning_node:main',
             'imu_calibration = dead_reckoning.imu_calibration:main',
+            'advanced_imu_calibration = dead_reckoning.improved_calibration:main',
         ],
     },
 )

@@ -1,0 +1,22 @@
+hungarian_association:
+  cones_topic: "/sorted_cones_time" 
+  output_topic: "/fused_sorted_cones"
+
+  max_matching_distance: 25.0 # 픽셀 단위 매칭 거리 임계값
+
+  cameras:
+    - id: "camera_1" 
+      detections_topic: "/camera_1/detections"
+    - id: "camera_2" 
+      detections_topic: "/camera_2/detections"
+
+  calibration:
+    config_folder: "/home/user1/ROS2_Workspace/ros2_ws/src/calico/config/" 
+    camera_extrinsic_calibration: "multi_camera_extrinsic_calibration.yaml" 
+    camera_intrinsic_calibration: "multi_camera_intrinsic_calibration.yaml" 
+
+  qos:
+    history_depth: 1
+    sync_slop: 0.1 # 초 단위
+    sync_queue_size: 10
+

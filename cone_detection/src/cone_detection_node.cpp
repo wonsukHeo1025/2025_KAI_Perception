@@ -657,16 +657,16 @@ void OutlierFilter::visualizeCones(const std::vector<ConeDescriptor> &cones, con
                 marker.header.stamp = current_time;
                 marker.ns = "cones";
                 marker.id = id++;
-                marker.type = visualization_msgs::msg::Marker::SPHERE;
+                marker.type = visualization_msgs::msg::Marker::CYLINDER;
                 marker.action = visualization_msgs::msg::Marker::ADD;
                 marker.pose.position.x = cone.mean.x;
                 marker.pose.position.y = cone.mean.y;
-                marker.pose.position.z = cone.mean.z;
-                marker.scale.x = marker.scale.y = marker.scale.z = 0.3;
-                marker.color.r = 0.0;
-                marker.color.g = 0.0;
-                marker.color.b = 1.0;
-                marker.color.a = 1.0;
+                marker.pose.position.z = cone.mean.z - 0.3;
+                marker.scale.x = marker.scale.y = marker.scale.z = 0.2;
+                marker.color.r = 0.3;
+                marker.color.g = 0.4;
+                marker.color.b = 0.5;
+                marker.color.a = 0.8;
                 marker.lifetime = rclcpp::Duration::from_seconds(0.5);
                 markers.markers.push_back(marker);
             }

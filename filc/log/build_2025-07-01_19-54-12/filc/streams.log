@@ -1,0 +1,166 @@
+[0.011s] Invoking command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake /home/user1/ROS2_Workspace/ros2_ws/src/filc -DCMAKE_INSTALL_PREFIX=/home/user1/ROS2_Workspace/ros2_ws/install/filc
+[0.014s] CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+[0.014s]   Compatibility with CMake < 3.10 will be removed from a future version of
+[0.014s]   CMake.
+[0.014s] 
+[0.015s]   Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+[0.015s]   to tell CMake that the project requires at least <min> but has been updated
+[0.015s]   to work with policies introduced by <max> or earlier.
+[0.015s] 
+[0.015s] 
+[0.020s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.178s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.185s] -- Found rclcpp: 16.0.12 (/opt/ros/humble/share/rclcpp/cmake)
+[0.213s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.215s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.221s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.230s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.243s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.277s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.279s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.399s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.455s] -- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[0.490s] -- Found cv_bridge: 3.2.1 (/opt/ros/humble/share/cv_bridge/cmake)
+[0.500s] -- Found pcl_ros: 2.4.5 (/opt/ros/humble/share/pcl_ros/cmake)
+[0.537s] CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:146 (find_package):
+[0.537s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[0.537s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[0.537s]   cmake_policy command to set the policy and suppress this warning.
+[0.537s] 
+[0.537s]   CMake variable EIGEN_ROOT is set to:
+[0.537s] 
+[0.537s]     /usr/include/eigen3
+[0.537s] 
+[0.537s]   For compatibility, find_package is ignoring the variable, but code in a
+[0.537s]   .cmake module might still use it.
+[0.537s] Call Stack (most recent call first):
+[0.537s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:299 (find_eigen)
+[0.537s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.537s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.537s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.537s]   /opt/ros/humble/share/pcl_ros/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.537s]   /opt/ros/humble/share/pcl_ros/cmake/pcl_rosConfig.cmake:41 (include)
+[0.537s]   CMakeLists.txt:19 (find_package)
+[0.537s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.538s] 
+[0.541s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[0.542s] CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[0.542s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[0.542s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[0.542s]   set the policy and suppress this warning.
+[0.542s] 
+[0.542s] Call Stack (most recent call first):
+[0.542s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[0.542s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.542s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.542s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.542s]   /opt/ros/humble/share/pcl_ros/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.542s]   /opt/ros/humble/share/pcl_ros/cmake/pcl_rosConfig.cmake:41 (include)
+[0.543s]   CMakeLists.txt:19 (find_package)
+[0.543s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.543s] 
+[0.551s] CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/Modules/FindFLANN.cmake:44 (find_package):
+[0.551s]   Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+[0.551s]   variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+[0.551s]   cmake_policy command to set the policy and suppress this warning.
+[0.551s] 
+[0.551s]   CMake variable FLANN_ROOT is set to:
+[0.551s] 
+[0.551s]     /usr
+[0.551s] 
+[0.551s]   For compatibility, find_package is ignoring the variable, but code in a
+[0.551s]   .cmake module might still use it.
+[0.551s] Call Stack (most recent call first):
+[0.551s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:256 (find_package)
+[0.552s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:301 (find_flann)
+[0.552s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[0.552s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.552s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[0.552s]   /opt/ros/humble/share/pcl_ros/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[0.552s]   /opt/ros/humble/share/pcl_ros/cmake/pcl_rosConfig.cmake:41 (include)
+[0.552s]   CMakeLists.txt:19 (find_package)
+[0.552s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[0.552s] 
+[0.578s] -- FLANN found (include: /usr/include, lib: /usr/lib/x86_64-linux-gnu/libflann_cpp.so)
+[0.984s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[0.990s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[1.243s] CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:128 (find_package):
+[1.243s]   Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+[1.243s]   --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+[1.243s]   set the policy and suppress this warning.
+[1.243s] 
+[1.243s] Call Stack (most recent call first):
+[1.243s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:297 (find_boost)
+[1.243s]   /usr/lib/x86_64-linux-gnu/cmake/pcl/PCLConfig.cmake:543 (find_external_library)
+[1.243s]   /opt/ros/humble/share/pcl_conversions/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[1.243s]   /opt/ros/humble/share/pcl_conversions/cmake/pcl_conversionsConfig.cmake:41 (include)
+[1.243s]   /opt/ros/humble/share/pcl_ros/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)
+[1.243s]   /opt/ros/humble/share/pcl_ros/cmake/pcl_rosConfig.cmake:41 (include)
+[1.244s]   CMakeLists.txt:19 (find_package)
+[1.244s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[1.244s] 
+[1.254s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[1.259s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[1.265s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/x86_64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[1.518s] -- Found Qhull version 8.0.2
+[1.778s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.053s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[2.054s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[2.147s] CMake Warning (dev) at CMakeLists.txt:26 (find_package):
+[2.147s]   Policy CMP0074 is not set: find_package uses <PackageName>_ROOT variables.
+[2.147s]   Run "cmake --help-policy CMP0074" for policy details.  Use the cmake_policy
+[2.147s]   command to set the policy and suppress this warning.
+[2.147s] 
+[2.147s]   CMake variable PCL_ROOT is set to:
+[2.147s] 
+[2.147s]     /usr
+[2.148s] 
+[2.148s]   For compatibility, CMake is ignoring the variable.
+[2.148s] This warning is for project developers.  Use -Wno-dev to suppress it.
+[2.148s] 
+[2.175s] -- Found ament_lint_auto: 0.12.12 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[2.263s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[2.263s] -- Configured cppcheck include dirs: /home/user1/ROS2_Workspace/ros2_ws/src/filc/include
+[2.263s] -- Configured cppcheck exclude dirs and/or files: 
+[2.265s] -- Added test 'flake8' to check Python code syntax and style conventions
+[2.269s] -- Added test 'lint_cmake' to check CMake code style
+[2.271s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[2.284s] -- Added test 'uncrustify' to check C / C++ code style
+[2.284s] -- Configured uncrustify additional arguments: 
+[2.286s] -- Added test 'xmllint' to check XML markup files
+[2.288s] -- Configuring done (2.3s)
+[2.336s] -- Generating done (0.0s)
+[2.340s] -- Build files have been written to: /home/user1/ROS2_Workspace/ros2_ws/build/filc
+[2.356s] Invoked command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake /home/user1/ROS2_Workspace/ros2_ws/src/filc -DCMAKE_INSTALL_PREFIX=/home/user1/ROS2_Workspace/ros2_ws/install/filc
+[2.358s] Invoking command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --build /home/user1/ROS2_Workspace/ros2_ws/build/filc -- -j16 -l16
+[2.395s] [100%] Built target improved_interpolation_node
+[2.399s] Invoked command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --build /home/user1/ROS2_Workspace/ros2_ws/build/filc -- -j16 -l16
+[2.403s] Invoking command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --install /home/user1/ROS2_Workspace/ros2_ws/build/filc
+[2.406s] -- Install configuration: ""
+[2.406s] -- Execute custom install script
+[2.406s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/lib/filc/improved_interpolation_node
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/config/interpolation_config.yaml
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/config/multi_camera_extrinsic_calibration.yaml
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/config/multi_camera_intrinsic_calibration.yaml
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/config/multi_general_configuration.yaml
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/launch/interpolation.launch.py
+[2.407s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/lib/filc/visualize_interpolation.py
+[2.408s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/lib/filc/benchmark_interpolation.py
+[2.408s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/ament_index/resource_index/package_run_dependencies/filc
+[2.408s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/ament_index/resource_index/parent_prefix_path/filc
+[2.409s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/environment/ament_prefix_path.sh
+[2.409s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/environment/ament_prefix_path.dsv
+[2.409s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/environment/path.sh
+[2.409s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/environment/path.dsv
+[2.410s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/local_setup.bash
+[2.410s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/local_setup.sh
+[2.410s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/local_setup.zsh
+[2.410s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/local_setup.dsv
+[2.410s] -- Symlinking: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/package.dsv
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/ament_index/resource_index/packages/filc
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/cmake/ament_cmake_export_include_directories-extras.cmake
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/cmake/ament_cmake_export_dependencies-extras.cmake
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/cmake/filcConfig.cmake
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/cmake/filcConfig-version.cmake
+[2.414s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/filc/share/filc/package.xml
+[2.415s] Invoked command in '/home/user1/ROS2_Workspace/ros2_ws/build/filc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --install /home/user1/ROS2_Workspace/ros2_ws/build/filc

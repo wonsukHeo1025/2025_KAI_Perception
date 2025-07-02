@@ -4,6 +4,7 @@ from rclpy.parameter import Parameter
 from rcl_interfaces.msg import SetParametersResult
 import numpy as np
 from scipy.spatial.transform import Rotation
+from scipy import signal
 import traceback
 
 # 메시지 타입 임포트
@@ -19,7 +20,7 @@ from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.common import Q_discrete_white_noise
 
-# UKF를 사용한 트랙 클래스 (3D 측정값 처리)
+# UKF를 사용한 트랙 클래스 (2D 추적, Z값은 측정값 그대로 사용)
 class Track:
     def __init__(self, track_id, initial_position_xyz, color, dt, T_imu_to_sensor,
                  P_initial_pos=5.0, P_initial_vel=1.0, R_measurement=0.5,
@@ -35,23 +36,28 @@ class Track:
         self.R_imu_to_sensor = self.T_imu_to_sensor[:3, :3]  # 3x3 회전 행렬
         self.t_imu_to_sensor = self.T_imu_to_sensor[:3, 3]   # 3x1 이동 벡터
 
-        # 상태 벡터: [콘_x, 콘_y, 콘_z, 센서_vx, 센서_vy, 센서_vz]
-        dim_x = 6
-        # 측정값은 3D [x, y, z]
-        dim_z = 3
+        # 상태 벡터: [콘_x, 콘_y, 센서_vx, 센서_vy] (2D로 축소)
+        dim_x = 4
+        # 측정값은 2D [x, y]
+        dim_z = 2
         points = MerweScaledSigmaPoints(n=dim_x, alpha=0.1, beta=2.0, kappa=(3.0 - dim_x))
 
         self.ukf = UnscentedKalmanFilter(dim_x=dim_x, dim_z=dim_z, dt=self.initial_dt,
                                          fx=Track.static_fx, hx=self.hx, points=points)
 
-        # 초기 상태
+        # 초기 상태 (XY만 사용)
         self.ukf.x = np.zeros(dim_x, dtype=np.float64)
-        self.ukf.x[0:3] = np.array(initial_position_xyz, dtype=np.float64)
+        self.ukf.x[0] = initial_position_xyz[0]  # x
+        self.ukf.x[1] = initial_position_xyz[1]  # y
+        # vx, vy는 0으로 초기화
+        
+        # Z값은 별도로 저장 (필터링 없이 측정값 사용)
+        self.last_z = initial_position_xyz[2]
 
-        # 공분산 행렬
-        self.ukf.P = np.diag([P_initial_pos]*3 + [P_initial_vel]*3)
+        # 공분산 행렬 (2D)
+        self.ukf.P = np.diag([P_initial_pos]*2 + [P_initial_vel]*2)
         self.ukf.R = np.eye(dim_z) * R_measurement
-        self.ukf.Q = np.diag([Q_process_diag_pos]*3 + [Q_process_diag_vel]*3)
+        self.ukf.Q = np.diag([Q_process_diag_pos]*2 + [Q_process_diag_vel]*2)
 
         # 색상 관련 변수
         self.color_history = []
@@ -66,10 +72,10 @@ class Track:
     @staticmethod
     def static_fx(x, dt, fx_args=None):
         """
-        상태 전이 함수
-        IMU 데이터를 기반으로 다음 상태 [콘_위치, 센서_속도]를 예측
+        2D 상태 전이 함수
+        IMU 데이터를 기반으로 다음 상태 [콘_위치_xy, 센서_속도_xy]를 예측
         
-        x: 현재 상태 [px, py, pz, vx, vy, vz]
+        x: 현재 상태 [px, py, vx, vy]
         dt: 시간 간격
         fx_args: (R_imu_to_sensor, omega_imu_vec, accel_imu_vec) 튜플
         """
@@ -78,30 +84,38 @@ class Track:
              return x
 
         R_imu_to_sensor, omega_imu_vec, accel_imu_vec = fx_args
-        current_pos_cone = x[0:3]
-        current_vel_sensor = x[3:6]
+        current_pos_cone = x[0:2]  # [px, py]
+        current_vel_sensor = x[2:4]  # [vx, vy]
 
-        # 1. IMU 측정값을 센서 프레임으로 변환
+        # 1. IMU 측정값을 센서 프레임으로 변환 (XY 평면만)
         omega_sensor = R_imu_to_sensor @ omega_imu_vec
         accel_sensor = R_imu_to_sensor @ accel_imu_vec
+        
+        # Z축 회전(yaw)만 사용
+        omega_z = omega_sensor[2]  # Z축 각속도
+        accel_xy = accel_sensor[0:2]  # XY 가속도만
 
-        # 2. dt 동안의 센서 회전 계산
-        rotation_vector = omega_sensor * dt
-        try:
-            R_delta = Rotation.from_rotvec(rotation_vector).as_matrix()
-        except ValueError:
-            R_delta = np.eye(3)
+        # 2. dt 동안의 센서 회전 계산 (2D)
+        theta = omega_z * dt
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+        R_delta_2d = np.array([[cos_theta, -sin_theta],
+                               [sin_theta, cos_theta]])
 
         # 역회전 (k+1 프레임에서 k 프레임으로 변환)
-        R_compensation = R_delta.T
+        R_compensation_2d = R_delta_2d.T
 
-        # 3. k+1 시점의 센서 속도 예측 (k+1 프레임에서 표현)
-        vel_kplus1_in_k = current_vel_sensor + accel_sensor * dt * -1
-        predicted_vel_sensor = R_compensation @ vel_kplus1_in_k
+        # 3. k+1 시점의 센서 속도 예측 (2D)
+        predicted_vel_sensor = current_vel_sensor + accel_xy * dt
 
-        # 4. k+1 시점의 콘 위치 예측 (k+1 프레임에서 표현)
-        delta_pos_sensor_in_k = current_vel_sensor * dt + 0.5 * accel_sensor * dt**2
-        predicted_pos_cone = R_compensation @ (current_pos_cone - delta_pos_sensor_in_k)
+        # 4. k+1 시점의 콘 위치 예측 (2D)
+        # 센서가 움직이면 콘은 반대 방향으로 상대 이동
+        delta_pos_sensor = current_vel_sensor * dt + 0.5 * accel_xy * dt**2
+        pos_before_rotation = current_pos_cone - delta_pos_sensor
+        
+        # 회전 적용
+        predicted_pos_cone = R_compensation_2d @ pos_before_rotation
+        predicted_vel_sensor = R_compensation_2d @ predicted_vel_sensor
 
         # 5. 예측된 상태 벡터 결합
         predicted_x = np.concatenate((predicted_pos_cone, predicted_vel_sensor))
@@ -110,10 +124,10 @@ class Track:
 
     def hx(self, x):
         """
-        측정 함수. 상태 벡터에서 [콘_x, 콘_y, 콘_z] 추출
-        상태 x: [px, py, pz, vx, vy, vz]
+        측정 함수. 상태 벡터에서 [콘_x, 콘_y] 추출 (2D)
+        상태 x: [px, py, vx, vy]
         """
-        return x[0:3]
+        return x[0:2]  # [x, y]만 반환
 
     def predict(self, dt, imu_msg):
         """
@@ -168,13 +182,18 @@ class Track:
         self.ukf.predict(dt=dt, fx_args=fx_args_tuple)
 
     def update(self, measurement_xyz, color):
-        """UKF 업데이트 단계 실행 및 색상 처리 (3D 측정값 사용)"""
-        z = np.asarray(measurement_xyz, dtype=np.float64)
-        if z.shape != (3,):
-            print(f"[Track.update 오류] 트랙 {self.track_id}: 잘못된 측정값 형태 {z.shape}. 예상: (3,).")
+        """UKF 업데이트 단계 실행 및 색상 처리 (3D 측정값 받지만 2D만 사용)"""
+        measurement_xyz = np.asarray(measurement_xyz, dtype=np.float64)
+        if measurement_xyz.shape != (3,):
+            print(f"[Track.update 오류] 트랙 {self.track_id}: 잘못된 측정값 형태 {measurement_xyz.shape}. 예상: (3,).")
             return
 
-        self.ukf.update(z)
+        # XY만 추출해서 칼만 필터 업데이트
+        z_2d = measurement_xyz[0:2]
+        self.ukf.update(z_2d)
+        
+        # Z값은 별도로 저장 (필터링 없이)
+        self.last_z = measurement_xyz[2]
 
         # 색상 처리 로직
         color_lower = color.lower()
@@ -199,8 +218,9 @@ class Track:
         self.color_counts[color_lower] = self.color_counts.get(color_lower, 0) + 1
 
     def get_predicted_position_xyz(self):
-        """필터링된 XYZ 위치 반환"""
-        return self.ukf.x[0:3]
+        """필터링된 XY 위치와 마지막 Z 측정값 반환"""
+        xy = self.ukf.x[0:2]
+        return np.array([xy[0], xy[1], self.last_z])
 
     def get_smoothed_color(self):
         """안정화된 색상 반환"""
@@ -220,7 +240,7 @@ class Track:
              return "Unknown"
 
 
-# 콘 트래커 노드 (3D 입력/출력 처리)
+# 콘 트래커 노드 (2D 칼만 필터, Z값은 측정값 사용)
 class ConeTracker(Node):
     def __init__(self):
         super().__init__('cone_tracker_ukf')
@@ -234,6 +254,12 @@ class ConeTracker(Node):
         self.declare_parameter('ukf.Q_process_diag_pos', 0.1)
         self.declare_parameter('ukf.Q_process_diag_vel', 0.1)
         self.declare_parameter('fixed_dt', 0.056)
+        
+        # IMU 필터링 파라미터
+        self.declare_parameter('imu_filter.type', 'butterworth')  # 'ema' or 'butterworth'
+        self.declare_parameter('imu_filter.ema_alpha', 0.1)  # EMA 필터 계수 (0-1, 작을수록 더 스무스)
+        self.declare_parameter('imu_filter.butterworth_cutoff', 10.0)  # 버터워스 차단 주파수 (Hz)
+        self.declare_parameter('imu_filter.butterworth_order', 2)  # 버터워스 필터 차수
         
         # IMU 프레임에서 센서 프레임으로의 변환 (os_imu -> os_sensor)
         default_transform = [
@@ -253,6 +279,12 @@ class ConeTracker(Node):
         self.Q_process_diag_pos = self.get_parameter('ukf.Q_process_diag_pos').value
         self.Q_process_diag_vel = self.get_parameter('ukf.Q_process_diag_vel').value
         self.fixed_dt = self.get_parameter('fixed_dt').value
+        
+        # IMU 필터 파라미터 가져오기
+        self.imu_filter_type = self.get_parameter('imu_filter.type').value
+        self.ema_alpha = self.get_parameter('imu_filter.ema_alpha').value
+        self.butterworth_cutoff = self.get_parameter('imu_filter.butterworth_cutoff').value
+        self.butterworth_order = self.get_parameter('imu_filter.butterworth_order').value
 
         imu_transform_list = self.get_parameter('imu_to_sensor_transform').value
         try:
@@ -262,15 +294,15 @@ class ConeTracker(Node):
              self.T_imu_to_sensor = np.eye(4, dtype=np.float64)
 
         # 파라미터 로깅
-        self.get_logger().info("--- 콘 트래커 UKF (3D 입력) 파라미터 ---")
-        self.get_logger().info(f" 거리 임계값 (3D): {self.distance_threshold}")
+        self.get_logger().info("--- 콘 트래커 UKF (2D 필터링) 파라미터 ---")
+        self.get_logger().info(f" 거리 임계값 (2D XY): {self.distance_threshold}")
         self.get_logger().info(f" 최대 검출 누락 횟수: {self.max_missed_detections}")
-        self.get_logger().info(f" UKF 파라미터:")
-        self.get_logger().info(f"   P_initial_pos: {self.P_initial_pos}")
-        self.get_logger().info(f"   P_initial_vel: {self.P_initial_vel}")
-        self.get_logger().info(f"   R_measurement (축별): {self.R_measurement}")
-        self.get_logger().info(f"   Q_process_diag_pos: {self.Q_process_diag_pos}")
-        self.get_logger().info(f"   Q_process_diag_vel: {self.Q_process_diag_vel}")
+        self.get_logger().info(f" UKF 파라미터 (2D):")
+        self.get_logger().info(f"   P_initial_pos (XY): {self.P_initial_pos}")
+        self.get_logger().info(f"   P_initial_vel (XY): {self.P_initial_vel}")
+        self.get_logger().info(f"   R_measurement (XY): {self.R_measurement}")
+        self.get_logger().info(f"   Q_process_diag_pos (XY): {self.Q_process_diag_pos}")
+        self.get_logger().info(f"   Q_process_diag_vel (XY): {self.Q_process_diag_vel}")
         self.get_logger().info(f" 고정 dt: {self.fixed_dt}")
         self.get_logger().info(f" IMU에서 센서로의 변환 (os_imu to os_sensor):")
         
@@ -311,8 +343,73 @@ class ConeTracker(Node):
         self.tracks = {}
         self.next_track_id = 0
         self.last_time_stamp = None
+        
+        # IMU 필터 초기화
+        self._init_imu_filter()
+        
+        # EMA 필터용 이전 값 저장
+        self.prev_angular_vel = None
+        self.prev_linear_accel = None
 
-        self.get_logger().info('3D 입력을 위한 콘 트래커 UKF 노드 초기화 완료.')
+        self.get_logger().info('2D 칼만 필터 콘 트래커 노드 초기화 완료 (Z값은 측정값 사용).')
+        self.get_logger().info(f'IMU 필터: {self.imu_filter_type} (EMA alpha: {self.ema_alpha}, Butterworth: {self.butterworth_cutoff}Hz, order {self.butterworth_order})')
+
+    def _init_imu_filter(self):
+        """IMU 필터 초기화"""
+        if self.imu_filter_type == 'butterworth':
+            # 버터워스 저역통과 필터 설계
+            fs = 100.0  # IMU 샘플링 주파수 (100Hz)
+            nyquist = fs / 2.0
+            normal_cutoff = self.butterworth_cutoff / nyquist
+            self.b, self.a = signal.butter(self.butterworth_order, normal_cutoff, btype='low', analog=False)
+            
+            # 필터 상태 초기화 (각 축별로)
+            self.zi_angular_x = signal.lfilter_zi(self.b, self.a)
+            self.zi_angular_y = signal.lfilter_zi(self.b, self.a)
+            self.zi_angular_z = signal.lfilter_zi(self.b, self.a)
+            self.zi_accel_x = signal.lfilter_zi(self.b, self.a)
+            self.zi_accel_y = signal.lfilter_zi(self.b, self.a)
+            self.zi_accel_z = signal.lfilter_zi(self.b, self.a)
+            
+            self.get_logger().info(f"버터워스 필터 초기화: 차단주파수 {self.butterworth_cutoff}Hz, 차수 {self.butterworth_order}")
+    
+    def _filter_imu_data(self, angular_vel, linear_accel):
+        """IMU 데이터에 필터 적용"""
+        if self.imu_filter_type == 'ema':
+            # Exponential Moving Average (EMA) 필터
+            if self.prev_angular_vel is None:
+                self.prev_angular_vel = angular_vel.copy()
+                self.prev_linear_accel = linear_accel.copy()
+                return angular_vel, linear_accel
+            
+            # EMA: new_value = alpha * current + (1 - alpha) * previous
+            filtered_angular = self.ema_alpha * angular_vel + (1 - self.ema_alpha) * self.prev_angular_vel
+            filtered_accel = self.ema_alpha * linear_accel + (1 - self.ema_alpha) * self.prev_linear_accel
+            
+            self.prev_angular_vel = filtered_angular.copy()
+            self.prev_linear_accel = filtered_accel.copy()
+            
+            return filtered_angular, filtered_accel
+            
+        elif self.imu_filter_type == 'butterworth':
+            # 버터워스 필터 적용
+            filtered_angular = np.zeros(3)
+            filtered_accel = np.zeros(3)
+            
+            # 각 축별로 필터 적용
+            filtered_angular[0], self.zi_angular_x = signal.lfilter(self.b, self.a, [angular_vel[0]], zi=self.zi_angular_x)
+            filtered_angular[1], self.zi_angular_y = signal.lfilter(self.b, self.a, [angular_vel[1]], zi=self.zi_angular_y)
+            filtered_angular[2], self.zi_angular_z = signal.lfilter(self.b, self.a, [angular_vel[2]], zi=self.zi_angular_z)
+            
+            filtered_accel[0], self.zi_accel_x = signal.lfilter(self.b, self.a, [linear_accel[0]], zi=self.zi_accel_x)
+            filtered_accel[1], self.zi_accel_y = signal.lfilter(self.b, self.a, [linear_accel[1]], zi=self.zi_accel_y)
+            filtered_accel[2], self.zi_accel_z = signal.lfilter(self.b, self.a, [linear_accel[2]], zi=self.zi_accel_z)
+            
+            return filtered_angular, filtered_accel
+        
+        else:
+            # 필터링 없음
+            return angular_vel, linear_accel
 
     def parameters_callback(self, params):
         """파라미터 콜백 - 기존 트랙의 R 및 Q 업데이트"""
@@ -345,9 +442,9 @@ class ConeTracker(Node):
                     if track_id in self.tracks:
                         track = self.tracks[track_id]
                         if 'ukf.R_measurement' in param_dict:
-                             track.ukf.R = np.eye(track.ukf.dim_z) * self.R_measurement
+                             track.ukf.R = np.eye(track.ukf.dim_z) * self.R_measurement  # dim_z = 2
                         if 'ukf.Q_process_diag_pos' in param_dict or 'ukf.Q_process_diag_vel' in param_dict:
-                             track.ukf.Q = np.diag([self.Q_process_diag_pos]*3 + [self.Q_process_diag_vel]*3)
+                             track.ukf.Q = np.diag([self.Q_process_diag_pos]*2 + [self.Q_process_diag_vel]*2)  # 2D
                         if 'imu_to_sensor_transform' in param_dict:
                              track.T_imu_to_sensor = self.T_imu_to_sensor
                              track.R_imu_to_sensor = self.T_imu_to_sensor[:3, :3]
@@ -410,17 +507,44 @@ class ConeTracker(Node):
             y = cone_msg.data[idx + 1]
             z = cone_msg.data[idx + 2]
             detections.append((x, y, z))
+        
+        # IMU 데이터 추출 및 필터링
+        omega_raw = np.array([imu_msg.angular_velocity.x,
+                              imu_msg.angular_velocity.y,
+                              imu_msg.angular_velocity.z])
+        accel_raw = np.array([imu_msg.linear_acceleration.x,
+                              imu_msg.linear_acceleration.y,
+                              imu_msg.linear_acceleration.z])
+        
+        # 필터 적용
+        omega_filtered, accel_filtered = self._filter_imu_data(omega_raw, accel_raw)
+        
+        # 필터링된 IMU 메시지 생성
+        filtered_imu_msg = Imu()
+        filtered_imu_msg.header = imu_msg.header
+        filtered_imu_msg.angular_velocity.x = omega_filtered[0]
+        filtered_imu_msg.angular_velocity.y = omega_filtered[1]
+        filtered_imu_msg.angular_velocity.z = omega_filtered[2]
+        filtered_imu_msg.linear_acceleration.x = accel_filtered[0]
+        filtered_imu_msg.linear_acceleration.y = accel_filtered[1]
+        filtered_imu_msg.linear_acceleration.z = accel_filtered[2]
+        
+        # 공분산 정보 복사
+        filtered_imu_msg.angular_velocity_covariance = imu_msg.angular_velocity_covariance
+        filtered_imu_msg.linear_acceleration_covariance = imu_msg.linear_acceleration_covariance
+        filtered_imu_msg.orientation = imu_msg.orientation
+        filtered_imu_msg.orientation_covariance = imu_msg.orientation_covariance
 
-        # 1. 예측 단계
+        # 1. 예측 단계 (필터링된 IMU 사용)
         track_ids_predict = list(self.tracks.keys())
         for track_id in track_ids_predict:
             if track_id in self.tracks:
                 try:
-                    self.tracks[track_id].predict(dt, imu_msg)
+                    self.tracks[track_id].predict(dt, filtered_imu_msg)
                 except Exception as e:
                     self.get_logger().error(f"트랙 {track_id} 예측 중 오류: {e}\n{traceback.format_exc()}")
 
-        # 2. 데이터 연관 (3D 거리 사용)
+        # 2. 데이터 연관 (2D 거리 사용 - XY 평면만)
         matched_indices = set()
         assigned_tracks = set()
         association_pairs = []
@@ -432,16 +556,17 @@ class ConeTracker(Node):
             detections_np = np.array(detections, dtype=np.float64)
 
             for i, det_xyz in enumerate(detections):
-                det_xyz_np = detections_np[i]
+                det_xy = detections_np[i][0:2]  # XY만 추출
                 for j, track_id in enumerate(track_ids_assoc):
                     if track_id in self.tracks:
                         track = self.tracks[track_id]
                         pred_pos_xyz = track.get_predicted_position_xyz()
-                        dist = np.linalg.norm(det_xyz_np - pred_pos_xyz)
-                        if dist < self.distance_threshold:
-                            cost_matrix[i, j] = dist
+                        pred_pos_xy = pred_pos_xyz[0:2]  # XY만 추출
+                        dist_2d = np.linalg.norm(det_xy - pred_pos_xy)
+                        if dist_2d < self.distance_threshold:
+                            cost_matrix[i, j] = dist_2d
 
-            # 간단한 그리디 매칭 (3D 비용 행렬 사용)
+            # 간단한 그리디 매칭 (2D 비용 행렬 사용)
             possible_matches = []
             for i in range(num_detections):
                  for j in range(len(track_ids_assoc)):
