@@ -1,5 +1,10 @@
 # Fine-grained Interpolation for LiDAR Continuity (filc)
 
+<div align="left">
+  <img src="docs/filc.png" alt="fil-c" width="200"/>
+  <h2>라이다 보간 패키지</h2>
+</div>
+
 Ouster OS1-32 LiDAR의 32채널 포인트클라우드를 128채널로 실시간 보간하는 ROS2 패키지
 
 ## 개요
