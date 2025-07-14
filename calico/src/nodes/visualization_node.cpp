@@ -1,0 +1,147 @@
+#include <rclcpp/rclcpp.hpp>
+#include <custom_interface/msg/tracked_cone_array.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include "calico/visualization/rviz_marker_publisher.hpp"
+#include "calico/utils/message_converter.hpp"
+
+namespace calico {
+
+class VisualizationNode : public rclcpp::Node {
+public:
+    VisualizationNode() : Node("calico_visualization") {
+        RCLCPP_INFO(this->get_logger(), "Initializing CALICO Visualization Node");
+        
+        // Declare parameters
+        this->declare_parameter<double>("cone_height", 0.5);
+        this->declare_parameter<double>("cone_radius", 0.15);
+        this->declare_parameter<bool>("show_track_ids", true);
+        this->declare_parameter<bool>("show_color_labels", false);
+        this->declare_parameter<std::string>("frame_id", "ouster_lidar");
+        
+        // Load parameters
+        double cone_height = this->get_parameter("cone_height").as_double();
+        double cone_radius = this->get_parameter("cone_radius").as_double();
+        show_track_ids_ = this->get_parameter("show_track_ids").as_bool();
+        show_color_labels_ = this->get_parameter("show_color_labels").as_bool();
+        frame_id_ = this->get_parameter("frame_id").as_string();
+        
+        // Track time for velocity estimation
+        last_callback_time_ = this->get_clock()->now();
+        
+        // Initialize marker publisher
+        marker_publisher_ = std::make_unique<visualization::RVizMarkerPublisher>();
+        marker_publisher_->setConeParameters(cone_height, cone_radius);
+        marker_publisher_->setShowTrackIds(show_track_ids_);
+        marker_publisher_->setShowColorLabels(show_color_labels_);
+        
+        // Setup QoS
+        rclcpp::QoS qos(10);
+        qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+        
+        // Create subscriber
+        tracked_cones_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
+            "/fused_sorted_cones_ukf", qos,
+            std::bind(&VisualizationNode::trackedConesCallback, this, std::placeholders::_1));
+        
+        // Create publishers with Python-compatible topic names
+        marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/visualization_marker_fused_colored", qos);
+        
+        arrow_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/visualization_marker_velocity_arrows", qos);
+        
+        RCLCPP_INFO(this->get_logger(), "Visualization Node initialized successfully");
+        RCLCPP_INFO(this->get_logger(), "Publishing markers to: /visualization_marker_fused_colored");
+        RCLCPP_INFO(this->get_logger(), "Publishing velocity arrows to: /visualization_marker_velocity_arrows");
+        RCLCPP_INFO(this->get_logger(), "Show track IDs: %s", show_track_ids_ ? "yes" : "no");
+        RCLCPP_INFO(this->get_logger(), "Show color labels: %s", show_color_labels_ ? "yes" : "no");
+    }
+    
+private:
+    void trackedConesCallback(const custom_interface::msg::TrackedConeArray::SharedPtr msg) {
+        // Convert to internal representation
+        auto cones = utils::MessageConverter::fromTrackedConeArray(*msg);
+        
+        // Get current time for velocity estimation
+        auto current_time = this->get_clock()->now();
+        double current_time_sec = current_time.seconds();
+        
+        // Update velocity estimates
+        marker_publisher_->updateVelocityEstimates(cones, current_time_sec);
+        
+        // Set velocity information for cones
+        marker_publisher_->setVelocityForCones(cones);
+        
+        // Use frame_id from message if available, otherwise use parameter
+        std::string frame_id = msg->header.frame_id.empty() ? frame_id_ : msg->header.frame_id;
+        
+        // Create marker array
+        auto marker_array = marker_publisher_->createMarkerArray(
+            cones, frame_id, msg->header.stamp);
+        
+        // Separate velocity arrows from main marker array
+        visualization_msgs::msg::MarkerArray main_markers;
+        visualization_msgs::msg::MarkerArray arrow_markers;
+        
+        // Split markers by namespace
+        for (const auto& marker : marker_array.markers) {
+            if (marker.ns == "velocity_arrows") {
+                arrow_markers.markers.push_back(marker);
+            } else {
+                main_markers.markers.push_back(marker);
+            }
+        }
+        
+        // Publish to separate topics
+        if (!main_markers.markers.empty()) {
+            marker_pub_->publish(main_markers);
+        }
+        if (!arrow_markers.markers.empty()) {
+            arrow_marker_pub_->publish(arrow_markers);
+        }
+        
+        // Log statistics
+        static int vis_count = 0;
+        if (++vis_count % 100 == 0) {
+            RCLCPP_DEBUG(this->get_logger(), 
+                        "Visualized %zu cones (%d cycles)",
+                        cones.size(), vis_count);
+        }
+    }
+    
+private:
+    // Marker publisher
+    std::unique_ptr<visualization::RVizMarkerPublisher> marker_publisher_;
+    
+    // Subscriber
+    rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr tracked_cones_sub_;
+    
+    // Publishers
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr arrow_marker_pub_;
+    
+    // Parameters
+    bool show_track_ids_;
+    bool show_color_labels_;
+    std::string frame_id_;
+    
+    // Time tracking
+    rclcpp::Time last_callback_time_;
+};
+
+} // namespace calico
+
+int main(int argc, char** argv) {
+    rclcpp::init(argc, argv);
+    
+    try {
+        auto node = std::make_shared<calico::VisualizationNode>();
+        rclcpp::spin(node);
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(rclcpp::get_logger("main"), "Exception: %s", e.what());
+        return 1;
+    }
+    
+    rclcpp::shutdown();
+    return 0;
+}

@@ -1,6 +1,8 @@
 #include "../include/cone_detection/cone_detection_node.h"
 #include <memory>
 #include <limits>
+#include <cstring>
+#include <cmath>
 
 namespace LIDAR {
 
@@ -561,9 +563,113 @@ void OutlierFilter::publishCloud(
     try {
         if (publisher->get_subscription_count() > 0) {
             sensor_msgs::msg::PointCloud2 cloud_msg;
-            pcl::toROSMsg(*cloud, cloud_msg);
-            cloud_msg.header.frame_id = frame_id;
-            cloud_msg.header.stamp = timestamp;
+            
+            // /point_cones_rec 토픽인 경우 Ouster 형식으로 변환
+            if (publisher == pub_reconstructed_cones_cloud_) {
+                // Ouster 형식으로 변환
+                cloud_msg.header.stamp = timestamp;
+                cloud_msg.header.frame_id = frame_id;  // os_sensor 유지
+                
+                // Ouster 형식 필드 정의
+                // Ouster OS1-32는 32 rows x N columns 형식
+                cloud_msg.height = 32;  // 32 channels
+                cloud_msg.width = (cloud->size() + 31) / 32;  // 올림 나눗셈으로 column 수 계산
+                cloud_msg.is_bigendian = false;
+                cloud_msg.point_step = 48;  // Ouster 포인트 크기
+                cloud_msg.row_step = cloud_msg.point_step * cloud_msg.width;
+                cloud_msg.is_dense = true;
+                
+                // 필드 설정
+                sensor_msgs::msg::PointField field;
+                cloud_msg.fields.clear();
+                
+                // x, y, z
+                field.name = "x"; field.offset = 0; field.datatype = 7; field.count = 1;
+                cloud_msg.fields.push_back(field);
+                field.name = "y"; field.offset = 4;
+                cloud_msg.fields.push_back(field);
+                field.name = "z"; field.offset = 8;
+                cloud_msg.fields.push_back(field);
+                
+                // intensity
+                field.name = "intensity"; field.offset = 16;
+                cloud_msg.fields.push_back(field);
+                
+                // t (timestamp)
+                field.name = "t"; field.offset = 20; field.datatype = 6;
+                cloud_msg.fields.push_back(field);
+                
+                // reflectivity
+                field.name = "reflectivity"; field.offset = 24; field.datatype = 4;
+                cloud_msg.fields.push_back(field);
+                
+                // ring
+                field.name = "ring"; field.offset = 26; field.datatype = 4;
+                cloud_msg.fields.push_back(field);
+                
+                // ambient
+                field.name = "ambient"; field.offset = 28; field.datatype = 4;
+                cloud_msg.fields.push_back(field);
+                
+                // range
+                field.name = "range"; field.offset = 32; field.datatype = 6;
+                cloud_msg.fields.push_back(field);
+                
+                // 데이터 채우기
+                cloud_msg.data.resize(cloud_msg.row_step);
+                uint8_t* data_ptr = cloud_msg.data.data();
+                
+                for (size_t i = 0; i < cloud->size(); ++i) {
+                    const auto& pt = cloud->points[i];
+                    size_t offset = i * cloud_msg.point_step;
+                    
+                    // x, y, z
+                    memcpy(data_ptr + offset, &pt.x, sizeof(float));
+                    memcpy(data_ptr + offset + 4, &pt.y, sizeof(float));
+                    memcpy(data_ptr + offset + 8, &pt.z, sizeof(float));
+                    
+                    // padding (12-15)
+                    memset(data_ptr + offset + 12, 0, 4);
+                    
+                    // intensity
+                    memcpy(data_ptr + offset + 16, &pt.intensity, sizeof(float));
+                    
+                    // t (timestamp) - 0으로 설정 (나중에 실제 타임스탬프 추가 가능)
+                    uint32_t t = 0;
+                    memcpy(data_ptr + offset + 20, &t, sizeof(uint32_t));
+                    
+                    // reflectivity - intensity를 uint16으로 변환
+                    uint16_t reflectivity = static_cast<uint16_t>(
+                        std::min(pt.intensity * 256.0f, 65535.0f));
+                    memcpy(data_ptr + offset + 24, &reflectivity, sizeof(uint16_t));
+                    
+                    // ring - z 좌표 기반 추정 (OS1-32 기준)
+                    float angle_deg = std::atan2(pt.z, std::sqrt(pt.x * pt.x + pt.y * pt.y)) * 180.0f / M_PI;
+                    // OS1-32는 -16.6도에서 +16.6도 범위, 32개 채널
+                    uint16_t ring = static_cast<uint16_t>(
+                        std::round((angle_deg + 16.6f) / 33.2f * 31.0f));
+                    ring = std::min(std::max(ring, uint16_t(0)), uint16_t(31));
+                    memcpy(data_ptr + offset + 26, &ring, sizeof(uint16_t));
+                    
+                    // ambient - 0으로 설정 (near_ir 데이터 없음)
+                    uint16_t ambient = 0;
+                    memcpy(data_ptr + offset + 28, &ambient, sizeof(uint16_t));
+                    
+                    // range (mm 단위)
+                    uint32_t range = static_cast<uint32_t>(
+                        std::sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z) * 1000);
+                    memcpy(data_ptr + offset + 32, &range, sizeof(uint32_t));
+                    
+                    // padding (36-47)
+                    memset(data_ptr + offset + 36, 0, 12);
+                }
+            } else {
+                // 다른 토픽들은 기존 방식대로
+                pcl::toROSMsg(*cloud, cloud_msg);
+                cloud_msg.header.frame_id = frame_id;
+                cloud_msg.header.stamp = timestamp;
+            }
+            
             publisher->publish(cloud_msg);
         }
     } catch (const std::exception& e) {
@@ -657,16 +763,16 @@ void OutlierFilter::visualizeCones(const std::vector<ConeDescriptor> &cones, con
                 marker.header.stamp = current_time;
                 marker.ns = "cones";
                 marker.id = id++;
-                marker.type = visualization_msgs::msg::Marker::SPHERE;
+                marker.type = visualization_msgs::msg::Marker::CYLINDER;
                 marker.action = visualization_msgs::msg::Marker::ADD;
                 marker.pose.position.x = cone.mean.x;
                 marker.pose.position.y = cone.mean.y;
-                marker.pose.position.z = cone.mean.z;
-                marker.scale.x = marker.scale.y = marker.scale.z = 0.3;
-                marker.color.r = 0.0;
-                marker.color.g = 0.0;
-                marker.color.b = 1.0;
-                marker.color.a = 1.0;
+                marker.pose.position.z = cone.mean.z - 0.3;
+                marker.scale.x = marker.scale.y = marker.scale.z = 0.2;
+                marker.color.r = 0.3;
+                marker.color.g = 0.4;
+                marker.color.b = 0.5;
+                marker.color.a = 0.8;
                 marker.lifetime = rclcpp::Duration::from_seconds(0.5);
                 markers.markers.push_back(marker);
             }

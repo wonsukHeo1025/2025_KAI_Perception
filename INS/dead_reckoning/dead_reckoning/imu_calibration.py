@@ -8,9 +8,9 @@ import numpy as np
 import json
 import os
 import time
-import threading
-from datetime import datetime
+import signal
 import sys
+from datetime import datetime
 
 class IMUCalibration(Node):
     def __init__(self):
@@ -26,7 +26,7 @@ class IMUCalibration(Node):
         # IMU 구독자 설정
         self.subscription = self.create_subscription(
             Imu,
-            '/imu/data',
+            '/ouster/imu',
             self.imu_callback,
             qos_profile
         )
@@ -36,16 +36,21 @@ class IMUCalibration(Node):
         self.gyro_data = []
         
         # 캘리브레이션 상태
-        self.is_collecting = False
-        self.collection_start_time = None
-        self.collection_duration = 0
+        self.is_collecting = True  # 자동으로 시작
+        self.start_time = time.time()
         
         # 캘리브레이션 결과
         self.accel_bias = np.array([0.0, 0.0, 0.0])
         self.gyro_bias = np.array([0.0, 0.0, 0.0])
         self.gravity_magnitude = 9.81
         
-        self.get_logger().info('IMU 캘리브레이션 노드가 시작되었습니다.')
+        # 진행률 표시를 위한 변수
+        self.last_progress_time = time.time()
+        self.progress_interval = 5.0  # 5초마다 진행률 표시
+        
+        self.get_logger().info('IMU 정적 캘리브레이션을 시작합니다...')
+        self.get_logger().info('데이터 수집 중... (Ctrl+C로 중단 및 결과 확인)')
+        self.get_logger().warn('센서가 수평하고 정지된 상태인지 확인하세요!')
         
     def imu_callback(self, msg):
         if self.is_collecting:
@@ -66,36 +71,20 @@ class IMUCalibration(Node):
             self.accel_data.append(accel)
             self.gyro_data.append(gyro)
             
-            # 수집 시간 체크
-            elapsed_time = time.time() - self.collection_start_time
-            if elapsed_time >= self.collection_duration:
-                self.stop_collection()
-    
-    def start_collection(self, duration):
-        """데이터 수집 시작"""
-        self.accel_data = []
-        self.gyro_data = []
-        self.is_collecting = True
-        self.collection_start_time = time.time()
-        self.collection_duration = duration
-        
-        self.get_logger().info(f"{duration}초 동안 IMU 데이터를 수집합니다...")
-        self.get_logger().warn("IMU를 수평하게 놓고 움직이지 마세요!")
-        
-    def stop_collection(self):
-        """데이터 수집 중지"""
-        self.is_collecting = False
-        
-        if len(self.accel_data) > 0:
-            self.get_logger().info(f"데이터 수집 완료! ({len(self.accel_data)}개 샘플)")
-            self.calculate_bias()
-        else:
-            self.get_logger().error("수집된 데이터가 없습니다.")
+            # 진행률 표시
+            current_time = time.time()
+            if current_time - self.last_progress_time >= self.progress_interval:
+                elapsed_time = current_time - self.start_time
+                sample_count = len(self.accel_data)
+                
+                self.get_logger().info(f"경과 시간: {elapsed_time:.1f}초 | 샘플 수: {sample_count}")
+                self.last_progress_time = current_time
     
     def calculate_bias(self):
         """바이어스 계산"""
         if len(self.accel_data) == 0:
-            return
+            self.get_logger().error("수집된 데이터가 없습니다.")
+            return False
             
         accel_array = np.array(self.accel_data)
         gyro_array = np.array(self.gyro_data)
@@ -122,13 +111,17 @@ class IMUCalibration(Node):
         gyro_std = np.std(gyro_array, axis=0)
         
         # 결과 출력
-        self.get_logger().info("=" * 60)
-        self.get_logger().info("캘리브레이션 결과")
-        self.get_logger().info("=" * 60)
+        total_time = time.time() - self.start_time
+        
+        self.get_logger().info("=" * 70)
+        self.get_logger().info("IMU 정적 캘리브레이션 결과")
+        self.get_logger().info("=" * 70)
+        self.get_logger().info(f"총 수집 시간: {total_time:.1f}초")
         self.get_logger().info(f"수집된 샘플 수: {len(self.accel_data)}")
-        self.get_logger().info(f"수집 시간: {self.collection_duration}초")
+        self.get_logger().info(f"평균 샘플링 레이트: {len(self.accel_data)/total_time:.1f} Hz")
         self.get_logger().info(f"감지된 중력 방향: {'X' if gravity_axis==0 else 'Y' if gravity_axis==1 else 'Z'}")
-        self.get_logger().info(f"중력 크기: {np.linalg.norm(accel_mean):.3f} m/s²")
+        self.get_logger().info(f"측정된 중력 크기: {np.linalg.norm(accel_mean):.4f} m/s²")
+        self.get_logger().info(f"이론적 중력 크기: {self.gravity_magnitude:.4f} m/s²")
         
         self.get_logger().info("가속도계 바이어스 (m/s²):")
         self.get_logger().info(f"   X: {self.accel_bias[0]:8.5f} ± {accel_std[0]:.5f}")
@@ -136,10 +129,12 @@ class IMUCalibration(Node):
         self.get_logger().info(f"   Z: {self.accel_bias[2]:8.5f} ± {accel_std[2]:.5f}")
         
         self.get_logger().info("자이로스코프 바이어스 (rad/s):")
-        self.get_logger().info(f"   X: {self.gyro_bias[0]:8.5f} ± {gyro_std[0]:.5f}")
-        self.get_logger().info(f"   Y: {self.gyro_bias[1]:8.5f} ± {gyro_std[1]:.5f}")
-        self.get_logger().info(f"   Z: {self.gyro_bias[2]:8.5f} ± {gyro_std[2]:.5f}")
-        self.get_logger().info("=" * 60)
+        self.get_logger().info(f"   X: {self.gyro_bias[0]:8.6f} ± {gyro_std[0]:.6f}")
+        self.get_logger().info(f"   Y: {self.gyro_bias[1]:8.6f} ± {gyro_std[1]:.6f}")
+        self.get_logger().info(f"   Z: {self.gyro_bias[2]:8.6f} ± {gyro_std[2]:.6f}")
+        self.get_logger().info("=" * 70)
+        
+        return True
     
     def save_calibration(self, filename=None):
         """캘리브레이션 결과 저장"""
@@ -152,10 +147,13 @@ class IMUCalibration(Node):
         os.makedirs(config_dir, exist_ok=True)
         filepath = os.path.join(config_dir, filename)
         
+        total_time = time.time() - self.start_time
+        
         calibration_data = {
             'timestamp': datetime.now().isoformat(),
-            'collection_duration': self.collection_duration,
+            'collection_duration': total_time,
             'sample_count': len(self.accel_data),
+            'sampling_rate': len(self.accel_data) / total_time,
             'accel_bias': {
                 'x': float(self.accel_bias[0]),
                 'y': float(self.accel_bias[1]),
@@ -166,7 +164,12 @@ class IMUCalibration(Node):
                 'y': float(self.gyro_bias[1]),
                 'z': float(self.gyro_bias[2])
             },
-            'gravity_magnitude': float(self.gravity_magnitude)
+            'gravity_magnitude': float(self.gravity_magnitude),
+            'statistics': {
+                'accel_std': np.std(np.array(self.accel_data), axis=0).tolist(),
+                'gyro_std': np.std(np.array(self.gyro_data), axis=0).tolist(),
+                'measured_gravity': float(np.linalg.norm(np.mean(np.array(self.accel_data), axis=0)))
+            }
         }
         
         try:
@@ -178,26 +181,20 @@ class IMUCalibration(Node):
             self.get_logger().error(f"저장 실패: {e}")
             return False
 
-    def print_menu(self):
-        """메뉴 출력"""
-        self.get_logger().info("=" * 60)
-        self.get_logger().info("IMU 캘리브레이션 도구")
-        self.get_logger().info("=" * 60)
-        self.get_logger().info("사용 방법:")
-        self.get_logger().info("   1. IMU 센서를 수평한 표면에 놓으세요")
-        self.get_logger().info("   2. 센서가 완전히 정지된 상태에서 캘리브레이션을 시작하세요")
-        self.get_logger().info("   3. 캘리브레이션 중에는 센서를 움직이지 마세요")
-        self.get_logger().info("")
-        self.get_logger().info("키 명령:")
-        self.get_logger().info("   1: 10초 캘리브레이션")
-        self.get_logger().info("   2: 30초 캘리브레이션")
-        self.get_logger().info("   3: 1분 캘리브레이션")
-        self.get_logger().info("   4: 5분 캘리브레이션")
-        self.get_logger().info("   5: 30분 캘리브레이션")
-        self.get_logger().info("   6: 1시간 캘리브레이션")
-        self.get_logger().info("   s: 캘리브레이션 결과 저장")
-        self.get_logger().info("   q: 종료")
-        self.get_logger().info("=" * 60)
+def signal_handler(signum, frame, calibration_node):
+    """Ctrl+C 신호 처리"""
+    calibration_node.get_logger().info("\n사용자 중단 신호를 받았습니다. 캘리브레이션을 완료합니다...")
+    calibration_node.is_collecting = False
+    
+    if calibration_node.calculate_bias():
+        calibration_node.save_calibration()
+        calibration_node.get_logger().info("캘리브레이션이 성공적으로 완료되었습니다!")
+    else:
+        calibration_node.get_logger().error("캘리브레이션 실패!")
+    
+    calibration_node.destroy_node()
+    rclpy.shutdown()
+    sys.exit(0)
 
 def main():
     rclpy.init()
@@ -205,98 +202,19 @@ def main():
     try:
         calibration_node = IMUCalibration()
         
-        calibration_node.get_logger().info("IMU 캘리브레이션 도구를 시작합니다...")
+        # Ctrl+C 신호 처리기 등록
+        signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, calibration_node))
+        
         calibration_node.get_logger().info("IMU 토픽 연결을 기다리는 중...")
         
-        # 스핀 스레드 시작
-        spin_thread = threading.Thread(target=rclpy.spin, args=(calibration_node,))
-        spin_thread.daemon = True
-        spin_thread.start()
+        # 노드 실행
+        rclpy.spin(calibration_node)
         
-        # 잠시 대기 후 메뉴 출력
-        time.sleep(1)
-        calibration_node.print_menu()
-        
-        # 시간 매핑
-        time_mapping = {
-            '1': 10,      # 10초
-            '2': 30,      # 30초
-            '3': 60,      # 1분
-            '4': 300,     # 5분
-            '5': 1800,    # 30분
-            '6': 3600     # 1시간
-        }
-        
-        while rclpy.ok():
-            try:
-                # 간단한 입력 방식 사용
-                user_input = input("\n명령을 입력하세요 (1-6, s, q): ").strip()
-                
-                if not user_input:
-                    continue
-                    
-                key = user_input[0].lower()
-                calibration_node.get_logger().info(f"입력된 명령: {key}")
-                
-                if key == 'q':
-                    calibration_node.get_logger().info("캘리브레이션 도구를 종료합니다.")
-                    break
-                elif key == 's':
-                    if len(calibration_node.accel_data) > 0:
-                        calibration_node.save_calibration()
-                    else:
-                        calibration_node.get_logger().warn("저장할 캘리브레이션 데이터가 없습니다.")
-                elif key in time_mapping:
-                    if not calibration_node.is_collecting:
-                        duration = time_mapping[key]
-                        duration_str = {
-                            10: "10초", 30: "30초", 60: "1분", 
-                            300: "5분", 1800: "30분", 3600: "1시간"
-                        }[duration]
-                        
-                        calibration_node.get_logger().info(f"{duration_str} 캘리브레이션을 시작합니다.")
-                        calibration_node.get_logger().warn("센서를 수평하게 놓고 움직이지 마세요!")
-                        calibration_node.get_logger().info("3초 후 시작됩니다...")
-                        
-                        for i in range(3, 0, -1):
-                            calibration_node.get_logger().info(f"   {i}...")
-                            time.sleep(1)
-                        
-                        calibration_node.start_collection(duration)
-                        
-                        # 진행률 표시
-                        calibration_node.get_logger().info("데이터 수집 중...")
-                        last_update = time.time()
-                        
-                        while calibration_node.is_collecting:
-                            current_time = time.time()
-                            if current_time - last_update >= 2.0:  # 2초마다 업데이트
-                                elapsed = current_time - calibration_node.collection_start_time
-                                progress = (elapsed / duration) * 100
-                                remaining = duration - elapsed
-                                
-                                calibration_node.get_logger().info(f"   진행률: {progress:.1f}% | 남은 시간: {remaining:.1f}초 | 샘플: {len(calibration_node.accel_data)}")
-                                last_update = current_time
-                            
-                            time.sleep(0.5)
-                        
-                    else:
-                        calibration_node.get_logger().warn("이미 캘리브레이션이 진행 중입니다.")
-                else:
-                    calibration_node.get_logger().warn(f"알 수 없는 명령: {key}")
-                    calibration_node.get_logger().info("도움말을 보려면 메뉴를 확인하세요.")
-                    
-            except EOFError:
-                break
-            except KeyboardInterrupt:
-                break
-    
     except KeyboardInterrupt:
+        pass  # signal_handler에서 처리
+    except Exception as e:
         if 'calibration_node' in locals():
-            calibration_node.get_logger().warn("사용자에 의해 중단되었습니다.")
-    
-    finally:
-        if 'calibration_node' in locals():
+            calibration_node.get_logger().error(f"예상치 못한 오류: {e}")
             calibration_node.destroy_node()
         rclpy.shutdown()
 
