@@ -28,10 +28,16 @@ find_package(yaml-cpp REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
-find_package(kalman_filters REQUIRED)
+# Find kalman_filters library
+find_library(KALMAN_FILTERS_LIB 
+  NAMES kalman_filters_lib
+  PATHS /usr/local/lib
+  PATH_SUFFIXES lib
+  REQUIRED
+  NO_DEFAULT_PATH
+)
 # OR-Tools is used directly without find_package due to protobuf issues
-# dlib for Hungarian algorithm fallback
-find_package(dlib REQUIRED)
+# dlib no longer needed - kalman_filters has its own Hungarian implementation
 
 # Custom messages
 find_package(custom_interface REQUIRED)
@@ -43,8 +49,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
-  ${kalman_filters_INCLUDE_DIRS}
-  /usr/local/include
+  /usr/local/include  # for kalman_filters
 )
 
 # Link directories
@@ -73,6 +78,7 @@ add_library(calico_utils SHARED
   src/utils/config_loader.cpp
   src/utils/message_converter.cpp
   src/utils/projection_utils.cpp
+  src/utils/imu_compensator.cpp
 )
 target_link_libraries(calico_utils
   ${YAML_CPP_LIBRARIES}
@@ -88,22 +94,10 @@ add_library(calico_fusion SHARED
 target_link_libraries(calico_fusion
   calico_utils
   ${OpenCV_LIBS}
-  dlib::dlib
+  ${KALMAN_FILTERS_LIB}
 )
 ament_target_dependencies(calico_fusion ${dependencies})
 
-# Add library for tracking
-add_library(calico_tracking SHARED
-  src/tracking/track.cpp
-  src/tracking/ukf_tracker.cpp
-  src/tracking/imu_compensator.cpp
-)
-target_link_libraries(calico_tracking
-  calico_utils
-  calico_fusion
-  ${kalman_filters_LIBRARIES}
-)
-ament_target_dependencies(calico_tracking ${dependencies})
 
 # Add library for visualization
 add_library(calico_visualization SHARED
@@ -132,7 +126,7 @@ add_executable(ukf_tracking_node
 )
 target_link_libraries(ukf_tracking_node
   calico_utils
-  calico_tracking
+  ${KALMAN_FILTERS_LIB}
 )
 ament_target_dependencies(ukf_tracking_node ${dependencies})
 
@@ -161,7 +155,6 @@ ament_target_dependencies(projection_debug_node ${dependencies})
 install(TARGETS
   calico_utils
   calico_fusion
-  calico_tracking
   calico_visualization
   multi_camera_fusion_node
   ukf_tracking_node
@@ -188,7 +181,7 @@ install(DIRECTORY
 
 # Export dependencies
 ament_export_include_directories(include)
-ament_export_libraries(calico_utils calico_fusion calico_tracking calico_visualization)
+ament_export_libraries(calico_utils calico_fusion calico_visualization)
 ament_export_dependencies(${dependencies})
 
 if(BUILD_TESTING)

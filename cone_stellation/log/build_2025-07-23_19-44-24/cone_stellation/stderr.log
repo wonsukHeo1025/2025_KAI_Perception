@@ -1,0 +1,12 @@
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘cone_stellation::ConstellationDescriptor cone_stellation::LoopClosureDetector::build_descriptor(const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, const std::vector<gtsam::Pose2>&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:392:31: warning: comparison of integer expressions of different signedness: ‘std::vector<cone_stellation::ConstellationDescriptor::ConeInfo>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  392 |   if (descriptor.cones.size() > config_.max_cones_per_constellation) {
+      |       ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘bool cone_stellation::LoopClosureDetector::validate_loop_closure(const Ptr&, const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, cone_stellation::LoopCandidate&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:663:32: warning: comparison of integer expressions of different signedness: ‘std::vector<std::pair<int, int> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  663 |   if (tentative_matches.size() < config_.min_matched_cones) {
+      |       ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘bool cone_stellation::LoopClosureDetector::estimate_relative_pose(const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<std::pair<int, int> >&, gtsam::Pose2&, std::vector<int>&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:751:32: warning: comparison of integer expressions of different signedness: ‘std::vector<int>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  751 |     if (current_inliers.size() > best_inlier_count) {
+      |         ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~

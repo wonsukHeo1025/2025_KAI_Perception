@@ -1,0 +1,93 @@
+[0.012s] Invoking command in '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --build /home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation -- -j16 -l16
+[0.056s] [ 66%] Built target cone_stellation_core
+[0.089s] [ 83%] Building CXX object CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o
+[5.725s] In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:14:
+[5.725s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp: In member function ‘virtual Eigen::Isometry3d cone_stellation::ConeOdometry2D::estimate(const ConstPtr&, const ConstPtr&)’:
+[5.725s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp:59:33: warning: comparison of integer expressions of different signedness: ‘std::vector<std::pair<int, int> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+[5.725s]    59 |     if (correspondences_.size() < config_.min_correspondences) {
+[5.726s]       |         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[6.132s] In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+[6.132s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘void cone_stellation::ConeMapping::create_distance_factor(int, int, const Ptr&)’:
+[6.132s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:818:77: warning: unused parameter ‘frame’ [-Wunused-parameter]
+[6.132s]   818 |   void create_distance_factor(int id1, int id2, const EstimationFrame::Ptr& frame) {
+[6.132s]       |                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+[6.190s] In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:17:
+[6.191s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp: In member function ‘void cone_stellation::SimpleConeMapping::add_keyframe(const Ptr&)’:
+[6.191s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:134:21: warning: comparison of integer expressions of different signedness: ‘std::tuple_element<0, const std::pair<const int, int> >::type’ {aka ‘const int’} and ‘std::vector<cone_stellation::ConeObservation>::size_type’ {aka ‘long unsigned int’} [-Wsign-compare]
+[6.191s]   134 |         if (obs_idx >= world_observations.size()) continue;
+[6.191s]       |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[6.191s] /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:135:21: warning: comparison of integer expressions of different signedness: ‘std::tuple_element<0, const std::pair<const int, int> >::type’ {aka ‘const int’} and ‘std::vector<cone_stellation::ConeObservation>::size_type’ {aka ‘long unsigned int’} [-Wsign-compare]
+[6.191s]   135 |         if (obs_idx >= obs_set.cones.size()) continue;
+[6.191s]       |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+[21.685s] [100%] Linking CXX executable cone_slam_node
+[22.728s] [100%] Built target cone_slam_node
+[22.734s] Invoked command in '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --build /home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation -- -j16 -l16
+[22.738s] Invoking command in '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --install /home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation
+[22.739s] -- Install configuration: ""
+[22.739s] -- Execute custom install script
+[22.740s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/libcone_stellation_core.so
+[22.740s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/cone_slam_node
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/CLAUDE.md
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/common/cone.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/common/estimation_frame.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/common/tentative_landmark.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/factors/cone_observation_factor.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/factors/inter_landmark_factors.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/mapping/cone_mapping_safe.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/mapping/data_association.hpp
+[22.741s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/mapping/loop_closure_detector.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/odometry/CLAUDE.md
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/odometry/async_cone_odometry.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/odometry/cone_odometry_base.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/preprocessing/cone_preprocessor.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/util/drift_correction_manager.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/util/ros_utils.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/cone_viewer.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/loop_closure_viewer.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/optimization_viewer.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/pose_viewer.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/slam_visualizer.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/slam_visualizer_improved.hpp
+[22.742s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/track_viewer.hpp
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/viewer_base.hpp
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/viewer_manager.hpp
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/include/cone_stellation/viewer/visualization_utils.hpp
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/dummy_publisher_node.py
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/launch/CLAUDE.md
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/launch/cone_slam_launch.py
+[22.743s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/launch/dummy_publisher_launch.py
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/launch/test_slam_launch.py
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/config/CLAUDE.md
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/config/cone_slam.rviz
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/config/dummy_publisher_config.yaml
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/config/slam_config.yaml
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/ament_index/resource_index/package_run_dependencies/cone_stellation
+[22.744s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/ament_index/resource_index/parent_prefix_path/cone_stellation
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/environment/ament_prefix_path.sh
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/environment/ament_prefix_path.dsv
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/environment/path.sh
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/environment/path.dsv
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/local_setup.bash
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/local_setup.sh
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/local_setup.zsh
+[22.745s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/local_setup.dsv
+[22.745s] -- Symlinking: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/package.dsv
+[22.748s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/ament_index/resource_index/packages/cone_stellation
+[22.748s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/cmake/cone_stellationConfig.cmake
+[22.748s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/cmake/cone_stellationConfig-version.cmake
+[22.749s] -- Up-to-date symlink: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/share/cone_stellation/package.xml
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/test_slam_only.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/sensor_simulator.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/check_topics.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/test_loop_closure.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/motion_controller.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/__init__.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/dummy_publisher_node.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/test_dummy_publisher.py
+[22.749s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/__pycache__
+[22.750s] -- Up-to-date: /home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation/lib/cone_stellation/scripts/cone_definitions.py
+[22.750s] Invoked command in '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble /usr/local/bin/cmake --install /home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation

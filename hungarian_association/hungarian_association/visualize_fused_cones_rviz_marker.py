@@ -30,8 +30,9 @@ class FusedConeColorVisualizer(Node):
 
         # 파라미터 선언
         self.declare_parameter('input_topic', '/fused_sorted_cones_ukf')
-        self.declare_parameter('marker_topic', '/visualization_marker_fused_colored') # 고유한 토픽
-        self.declare_parameter('arrow_marker_topic', '/visualization_marker_velocity_arrows') # 화살표 전용 토픽
+        self.declare_parameter('marker_topic', '/vis/cone/fused/ukf') # 퓨전된 UKF 콘
+        self.declare_parameter('arrow_marker_topic', '/vis/cone/velocity') # 속도 화살표
+        self.declare_parameter('text_marker_topic', '/vis/cone/text') # 트랙 ID 텍스트
         self.declare_parameter('marker_namespace', 'fused_cones_colored')
         self.declare_parameter('velocity_marker_namespace', 'velocity_arrows')
         self.declare_parameter('text_marker_namespace', 'track_id_text')
@@ -41,6 +42,7 @@ class FusedConeColorVisualizer(Node):
         input_topic = self.get_parameter('input_topic').get_parameter_value().string_value
         marker_topic = self.get_parameter('marker_topic').get_parameter_value().string_value
         arrow_marker_topic = self.get_parameter('arrow_marker_topic').get_parameter_value().string_value
+        text_marker_topic = self.get_parameter('text_marker_topic').get_parameter_value().string_value
         self._marker_ns = self.get_parameter('marker_namespace').get_parameter_value().string_value
         self._velocity_marker_ns = self.get_parameter('velocity_marker_namespace').get_parameter_value().string_value
         self._text_marker_ns = self.get_parameter('text_marker_namespace').get_parameter_value().string_value
@@ -71,6 +73,7 @@ class FusedConeColorVisualizer(Node):
         # 발행자
         self.marker_pub = self.create_publisher(MarkerArray, marker_topic, qos_profile)
         self.arrow_marker_pub = self.create_publisher(MarkerArray, arrow_marker_topic, qos_profile)
+        self.text_marker_pub = self.create_publisher(MarkerArray, text_marker_topic, qos_profile)
 
         # 상태
         self._previous_marker_count = 0 # 이전 마커 수 추적용
@@ -83,8 +86,9 @@ class FusedConeColorVisualizer(Node):
 
         self.get_logger().info(f"'{node_name}' 시작됨.")
         self.get_logger().info(f"구독 토픽: '{input_topic}'")
-        self.get_logger().info(f"마커 발행 토픽: '{marker_topic}'")
-        self.get_logger().info(f"화살표 마커 발행 토픽: '{arrow_marker_topic}'")
+        self.get_logger().info(f"퓨전 UKF 콘 발행 토픽: '{marker_topic}'")
+        self.get_logger().info(f"속도 화살표 발행 토픽: '{arrow_marker_topic}'")
+        self.get_logger().info(f"트랙 ID 텍스트 발행 토픽: '{text_marker_topic}'")
 
     def _get_color_for_class(self, class_name: str) -> ColorRGBA:
         """주어진 클래스 이름에 대한 해당 색상을 반환합니다."""
@@ -285,7 +289,7 @@ class FusedConeColorVisualizer(Node):
             text_marker.color.b = 1.0
             text_marker.color.a = 1.0
 
-            marker_array.markers.append(text_marker)
+            text_marker_array.markers.append(text_marker)
             current_text_count += 1
 
         # 4. 다음 콜백을 위해 마커 수 업데이트
@@ -300,6 +304,10 @@ class FusedConeColorVisualizer(Node):
         # 6. 화살표 MarkerArray 발행
         if arrow_marker_array.markers: # 화살표 추가하거나 삭제할 항목이 있는 경우에만 발행
             self.arrow_marker_pub.publish(arrow_marker_array)
+            
+        # 7. 텍스트 MarkerArray 발행
+        if text_marker_array.markers: # 텍스트 추가하거나 삭제할 항목이 있는 경우에만 발행
+            self.text_marker_pub.publish(text_marker_array)
 
     def _publish_delete_markers(self, frame_id: str, timestamp):
         """삭제 마커만 발행하는 헬퍼 함수."""
@@ -331,12 +339,14 @@ class FusedConeColorVisualizer(Node):
             delete_marker.ns = self._text_marker_ns
             delete_marker.id = i
             delete_marker.action = Marker.DELETE
-            marker_array.markers.append(delete_marker)
+            text_marker_array.markers.append(delete_marker)
             
         if marker_array.markers:
             self.marker_pub.publish(marker_array)
         if arrow_marker_array.markers:
             self.arrow_marker_pub.publish(arrow_marker_array)
+        if text_marker_array.markers:
+            self.text_marker_pub.publish(text_marker_array)
             
         self._previous_marker_count = 0 # 삭제 후 카운트 재설정
         self._previous_velocity_marker_count = 0

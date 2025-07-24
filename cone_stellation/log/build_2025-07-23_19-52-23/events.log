@@ -1,0 +1,184 @@
+[0.000000] (-) TimerEvent: {}
+[0.000300] (cone_stellation) JobQueued: {'identifier': 'cone_stellation', 'dependencies': OrderedDict()}
+[0.000350] (cone_stellation) JobStarted: {'identifier': 'cone_stellation'}
+[0.009044] (cone_stellation) JobProgress: {'identifier': 'cone_stellation', 'progress': 'cmake'}
+[0.009567] (cone_stellation) JobProgress: {'identifier': 'cone_stellation', 'progress': 'build'}
+[0.010075] (cone_stellation) Command: {'cmd': ['/usr/local/bin/cmake', '--build', '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation', '--', '-j16', '-l16'], 'cwd': '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation', 'env': OrderedDict([('USER', 'user1'), ('LC_TIME', 'ko_KR.UTF-8'), ('CLAUDE_CODE_ENTRYPOINT', 'cli'), ('UV_ACTIVE', '1'), ('GIT_EDITOR', 'true'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu:/usr/local/cuda/lib64:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros/lib:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext/lib:/home/user1/ROS2_Workspace/GLIM_ws/install/glim/lib:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros/lib:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/calico/lib:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam/lib:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps/lib:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('LESS', '-R'), ('HOME', '/home/user1'), ('CONDA_SHLVL', '0'), ('OLDPWD', '/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation'), ('DESKTOP_SESSION', 'ubuntu'), ('NVM_BIN', '/home/user1/.nvm/versions/node/v22.17.0/bin'), ('LSCOLORS', 'Gxfxcxdxbxegedabagacad'), ('NVM_INC', '/home/user1/.nvm/versions/node/v22.17.0/include/node'), ('ZSH', '/home/user1/.oh-my-zsh'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('DIRENV_DIFF', 'eJzsVk1z4jgQ_S86QxQDCR9Vc3CIF8ym-DDgGbioZFnYCrZk9AEDU_nvWwSYDUx2We96b9ysRu_pdVPd_X6ADLR-gKE96YIWgLFIKTSKSgumjLOFkBGtQiJ4iAPGW9AoCRNBcAKJCTF8j33AeINxBX0VcqkyTCiUQlXQRkHGlcZJAmPDIywZ5ggrJQjDmgl-IBGZ3l-HsUmDhP5CfHd49EKDujj_PP75w_vH4fgzFuGUqo-4Y0BxnB0Bxy9QAsPZpDvof1Kfi1yFUZrKj9keI4pyJSRKVaSOzyUsgNlWx4JX76x7GDKlyxkmSxztVVwvZ2BYEsKtSASS4h8hTpJOmEsJimmaS8IZ4SG1ghhNkIjvxVJKTdJiGA-Vfz8RnFKJUcJCLNHCKCZytcJfcRQkkWvJMkQSRrmGSpI80s6wxcj5tPH_--QoRlxIcYgkJUvBGY_yqDpHFiSHEKQSnKJI4izOo-YMWFjzEKO0SBHjmsrF_sLfE1_M8XyXr05H8FYCfL-vnl3P6fvo2fVAC5SvpwNKJ8hXe9LuOmPQArT3Xe1ercFmZ0_tQbtO3fpjbR3Hg-Zy7oyizpMYr5oWSdxVxePB3GUvZufXq3ZWRq9WvTrqy3Vv428HTyZMLTKUjabZLLbIWlUrk05_Mo7XFWtDHgbJdmXIffM3XfZFsHZ7s1rtiZRfSa2BxtrgVM7rWtbXsq5nTDu_BytPiqmx7m1ffiPRlJK5Z0cj1Jh1Ng-O9zBexm0_fvQ8_9vOFcnj1On0HUu1m_NGs7l9trqLbcOqLaurxq5h20OE3N7Ty3z05ct-mV1dY6e__25N-fqXNXzzBLk8wXkx_21H3pzFzVncnMXNWdycxf_pLEpg6iO7PXF9B7SABUrAd73J1H5BTt_PMebB29sfAQAA__9-rYqa'), ('PAGER', 'less'), ('LC_MONETARY', 'ko_KR.UTF-8'), ('MANAGERPID', '1885'), ('P9K_TTY', 'old'), ('SYSTEMD_EXEC_PID', '2443'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator23558193cd9818af7fe4d2c2f5bd9d00f'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '3236'), ('NVM_DIR', '/home/user1/.nvm'), ('COLCON_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install:/home/user1/ROS2_Workspace/ouster_ws/install:/home/user1/ROS2_Workspace/ros2_ws/install'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'user1'), ('_', '/home/user1/ROS2_Workspace/ros2_ws/.venv/bin/colcon'), ('_P9K_SSH_TTY', '/dev/pts/2'), ('JOURNAL_STREAM', '8:17169'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'user1'), ('TERM', 'xterm-256color'), ('OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE', 'delta'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/user1/.nvm/versions/node/v22.17.0/bin:/home/user1/ROS2_Workspace/ros2_ws/.venv/bin:/home/user1/miniforge3/condabin:/usr/local/cuda/bin:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association/bin:/opt/ros/humble/bin:/home/user1/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin'), ('SESSION_MANAGER', 'local/user1-LOQ-15ARP9:@/tmp/.ICE-unix/2176,unix/user1-LOQ-15ARP9:/tmp/.ICE-unix/2176'), ('INVOCATION_ID', '1b1343c6ac994d10b3731761f6e548c6'), ('DIRENV_WATCHES', 'eJxszj1OwzAUAOC7eI764vhhO9kZEQgGBoSq91clIq2RnbZIiLuzV73Ap-_j173QNrvJwVyOBudm1cPr89uwfy_1q32TGNTShv21wc5Olyquc09Ft-VobvIJY44Bc-jc48_StuamrZ7tr7vr7tYitEKbqRroUu10AVrXcgUecZRAgQ_8YGw5ER5SkhCVh6RRVXzIol6UEGNE1sC9Z899yD1Hfy814k3q8z8AAP__IJBLZQ=='), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'ko_KR.UTF-8'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('COREPACK_ENABLE_AUTO_PIN', '0'), ('MAMBA_ROOT_PREFIX', '/home/user1/miniforge3'), ('DISPLAY', ':1'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('IBUS_DISABLE_SNOOPER', '1'), ('OUSTER_ROS_PATH', '/home/user1/ouster_ws/src/ouster-ros'), ('LC_TELEPHONE', 'ko_KR.UTF-8'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '19'), ('AMENT_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext:/home/user1/ROS2_Workspace/GLIM_ws/install/glim:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_bringup:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/calico:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam:/home/user1/ROS2_Workspace/ros2_ws/install/ublox:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps:/home/user1/ROS2_Workspace/ros2_ws/install/fix2nmea:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_serialization:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/myahrs_ros2_driver:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/gps_imu_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/filc:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation:/home/user1/ROS2_Workspace/ros2_ws/install/cone_detection:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/user1/miniforge3/bin/python'), ('SHELL', '/usr/bin/zsh'), ('LC_NAME', 'ko_KR.UTF-8'), ('TERMINATOR_UUID', 'urn:uuid:74b0cfbe-b563-451a-934c-01861ad1afb5'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('DIRENV_DIR', '-/home/user1/ROS2_Workspace/ros2_ws'), ('LC_MEASUREMENT', 'ko_KR.UTF-8'), ('CLAUDECODE', '1'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo-11'), ('MAMBA_EXE', '/home/user1/miniforge3/bin/mamba'), ('LC_IDENTIFICATION', 'ko_KR.UTF-8'), ('P9K_SSH', '0'), ('VIRTUAL_ENV', '/home/user1/ROS2_Workspace/ros2_ws/.venv'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/user1/miniforge3/bin/conda'), ('_P9K_TTY', '/dev/pts/2'), ('NVM_CD_FLAGS', '-q'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/user1/ROS2_Workspace/ros2_ws/.venv/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs/local/lib/python3.10/dist-packages:/home/user1/ROS2_Workspace/ros2_ws/build/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/ntrip_client/src:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/cc_slam_graph:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('LC_NUMERIC', 'ko_KR.UTF-8'), ('LC_PAPER', 'ko_KR.UTF-8'), ('COLCON', '1'), ('VTE_VERSION', '6800'), ('CMAKE_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext:/home/user1/ROS2_Workspace/GLIM_ws/install/glim:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_bringup:/home/user1/ROS2_Workspace/ros2_ws/install/calico:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam:/home/user1/ROS2_Workspace/ros2_ws/install/ublox:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps:/home/user1/ROS2_Workspace/ros2_ws/install/fix2nmea:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_serialization:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/myahrs_ros2_driver:/home/user1/ROS2_Workspace/ros2_ws/install/gps_imu_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/filc:/home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation:/home/user1/ROS2_Workspace/ros2_ws/install/cone_detection:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble')]), 'shell': False}
+[0.046825] (cone_stellation) StdoutLine: {'line': b'[ 66%] Built target cone_stellation_core\n'}
+[0.070466] (cone_stellation) StdoutLine: {'line': b'[ 83%] Building CXX object CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o\n'}
+[0.099565] (-) TimerEvent: {}
+[0.199788] (-) TimerEvent: {}
+[0.300367] (-) TimerEvent: {}
+[0.400616] (-) TimerEvent: {}
+[0.500870] (-) TimerEvent: {}
+[0.601113] (-) TimerEvent: {}
+[0.701342] (-) TimerEvent: {}
+[0.801568] (-) TimerEvent: {}
+[0.901810] (-) TimerEvent: {}
+[1.002047] (-) TimerEvent: {}
+[1.102288] (-) TimerEvent: {}
+[1.202527] (-) TimerEvent: {}
+[1.302754] (-) TimerEvent: {}
+[1.402995] (-) TimerEvent: {}
+[1.503216] (-) TimerEvent: {}
+[1.603422] (-) TimerEvent: {}
+[1.703609] (-) TimerEvent: {}
+[1.803813] (-) TimerEvent: {}
+[1.903998] (-) TimerEvent: {}
+[2.004192] (-) TimerEvent: {}
+[2.104366] (-) TimerEvent: {}
+[2.204553] (-) TimerEvent: {}
+[2.304754] (-) TimerEvent: {}
+[2.404960] (-) TimerEvent: {}
+[2.505127] (-) TimerEvent: {}
+[2.605305] (-) TimerEvent: {}
+[2.705542] (-) TimerEvent: {}
+[2.805752] (-) TimerEvent: {}
+[2.906002] (-) TimerEvent: {}
+[3.006228] (-) TimerEvent: {}
+[3.106433] (-) TimerEvent: {}
+[3.206642] (-) TimerEvent: {}
+[3.306867] (-) TimerEvent: {}
+[3.407103] (-) TimerEvent: {}
+[3.507308] (-) TimerEvent: {}
+[3.607489] (-) TimerEvent: {}
+[3.707712] (-) TimerEvent: {}
+[3.807906] (-) TimerEvent: {}
+[3.908067] (-) TimerEvent: {}
+[4.008262] (-) TimerEvent: {}
+[4.108482] (-) TimerEvent: {}
+[4.208686] (-) TimerEvent: {}
+[4.308881] (-) TimerEvent: {}
+[4.409107] (-) TimerEvent: {}
+[4.509306] (-) TimerEvent: {}
+[4.609553] (-) TimerEvent: {}
+[4.709744] (-) TimerEvent: {}
+[4.809920] (-) TimerEvent: {}
+[4.910139] (-) TimerEvent: {}
+[5.010354] (-) TimerEvent: {}
+[5.110534] (-) TimerEvent: {}
+[5.210759] (-) TimerEvent: {}
+[5.310996] (-) TimerEvent: {}
+[5.411200] (-) TimerEvent: {}
+[5.511410] (-) TimerEvent: {}
+[5.611617] (-) TimerEvent: {}
+[5.686955] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:14:\n'}
+[5.687223] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp: In member function \xe2\x80\x98virtual Eigen::Isometry3d cone_stellation::ConeOdometry2D::estimate(const ConstPtr&, const ConstPtr&)\xe2\x80\x99:\n'}
+[5.687336] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp:59:33: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::vector<std::pair<int, int> >::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} and \xe2\x80\x98int\xe2\x80\x99 [-Wsign-compare]\n'}
+[5.687431] (cone_stellation) StderrLine: {'line': b'   59 |     if (correspondences_.size() < config_.min_correspondences) {\n'}
+[5.687516] (cone_stellation) StderrLine: {'line': b'      |         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[5.711740] (-) TimerEvent: {}
+[5.811948] (-) TimerEvent: {}
+[5.912120] (-) TimerEvent: {}
+[6.012292] (-) TimerEvent: {}
+[6.041495] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[6.041715] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::ConeMapping::create_distance_factor(int, int, const Ptr&)\xe2\x80\x99:\n'}
+[6.041872] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:576:77: warning: unused parameter \xe2\x80\x98frame\xe2\x80\x99 [-Wunused-parameter]\n'}
+[6.041996] (cone_stellation) StderrLine: {'line': b'  576 |   void create_distance_factor(int id1, int id2, const EstimationFrame::Ptr& frame) {\n'}
+[6.042103] (cone_stellation) StderrLine: {'line': b'      |                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n'}
+[6.097863] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:17:\n'}
+[6.098034] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::SimpleConeMapping::add_keyframe(const Ptr&)\xe2\x80\x99:\n'}
+[6.098087] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:134:21: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::tuple_element<0, const std::pair<const int, int> >::type\xe2\x80\x99 {aka \xe2\x80\x98const int\xe2\x80\x99} and \xe2\x80\x98std::vector<cone_stellation::ConeObservation>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} [-Wsign-compare]\n'}
+[6.098132] (cone_stellation) StderrLine: {'line': b'  134 |         if (obs_idx >= world_observations.size()) continue;\n'}
+[6.098171] (cone_stellation) StderrLine: {'line': b'      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[6.098208] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:135:21: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::tuple_element<0, const std::pair<const int, int> >::type\xe2\x80\x99 {aka \xe2\x80\x98const int\xe2\x80\x99} and \xe2\x80\x98std::vector<cone_stellation::ConeObservation>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} [-Wsign-compare]\n'}
+[6.098247] (cone_stellation) StderrLine: {'line': b'  135 |         if (obs_idx >= obs_set.cones.size()) continue;\n'}
+[6.098286] (cone_stellation) StderrLine: {'line': b'      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~\n'}
+[6.112375] (-) TimerEvent: {}
+[6.212551] (-) TimerEvent: {}
+[6.312738] (-) TimerEvent: {}
+[6.340998] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp: In member function \xe2\x80\x98void cone_stellation::ConeSLAMNode::load_config()\xe2\x80\x99:\n'}
+[6.341148] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:153:21: error: \xe2\x80\x98struct cone_stellation::ConeMapping::Config\xe2\x80\x99 has no member named \xe2\x80\x98enable_loop_closure\xe2\x80\x99\n'}
+[6.341371] (cone_stellation) StderrLine: {'line': b'  153 |     mapping_config_.enable_loop_closure =\n'}
+[6.341425] (cone_stellation) StderrLine: {'line': b'      |                     ^~~~~~~~~~~~~~~~~~~\n'}
+[6.341468] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:155:21: error: \xe2\x80\x98struct cone_stellation::ConeMapping::Config\xe2\x80\x99 has no member named \xe2\x80\x98min_keyframes_apart\xe2\x80\x99\n'}
+[6.341509] (cone_stellation) StderrLine: {'line': b'  155 |     mapping_config_.min_keyframes_apart =\n'}
+[6.341546] (cone_stellation) StderrLine: {'line': b'      |                     ^~~~~~~~~~~~~~~~~~~\n'}
+[6.341588] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:157:21: error: \xe2\x80\x98struct cone_stellation::ConeMapping::Config\xe2\x80\x99 has no member named \xe2\x80\x98max_distance_for_loop\xe2\x80\x99\n'}
+[6.341633] (cone_stellation) StderrLine: {'line': b'  157 |     mapping_config_.max_distance_for_loop =\n'}
+[6.341671] (cone_stellation) StderrLine: {'line': b'      |                     ^~~~~~~~~~~~~~~~~~~~~\n'}
+[6.341707] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:159:21: error: \xe2\x80\x98struct cone_stellation::ConeMapping::Config\xe2\x80\x99 has no member named \xe2\x80\x98min_matched_cones\xe2\x80\x99\n'}
+[6.341757] (cone_stellation) StderrLine: {'line': b'  159 |     mapping_config_.min_matched_cones =\n'}
+[6.341792] (cone_stellation) StderrLine: {'line': b'      |                     ^~~~~~~~~~~~~~~~~\n'}
+[6.341826] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:163:21: error: \xe2\x80\x98struct cone_stellation::ConeMapping::Config\xe2\x80\x99 has no member named \xe2\x80\x98loop_closure_noise\xe2\x80\x99\n'}
+[6.341859] (cone_stellation) StderrLine: {'line': b'  163 |     mapping_config_.loop_closure_noise =\n'}
+[6.341892] (cone_stellation) StderrLine: {'line': b'      |                     ^~~~~~~~~~~~~~~~~~\n'}
+[6.412882] (-) TimerEvent: {}
+[6.513170] (-) TimerEvent: {}
+[6.613393] (-) TimerEvent: {}
+[6.713595] (-) TimerEvent: {}
+[6.813796] (-) TimerEvent: {}
+[6.914019] (-) TimerEvent: {}
+[7.014215] (-) TimerEvent: {}
+[7.114403] (-) TimerEvent: {}
+[7.214598] (-) TimerEvent: {}
+[7.314799] (-) TimerEvent: {}
+[7.415015] (-) TimerEvent: {}
+[7.515203] (-) TimerEvent: {}
+[7.615389] (-) TimerEvent: {}
+[7.715573] (-) TimerEvent: {}
+[7.815770] (-) TimerEvent: {}
+[7.915979] (-) TimerEvent: {}
+[8.016174] (-) TimerEvent: {}
+[8.116400] (-) TimerEvent: {}
+[8.216595] (-) TimerEvent: {}
+[8.316809] (-) TimerEvent: {}
+[8.417005] (-) TimerEvent: {}
+[8.517221] (-) TimerEvent: {}
+[8.617442] (-) TimerEvent: {}
+[8.717666] (-) TimerEvent: {}
+[8.817888] (-) TimerEvent: {}
+[8.918112] (-) TimerEvent: {}
+[9.018642] (-) TimerEvent: {}
+[9.118872] (-) TimerEvent: {}
+[9.219092] (-) TimerEvent: {}
+[9.319314] (-) TimerEvent: {}
+[9.419508] (-) TimerEvent: {}
+[9.519733] (-) TimerEvent: {}
+[9.619928] (-) TimerEvent: {}
+[9.720125] (-) TimerEvent: {}
+[9.820314] (-) TimerEvent: {}
+[9.920499] (-) TimerEvent: {}
+[10.020697] (-) TimerEvent: {}
+[10.120895] (-) TimerEvent: {}
+[10.221096] (-) TimerEvent: {}
+[10.321301] (-) TimerEvent: {}
+[10.421497] (-) TimerEvent: {}
+[10.521690] (-) TimerEvent: {}
+[10.621884] (-) TimerEvent: {}
+[10.722152] (-) TimerEvent: {}
+[10.822383] (-) TimerEvent: {}
+[10.922614] (-) TimerEvent: {}
+[11.022811] (-) TimerEvent: {}
+[11.123002] (-) TimerEvent: {}
+[11.223204] (-) TimerEvent: {}
+[11.323426] (-) TimerEvent: {}
+[11.423624] (-) TimerEvent: {}
+[11.523846] (-) TimerEvent: {}
+[11.624401] (-) TimerEvent: {}
+[11.724625] (-) TimerEvent: {}
+[11.824850] (-) TimerEvent: {}
+[11.925057] (-) TimerEvent: {}
+[12.025249] (-) TimerEvent: {}
+[12.125463] (-) TimerEvent: {}
+[12.225690] (-) TimerEvent: {}
+[12.325925] (-) TimerEvent: {}
+[12.426232] (-) TimerEvent: {}
+[12.526460] (-) TimerEvent: {}
+[12.626663] (-) TimerEvent: {}
+[12.726836] (-) TimerEvent: {}
+[12.826992] (-) TimerEvent: {}
+[12.927178] (-) TimerEvent: {}
+[13.027385] (-) TimerEvent: {}
+[13.127583] (-) TimerEvent: {}
+[13.227800] (-) TimerEvent: {}
+[13.328002] (-) TimerEvent: {}
+[13.428180] (-) TimerEvent: {}
+[13.528399] (-) TimerEvent: {}
+[13.606645] (cone_stellation) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/cone_slam_node.dir/build.make:79: CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o] Error 1\n'}
+[13.607106] (cone_stellation) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:188: CMakeFiles/cone_slam_node.dir/all] Error 2\n'}
+[13.607494] (cone_stellation) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[13.608879] (cone_stellation) CommandEnded: {'returncode': 2}
+[13.619355] (cone_stellation) JobEnded: {'identifier': 'cone_stellation', 'rc': 2}
+[13.628464] (-) TimerEvent: {}
+[13.629751] (-) EventReactorShutdown: {}

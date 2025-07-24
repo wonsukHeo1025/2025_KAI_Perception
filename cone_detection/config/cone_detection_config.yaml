@@ -1,7 +1,7 @@
 cone_detection:
   ros__parameters:
-    input_topic_name: "/ouster/points"         
-    # input_topic_name: "/ouster/improved_interpolated_points"
+    #input_topic_name: "/ouster/points"         
+    input_topic_name: "/ouster/improved_interpolated_points"
     
     x_threshold_enable: false      # X축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
     y_threshold_enable: false      # Y축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
@@ -24,7 +24,7 @@ cone_detection:
     voxel_leaf_size: 0.1           # Voxel Grid 필터링의 leaf 크기 (다운샘플링 해상도)
     
     ec_cluster_tolerance: 0.30      # 한 군집이 될 점간의 거리 임계값
-    ec_min_cluster_size: 5        # 클러스터로 인정하기 위한 최소 포인트 수 // 증가: 노이즈 제외, 클러스터 수 감소, 감소: 더 작은 클러스터 인정
+    ec_min_cluster_size: 3        # 클러스터로 인정하기 위한 최소 포인트 수 // 증가: 노이즈 제외, 클러스터 수 감소, 감소: 더 작은 클러스터 인정
     ec_max_cluster_size: 35       # 클러스터로 인정하기 위한 최대 포인트 수 // 증가: 매우 큰 클러스터도 유지, 감소: 일정 크기 이상 클러스터 제외
 
     # 검증 단계 파라미터 (최종)
@@ -53,3 +53,16 @@ cone_detection:
     s2_bottom_bins_count_for_heavy_check: 2 # 하단 집중도 검사를 위한 빈 개수 (s2_height_histogram_bins/2 보다 작거나 같게)
     s2_top_sparse_max_point_ratio_per_bin: 0.45 # 상단 N개 각 빈에 허용되는 최대 포인트 비율(전체 ROI 포인트 대비) (예: 0.1-0.3)
     s2_num_top_bins_for_sparsity_check: 1    # 상단 희소성 검사를 위한 빈 개수 (예: 1 또는 2)
+    
+    # UKF Tracking parameters
+    enable_tracking: true               # Enable UKF tracking
+    max_association_distance: 0.5       # Maximum distance for cone association (m)
+    min_hits_before_confirmation: 3     # Minimum hits before track is confirmed
+    max_age_before_deletion: 8          # Maximum frames without update before deletion
+    
+    # UKF filter parameters
+    ukf_p_initial_pos: 1.0              # Initial position covariance
+    ukf_p_initial_vel: 10.0             # Initial velocity covariance
+    ukf_r_measurement: 0.1              # Measurement noise
+    ukf_q_pos: 0.01                     # Process noise for position
+    ukf_q_vel: 0.1                      # Process noise for velocity

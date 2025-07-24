@@ -17,7 +17,8 @@ OutlierFilter::OutlierFilter()
         {"x_threshold_enable", &params_.x_threshold_enable},
         {"y_threshold_enable", &params_.y_threshold_enable},
         {"z_threshold_enable", &params_.z_threshold_enable},
-        {"enable_stage2_validation", &params_.enable_stage2_validation}
+        {"enable_stage2_validation", &params_.enable_stage2_validation},
+        {"enable_tracking", &params_.enable_tracking}
     };
     std::vector<std::pair<std::string, int*>> int_params = {
         {"ec_min_cluster_size", &params_.ec_min_cluster_size},
@@ -29,7 +30,9 @@ OutlierFilter::OutlierFilter()
         {"s2_height_histogram_bins", &params_.s2_height_histogram_bins},
         {"s2_max_uphill_transitions_allowed", &params_.s2_max_uphill_transitions_allowed},
         {"s2_bottom_bins_count_for_heavy_check", &params_.s2_bottom_bins_count_for_heavy_check},
-        {"s2_num_top_bins_for_sparsity_check", &params_.s2_num_top_bins_for_sparsity_check}
+        {"s2_num_top_bins_for_sparsity_check", &params_.s2_num_top_bins_for_sparsity_check},
+        {"min_hits_before_confirmation", &params_.min_hits_before_confirmation},
+        {"max_age_before_deletion", &params_.max_age_before_deletion}
     };
     std::vector<std::pair<std::string, float*>> float_params = {
         {"x_threshold_min", &params_.x_threshold_min},
@@ -55,6 +58,14 @@ OutlierFilter::OutlierFilter()
         {"s2_bottom_heavy_ratio_threshold", &params_.s2_bottom_heavy_ratio_threshold},
         {"s2_top_sparse_max_point_ratio_per_bin", &params_.s2_top_sparse_max_point_ratio_per_bin}
     };
+    std::vector<std::pair<std::string, double*>> double_params = {
+        {"max_association_distance", &params_.max_association_distance},
+        {"ukf_p_initial_pos", &params_.ukf_p_initial_pos},
+        {"ukf_p_initial_vel", &params_.ukf_p_initial_vel},
+        {"ukf_r_measurement", &params_.ukf_r_measurement},
+        {"ukf_q_pos", &params_.ukf_q_pos},
+        {"ukf_q_vel", &params_.ukf_q_vel}
+    };
 
     for (const auto& [name, value_ptr] : str_params) {
         this->declare_parameter(name, *value_ptr);
@@ -79,18 +90,41 @@ OutlierFilter::OutlierFilter()
         this->get_parameter(name, *value_ptr);
         RCLCPP_INFO(this->get_logger(), "  %s: %.2f", name.c_str(), *value_ptr);
     }
+    
+    for (const auto& [name, value_ptr] : double_params) {
+        this->declare_parameter(name, *value_ptr);
+        this->get_parameter(name, *value_ptr);
+        RCLCPP_INFO(this->get_logger(), "  %s: %.2f", name.c_str(), *value_ptr);
+    }
 
     // 퍼블리셔 초기화
-    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization_marker", 10);
     cones_time_pub = this->create_publisher<custom_interface::msg::ModifiedFloat32MultiArray>("/sorted_cones_time", 10);
+    cones_time_ukf_pub_ = this->create_publisher<custom_interface::msg::TrackedConeArray>("/sorted_cones_time_ukf", 10);
     pub_cones_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cones", 10);
     pub_points_fixed_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/ouster/points_fixed", 10);
     pub_reconstructed_cones_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cones_rec", 10);
+    raw_cone_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis/cone/lidar", 10);
 
     // 서브스크라이버 초기화 (포인트 클라우드 데이터 수신)
     point_cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         params_.input_topic_name, rclcpp::SensorDataQoS(),
         std::bind(&OutlierFilter::callback, this, std::placeholders::_1));
+
+    // Initialize tracker if enabled
+    if (params_.enable_tracking) {
+        kalman_filters::tracking::TrackingConfig tracker_config;
+        tracker_config.max_association_dist = params_.max_association_distance;
+        tracker_config.min_hits = params_.min_hits_before_confirmation;
+        tracker_config.max_age = params_.max_age_before_deletion;
+        tracker_config.p_initial_pos = params_.ukf_p_initial_pos;
+        tracker_config.p_initial_vel = params_.ukf_p_initial_vel;
+        tracker_config.r_pos = params_.ukf_r_measurement;
+        tracker_config.q_pos = params_.ukf_q_pos;
+        tracker_config.q_vel = params_.ukf_q_vel;
+        
+        tracker_ = std::make_shared<kalman_filters::tracking::MultiTracker>(tracker_config);
+        RCLCPP_INFO(this->get_logger(), "UKF tracking enabled");
+    }
 
     RCLCPP_INFO(this->get_logger(), "Cone_detection_node has been started!");
 }
@@ -177,7 +211,7 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 RCLCPP_INFO(this->get_logger(), "No cones detected after stage 1 clustering");
                 // 2단계 검증 비활성화 시 또는 stage1_candidate_cones가 비었으면 마커 삭제 로직 추가
                 if (!params_.enable_stage2_validation || stage1_candidate_cones.empty()) {
-                    visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
+                    // Visualization moved to separate node
                 }
                 return;
             }
@@ -193,7 +227,7 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 validateAndReconstructConesStage2(stage1_candidate_cones, original_cloud_for_stage2_, intermediate_cones, msg->header.stamp);
                 if (intermediate_cones.empty()) {
                     RCLCPP_INFO(this->get_logger(), "No cones passed stage 2 validation");
-                     visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
+                     // Visualization moved to separate node
                     return;
                 }
             } catch (const std::exception& e) {
@@ -223,7 +257,7 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
                 if (pub_reconstructed_cones_cloud_ && pub_reconstructed_cones_cloud_->get_subscription_count() > 0) {
                     publishCloud(pub_reconstructed_cones_cloud_, final_reconstructed_points_for_pub, msg->header.stamp, "os_sensor");
                 }
-                visualizeCones({}, "os_sensor"); // 빈 벡터로 호출하여 기존 마커 삭제
+                // Visualization moved to separate node
                 return;
             }
         } catch (const std::exception& e) {
@@ -254,8 +288,49 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
         try {
             std::vector<std::vector<double>> sorted_cones = sortCones(final_validated_cones);
             publishArrayWithTimestamp(cones_time_pub, sorted_cones, msg->header.stamp, "os_sensor");
+            
+            // Publish raw cone markers for visualization
+            publishRawConeMarkers(final_validated_cones, msg->header.stamp, "os_sensor");
 
-            visualizeCones(final_validated_cones, "os_sensor");
+            // Apply UKF tracking if enabled
+            if (params_.enable_tracking && tracker_) {
+                // Convert timestamp to seconds
+                double timestamp_sec = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
+                
+                // Convert ConeDescriptor to Detection
+                std::vector<kalman_filters::tracking::Detection> detections;
+                for (const auto& cone : final_validated_cones) {
+                    detections.emplace_back(cone.mean.x, cone.mean.y, cone.mean.z, "");
+                }
+                
+                // Update tracker with new detections
+                tracker_->update(detections, timestamp_sec);
+                
+                // Get tracked objects and convert back to ConeDescriptor
+                auto tracked_objects = tracker_->getTrackedObjects();
+                std::vector<ConeDescriptor> tracked_cones;
+                
+                for (const auto& obj : tracked_objects) {
+                    ConeDescriptor cone;
+                    cone.mean.x = obj.x;
+                    cone.mean.y = obj.y;
+                    cone.mean.z = obj.z;
+                    // color/label not used in lidar clustering
+                    // track_id managed separately if needed
+                    cone.calculate();  // Update valid flag and other properties
+                    tracked_cones.push_back(cone);
+                }
+                
+                // Publish tracked cones
+                if (!tracked_objects.empty()) {
+                    publishTrackedConeArray(cones_time_ukf_pub_, tracked_objects, msg->header.stamp, "os_sensor");
+                    
+                    RCLCPP_DEBUG(this->get_logger(), "Published %zu tracked cones from %zu tracks", 
+                                tracked_objects.size(), tracker_->getNumTracks());
+                }
+            }
+
+            // Visualization moved to separate node
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Exception in result publishing: %s", e.what());
         }
@@ -727,63 +802,102 @@ void OutlierFilter::publishArrayWithTimestamp(
     }
 }
 
-// cones 클러스터를 시각화
-void OutlierFilter::visualizeCones(const std::vector<ConeDescriptor> &cones, const std::string& frame_id) {
-    if (!marker_pub_ || marker_pub_->get_subscription_count() == 0 || cones.empty()) {
+// 정렬된 콘 데이터를 TrackedConeArray로 퍼블리싱
+void OutlierFilter::publishTrackedConeArray(
+    const rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr &publisher,
+    const std::vector<kalman_filters::tracking::TrackedObject> &tracked_objects,
+    const rclcpp::Time &timestamp,
+    const std::string& frame_id) {
+    
+    if (!publisher) {
         return;
     }
     
     try {
-        visualization_msgs::msg::MarkerArray markers;
-        const auto current_time = this->now();
-        markers.markers.reserve(previous_marker_count_ + cones.size());  // 메모리 미리 할당
-        
-        // 이전 마커 삭제
-        for (int i = 0; i < previous_marker_count_; ++i) {
-            visualization_msgs::msg::Marker delete_marker;
-            delete_marker.header.frame_id = frame_id;
-            delete_marker.header.stamp = current_time;
-            delete_marker.ns = "cones";
-            delete_marker.id = i;
-            delete_marker.action = visualization_msgs::msg::Marker::DELETE;
-            markers.markers.push_back(delete_marker);
-        }
-
-        // 새 마커 추가
-        int id = 0;
-        for (const auto &cone : cones) {
-            if (cone.valid) {
-                // NaN 체크
-                if (std::isnan(cone.mean.x) || std::isnan(cone.mean.y) || std::isnan(cone.mean.z)) {
-                    continue;
-                }
+        if (publisher->get_subscription_count() > 0) {
+            custom_interface::msg::TrackedConeArray msg;
+            msg.header.stamp = timestamp;
+            msg.header.frame_id = frame_id;
+            
+            // Convert tracked objects to TrackedCone messages
+            for (const auto& obj : tracked_objects) {
+                custom_interface::msg::TrackedCone cone;
+                cone.track_id = obj.track_id;
+                cone.position.x = obj.x;
+                cone.position.y = obj.y;
+                cone.position.z = obj.z;
+                cone.color = "Unknown"; // LiDAR doesn't have color info
                 
-                visualization_msgs::msg::Marker marker;
-                marker.header.frame_id = frame_id;
-                marker.header.stamp = current_time;
-                marker.ns = "cones";
-                marker.id = id++;
-                marker.type = visualization_msgs::msg::Marker::CYLINDER;
-                marker.action = visualization_msgs::msg::Marker::ADD;
-                marker.pose.position.x = cone.mean.x;
-                marker.pose.position.y = cone.mean.y;
-                marker.pose.position.z = cone.mean.z - 0.3;
-                marker.scale.x = marker.scale.y = marker.scale.z = 0.2;
-                marker.color.r = 0.3;
-                marker.color.g = 0.4;
-                marker.color.b = 0.5;
-                marker.color.a = 0.8;
-                marker.lifetime = rclcpp::Duration::from_seconds(0.5);
-                markers.markers.push_back(marker);
+                msg.cones.push_back(cone);
             }
+            
+            publisher->publish(msg);
+            RCLCPP_DEBUG(this->get_logger(), "Published %zu tracked cones", msg.cones.size());
         }
-        
-        previous_marker_count_ = id;
-        marker_pub_->publish(markers);
     } catch (const std::exception& e) {
-        RCLCPP_ERROR(this->get_logger(), "Exception in visualizeCones: %s", e.what());
+        RCLCPP_ERROR(this->get_logger(), "Exception in publishTrackedConeArray: %s", e.what());
     }
 }
+
+// 원본 LiDAR 콘 마커 발행 함수
+void OutlierFilter::publishRawConeMarkers(
+    const std::vector<ConeDescriptor> &cones,
+    const rclcpp::Time &timestamp,
+    const std::string& frame_id) {
+    
+    try {
+        visualization_msgs::msg::MarkerArray marker_array;
+        
+        // Delete all previous markers
+        visualization_msgs::msg::Marker delete_marker;
+        delete_marker.header.frame_id = frame_id;
+        delete_marker.header.stamp = timestamp;
+        delete_marker.ns = "raw_lidar_cones";
+        delete_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+        marker_array.markers.push_back(delete_marker);
+        
+        // Create markers for each cone
+        int marker_id = 0;
+        for (const auto& cone : cones) {
+            visualization_msgs::msg::Marker marker;
+            marker.header.frame_id = frame_id;
+            marker.header.stamp = timestamp;
+            marker.ns = "raw_lidar_cones";
+            marker.id = marker_id++;
+            marker.type = visualization_msgs::msg::Marker::CYLINDER;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+            
+            // Position
+            marker.pose.position.x = cone.mean.x;
+            marker.pose.position.y = cone.mean.y;
+            marker.pose.position.z = cone.mean.z - 0.25;  // Offset to ground
+            marker.pose.orientation.w = 1.0;
+            
+            // Scale - smaller than tracked cones
+            marker.scale.x = 0.15;  // Diameter
+            marker.scale.y = 0.15;
+            marker.scale.z = 0.5;   // Height
+            
+            // Color - blue with transparency
+            marker.color.r = 0.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.8;
+            marker.color.a = 0.8;
+            
+            marker.lifetime = rclcpp::Duration::from_seconds(0.2);
+            marker_array.markers.push_back(marker);
+        }
+        
+        // Publish markers
+        if (raw_cone_marker_pub_->get_subscription_count() > 0) {
+            raw_cone_marker_pub_->publish(marker_array);
+        }
+        
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Exception in publishRawConeMarkers: %s", e.what());
+    }
+}
+
 
 // ROI 영역의 각도를 계산
 float OutlierFilter::ROI_theta(float x, float y) {

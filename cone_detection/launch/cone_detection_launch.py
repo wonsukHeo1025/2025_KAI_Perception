@@ -16,5 +16,11 @@ def generate_launch_description():
             executable='cone_detection_node',
             name='cone_detection',
             parameters=[config_file]
+        ),
+
+        Node(
+            package='cone_detection',
+            executable='cone_detection_visualization_node',
+            name='cone_detection_visualization',
         )
     ])

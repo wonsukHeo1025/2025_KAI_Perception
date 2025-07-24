@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-07-23T16:23:45.062884",
+  "collection_duration": 300,
+  "sample_count": 299894,
+  "accel_bias": {
+    "x": 0.7202,
+    "y": 1.1750,
+    "z": -0.3615
+  },
+  "gyro_bias": {
+    "x": 0.0095,
+    "y": -0.0157,
+    "z": -0.0210
+  },
+  "gravity_magnitude": 9.81
+}

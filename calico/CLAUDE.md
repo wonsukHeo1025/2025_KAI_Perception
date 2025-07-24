@@ -21,10 +21,10 @@ CALICO is currently in active development, being ported from Python to C++ for p
 - Launch files for individual and full system
 
 ### 🚧 Components Needing Improvement
-- **Hungarian Algorithm**: Currently using simplified greedy approach
-  - Need: Full O(n³) implementation or library (dlib/munkres-cpp)
-- **UKF Implementation**: Basic version without filterpy features
-  - Need: Complete UKF or external library integration
+- **Hungarian Algorithm**: ✅ Now using kalman_filters library implementation
+  - Removed dlib dependency completely
+- **UKF Implementation**: ✅ Using kalman_filters library
+  - Complete UKF with numerical stability improvements
 - **Butterworth Filter**: Simplified 2nd order implementation
   - Need: Full filter design or DSP library
 
@@ -95,13 +95,12 @@ This ensures seamless transition from Python to C++ implementation without chang
 calico/
 ├── include/calico/     # Header files
 │   ├── fusion/        # Sensor fusion algorithms
-│   ├── tracking/      # UKF tracking system
-│   ├── utils/         # Utilities
+│   ├── utils/         # Utilities and IMU compensator
 │   └── visualization/ # RViz markers
 ├── src/               # Implementation files
 │   ├── fusion/
-│   ├── tracking/
 │   ├── utils/
+│   ├── visualization/
 │   └── nodes/         # ROS2 node executables
 └── launch/            # Launch files
 ```
@@ -142,10 +141,10 @@ Ensure absolute paths are used or files are in the expected location.
    - Implement multi-camera fusion logic
    - Handle camera conflicts
 
-3. **UKF Tracking**
-   - Implement UKF from scratch or use library
-   - Add IMU compensation
-   - Color voting mechanism
+3. **UKF Tracking** ✅
+   - Now using kalman_filters external library
+   - IMU compensation integrated
+   - Color voting mechanism implemented
 
 4. **Performance Optimization**
    - Profile and identify bottlenecks

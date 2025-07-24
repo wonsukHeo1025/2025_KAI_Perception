@@ -172,5 +172,100 @@ std::string MessageConverter::mapClassToColor(const std::string& class_name) {
     return "Unknown";  // Python uses "Unknown" (capitalized)
 }
 
+// Convert Cone to kalman_filters Detection
+kalman_filters::tracking::Detection MessageConverter::coneToDetection(const Cone& cone) {
+    kalman_filters::tracking::Detection det;
+    det.x = cone.x;
+    det.y = cone.y;
+    det.z = cone.z;
+    det.label = cone.color;
+    det.id = cone.id;
+    det.confidence = cone.confidence;
+    return det;
+}
+
+// Convert Detection to Cone
+Cone MessageConverter::detectionToCone(const kalman_filters::tracking::Detection& detection) {
+    Cone cone;
+    cone.x = detection.x;
+    cone.y = detection.y;
+    cone.z = detection.z;
+    cone.color = detection.label;
+    cone.id = detection.id;
+    cone.confidence = detection.confidence;
+    return cone;
+}
+
+// Convert vector of Cones to Detections
+std::vector<kalman_filters::tracking::Detection> MessageConverter::conesToDetections(const std::vector<Cone>& cones) {
+    std::vector<kalman_filters::tracking::Detection> detections;
+    detections.reserve(cones.size());
+    for (const auto& cone : cones) {
+        detections.push_back(coneToDetection(cone));
+    }
+    return detections;
+}
+
+// Convert vector of Detections to Cones
+std::vector<Cone> MessageConverter::detectionsToCones(const std::vector<kalman_filters::tracking::Detection>& detections) {
+    std::vector<Cone> cones;
+    cones.reserve(detections.size());
+    for (const auto& det : detections) {
+        cones.push_back(detectionToCone(det));
+    }
+    return cones;
+}
+
+// Convert TrackedObject to Cone with velocity
+Cone MessageConverter::trackedObjectToCone(const kalman_filters::tracking::TrackedObject& obj) {
+    Cone cone;
+    cone.x = obj.x;
+    cone.y = obj.y;
+    cone.z = obj.z;
+    cone.color = obj.label;
+    cone.id = obj.track_id;
+    cone.confidence = obj.confidence;
+    cone.has_velocity = true;
+    cone.velocity = Eigen::Vector3d(obj.vx, obj.vy, 0.0);
+    return cone;
+}
+
+// Convert vector of TrackedObjects to Cones
+std::vector<Cone> MessageConverter::trackedObjectsToCones(const std::vector<kalman_filters::tracking::TrackedObject>& objects) {
+    std::vector<Cone> cones;
+    cones.reserve(objects.size());
+    for (const auto& obj : objects) {
+        cones.push_back(trackedObjectToCone(obj));
+    }
+    return cones;
+}
+
+// Convert IMUData to kalman_filters format
+kalman_filters::tracking::IMUData MessageConverter::toKalmanIMUData(const IMUData& imu_data) {
+    kalman_filters::tracking::IMUData kf_imu;
+    kf_imu.timestamp = imu_data.timestamp;
+    kf_imu.angular_vel_x = imu_data.angular_vel_x;
+    kf_imu.angular_vel_y = imu_data.angular_vel_y;
+    kf_imu.angular_vel_z = imu_data.angular_vel_z;
+    kf_imu.linear_accel_x = imu_data.linear_accel_x;
+    kf_imu.linear_accel_y = imu_data.linear_accel_y;
+    kf_imu.linear_accel_z = imu_data.linear_accel_z;
+    return kf_imu;
+}
+
+// Convert kalman_filters IMUData to calico format
+IMUData MessageConverter::fromKalmanIMUData(const kalman_filters::tracking::IMUData& kf_imu_data) {
+    IMUData imu;
+    imu.timestamp = kf_imu_data.timestamp;
+    imu.angular_vel_x = kf_imu_data.angular_vel_x;
+    imu.angular_vel_y = kf_imu_data.angular_vel_y;
+    imu.angular_vel_z = kf_imu_data.angular_vel_z;
+    imu.linear_accel_x = kf_imu_data.linear_accel_x;
+    imu.linear_accel_y = kf_imu_data.linear_accel_y;
+    imu.linear_accel_z = kf_imu_data.linear_accel_z;
+    // orientation은 칼만 필터에서 사용하지 않으므로 변환하지 않음
+    return imu;
+}
+
 } // namespace utils
 } // namespace calico

@@ -21,11 +21,25 @@ class DeadReckoningNode(Node):
     def __init__(self):
         super().__init__('dead_reckoning_node')
         
+        # 파라미터 선언
+        self.declare_parameter('processed_topic', '')
+        self.processed_topic = self.get_parameter('processed_topic').get_parameter_value().string_value
+        
+        self.declare_parameter('rotation_only_mode', False)
+        self.rotation_only_mode = self.get_parameter('rotation_only_mode').get_parameter_value().bool_value
+        
         # 캘리브레이션 데이터 로드
         self.accel_bias = np.array([0.0, 0.0, 0.0])
         self.gyro_bias = np.array([0.0, 0.0, 0.0])
         self.gravity_magnitude = 9.81
-        self.load_calibration()
+        
+        # processed_topic이 없으면 캘리브레이션 파일 사용
+        if not self.processed_topic:
+            self.load_calibration()
+            self.use_processed_topic = False
+        else:
+            self.use_processed_topic = True
+            self.get_logger().info(f'전처리된 IMU 토픽 사용: {self.processed_topic}')
         
         # 중력 초기화 관련 변수들 (캘리브레이션된 데이터용)
         self.initial_gravity_vector_calibrated = None
@@ -43,12 +57,30 @@ class DeadReckoningNode(Node):
         )
         
         # 구독자
-        self.imu_subscription = self.create_subscription(
-            Imu,
-            '/ouster/imu',
-            self.imu_callback,
-            qos_profile
-        )
+        if self.use_processed_topic:
+            # processed topic을 사용하는 경우 raw와 processed 둘 다 구독
+            self.imu_raw_subscription = self.create_subscription(
+                Imu,
+                '/imu/data',
+                self.imu_raw_callback,
+                qos_profile
+            )
+            self.imu_processed_subscription = self.create_subscription(
+                Imu,
+                self.processed_topic,
+                self.imu_processed_callback,
+                qos_profile
+            )
+            self.raw_data_buffer = None
+            self.processed_data_buffer = None
+        else:
+            # 기존 방식: raw 데이터만 구독하고 내부에서 캘리브레이션 적용
+            self.imu_subscription = self.create_subscription(
+                Imu,
+                '/imu/data',
+                self.imu_callback,
+                qos_profile
+            )
         
         # 발행자
         self.path_publisher_calibrated = self.create_publisher(Path, '/dead_reckoning/path_calibrated', 10)
@@ -59,12 +91,20 @@ class DeadReckoningNode(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
         
         # 캘리브레이션된 상태 변수들
-        self.position_calibrated = np.array([0.0, 0.0, 0.0])
+        if self.rotation_only_mode:
+            # rotation_only_mode에서는 고정 위치 사용
+            self.position_calibrated = np.array([0.0, -1.0, 0.0])  # 왼쪽에 배치
+        else:
+            self.position_calibrated = np.array([0.0, 0.0, 0.0])
         self.velocity_calibrated = np.array([0.0, 0.0, 0.0])
         self.orientation_calibrated = np.array([1.0, 0.0, 0.0, 0.0])
         
         # 원본 상태 변수들
-        self.position_raw = np.array([0.0, 0.0, 0.0])
+        if self.rotation_only_mode:
+            # rotation_only_mode에서는 고정 위치 사용
+            self.position_raw = np.array([0.0, 1.0, 0.0])  # 오른쪽에 배치
+        else:
+            self.position_raw = np.array([0.0, 0.0, 0.0])
         self.velocity_raw = np.array([0.0, 0.0, 0.0])
         self.orientation_raw = np.array([1.0, 0.0, 0.0, 0.0])
         
@@ -86,9 +126,18 @@ class DeadReckoningNode(Node):
         self.max_drift_distance_raw = 0.0
         
         self.get_logger().info('Dead Reckoning Node가 시작되었습니다.')
-        self.get_logger().info('/ouster/imu 토픽을 구독하고 있습니다.')
+        if self.rotation_only_mode:
+            self.get_logger().info('*** Rotation Only Mode 활성화 ***')
+            self.get_logger().info('위치 변화는 무시하고 회전 드리프트만 시각화합니다.')
+        
+        if self.use_processed_topic:
+            self.get_logger().info(f'원본 IMU 토픽: /imu/data')
+            self.get_logger().info(f'전처리된 IMU 토픽: {self.processed_topic}')
+            self.get_logger().info('원본 vs 전처리된 데이터 비교 모드입니다.')
+        else:
+            self.get_logger().info('imu 토픽을 구독하고 있습니다.')
+            self.get_logger().info('캘리브레이션 적용 vs 원본 데이터 비교 모드입니다.')
         self.get_logger().info(f'초기화를 위해 {self.required_samples}개 샘플을 수집합니다...')
-        self.get_logger().info('캘리브레이션 적용 vs 원본 데이터 비교 모드입니다.')
 
     def load_calibration(self):
         """최신 캘리브레이션 파일을 로드합니다."""
@@ -206,6 +255,167 @@ class DeadReckoningNode(Node):
             del self.gravity_samples_calibrated
             del self.gravity_samples_raw
 
+    def imu_raw_callback(self, msg):
+        """processed topic 모드에서 raw 데이터 콜백"""
+        self.raw_data_buffer = msg
+        self.process_synchronized_data()
+    
+    def imu_processed_callback(self, msg):
+        """processed topic 모드에서 processed 데이터 콜백"""
+        self.processed_data_buffer = msg
+        self.process_synchronized_data()
+    
+    def process_synchronized_data(self):
+        """raw와 processed 데이터가 모두 있을 때 처리"""
+        if self.raw_data_buffer is None or self.processed_data_buffer is None:
+            return
+        
+        # 시간 차이 확인 (100ms 이내인 경우만 처리)
+        raw_time = rclpy.time.Time.from_msg(self.raw_data_buffer.header.stamp)
+        processed_time = rclpy.time.Time.from_msg(self.processed_data_buffer.header.stamp)
+        time_diff = abs((raw_time - processed_time).nanoseconds / 1e9)
+        
+        if time_diff > 0.1:  # 100ms 이상 차이나면 무시
+            return
+        
+        # processed 데이터의 타임스탬프 사용
+        current_event_time = processed_time
+        
+        # 원본 IMU 데이터 추출
+        angular_velocity_raw = np.array([
+            self.raw_data_buffer.angular_velocity.x,
+            self.raw_data_buffer.angular_velocity.y,
+            self.raw_data_buffer.angular_velocity.z
+        ])
+        
+        linear_acceleration_raw = np.array([
+            self.raw_data_buffer.linear_acceleration.x,
+            self.raw_data_buffer.linear_acceleration.y,
+            self.raw_data_buffer.linear_acceleration.z
+        ])
+        
+        # 전처리된 IMU 데이터 추출
+        angular_velocity_processed = np.array([
+            self.processed_data_buffer.angular_velocity.x,
+            self.processed_data_buffer.angular_velocity.y,
+            self.processed_data_buffer.angular_velocity.z
+        ])
+        
+        linear_acceleration_processed = np.array([
+            self.processed_data_buffer.linear_acceleration.x,
+            self.processed_data_buffer.linear_acceleration.y,
+            self.processed_data_buffer.linear_acceleration.z
+        ])
+        
+        # 초기화가 안 되었으면 중력 방향 초기화
+        if not self.is_initialized:
+            self.initialize_gravity_direction(linear_acceleration_processed, linear_acceleration_raw)
+            self.raw_data_buffer = None
+            self.processed_data_buffer = None
+            return
+        
+        # 시간 차이 계산
+        if self.last_time is None:
+            self.last_time = current_event_time
+            self.raw_data_buffer = None
+            self.processed_data_buffer = None
+            return
+        
+        dt_duration = current_event_time - self.last_time
+        dt = dt_duration.nanoseconds / 1e9
+        
+        # dt 유효성 검사
+        if dt <= 0:
+            self.get_logger().warn(f'dt ({dt:.4f}s)가 0 또는 음수입니다.')
+            self.last_time = current_event_time
+            self.raw_data_buffer = None
+            self.processed_data_buffer = None
+            return
+        
+        max_reasonable_dt = 1.0 
+        if dt > max_reasonable_dt:
+            self.get_logger().warn(f'dt ({dt:.4f}s)가 너무 큽니다.')
+            self.last_time = current_event_time
+            self.raw_data_buffer = None
+            self.processed_data_buffer = None
+            return
+        
+        # 전처리된 데이터 처리 (calibrated 변수 사용)
+        self.update_orientation(angular_velocity_processed, dt, is_calibrated=True)
+        
+        if not self.rotation_only_mode:
+            # 위치 업데이트는 rotation_only_mode가 아닐 때만
+            accel_without_gravity_processed = linear_acceleration_processed - self.initial_gravity_vector_calibrated
+            world_acceleration_processed = self.rotate_vector_by_quaternion(accel_without_gravity_processed, self.orientation_calibrated)
+            self.velocity_calibrated += world_acceleration_processed * dt
+            self.position_calibrated += self.velocity_calibrated * dt
+        
+        # 원본 데이터 처리
+        self.update_orientation(angular_velocity_raw, dt, is_calibrated=False)
+        
+        if not self.rotation_only_mode:
+            # 위치 업데이트는 rotation_only_mode가 아닐 때만
+            accel_without_gravity_raw = linear_acceleration_raw - self.initial_gravity_vector_raw
+            world_acceleration_raw = self.rotate_vector_by_quaternion(accel_without_gravity_raw, self.orientation_raw)
+            self.velocity_raw += world_acceleration_raw * dt
+            self.position_raw += self.velocity_raw * dt
+        
+        # 드리프트 통계 업데이트
+        current_drift_processed = np.linalg.norm(self.position_calibrated)
+        if current_drift_processed > self.max_drift_distance_calibrated:
+            self.max_drift_distance_calibrated = current_drift_processed
+        
+        current_drift_raw = np.linalg.norm(self.position_raw)
+        if current_drift_raw > self.max_drift_distance_raw:
+            self.max_drift_distance_raw = current_drift_raw
+        
+        # TF 발행
+        self.publish_tf_calibrated(current_event_time)  # processed 데이터용
+        self.publish_tf_raw(current_event_time)         # raw 데이터용
+        
+        # Path 업데이트 및 발행
+        self.update_path_calibrated(current_event_time)  # processed 데이터용
+        self.update_path_raw(current_event_time)         # raw 데이터용
+        
+        # 로그 출력
+        self.sample_count += 1
+        log_time_seconds = current_event_time.nanoseconds / 1e9
+        current_int_seconds = int(log_time_seconds)
+        if current_int_seconds % 10 == 0:
+            if not hasattr(self, '_sync_last_log_sec') or self._sync_last_log_sec != current_int_seconds:
+                if self.rotation_only_mode:
+                    # rotation only mode에서는 RPY 각도 차이 출력
+                    rpy_processed = self.quaternion_to_rpy(self.orientation_calibrated)
+                    rpy_raw = self.quaternion_to_rpy(self.orientation_raw)
+                    rpy_diff = rpy_processed - rpy_raw
+                    
+                    self.get_logger().info(
+                        f'전처리된 RPY: [R:{rpy_processed[0]:.1f}°, P:{rpy_processed[1]:.1f}°, Y:{rpy_processed[2]:.1f}°]'
+                    )
+                    self.get_logger().info(
+                        f'원본 RPY: [R:{rpy_raw[0]:.1f}°, P:{rpy_raw[1]:.1f}°, Y:{rpy_raw[2]:.1f}°]'
+                    )
+                    self.get_logger().info(
+                        f'각도 차이: [ΔR:{rpy_diff[0]:.1f}°, ΔP:{rpy_diff[1]:.1f}°, ΔY:{rpy_diff[2]:.1f}°] | 샘플: {self.sample_count}'
+                    )
+                else:
+                    velocity_magnitude_processed = np.linalg.norm(self.velocity_calibrated)
+                    velocity_magnitude_raw = np.linalg.norm(self.velocity_raw)
+                    self.get_logger().info(
+                        f'전처리된: 위치[{self.position_calibrated[0]:.2f}, {self.position_calibrated[1]:.2f}, {self.position_calibrated[2]:.2f}] '
+                        f'속도{velocity_magnitude_processed:.3f}m/s 드리프트{self.max_drift_distance_calibrated:.2f}m'
+                    )
+                    self.get_logger().info(
+                        f'원본: 위치[{self.position_raw[0]:.2f}, {self.position_raw[1]:.2f}, {self.position_raw[2]:.2f}] '
+                        f'속도{velocity_magnitude_raw:.3f}m/s 드리프트{self.max_drift_distance_raw:.2f}m | 샘플: {self.sample_count}'
+                    )
+                self._sync_last_log_sec = current_int_seconds
+        
+        # 다음 처리를 위해 버퍼 초기화
+        self.last_time = current_event_time
+        self.raw_data_buffer = None
+        self.processed_data_buffer = None
+
     def imu_callback(self, msg):
         # 메시지 헤더의 타임스탬프를 rclpy.time.Time 객체로 변환
         current_event_time = rclpy.time.Time.from_msg(msg.header.stamp)
@@ -260,17 +470,23 @@ class DeadReckoningNode(Node):
 
         # 캘리브레이션된 데이터 처리
         self.update_orientation(angular_velocity_calibrated, dt, is_calibrated=True)
-        accel_without_gravity_calibrated = linear_acceleration_calibrated - self.initial_gravity_vector_calibrated
-        world_acceleration_calibrated = self.rotate_vector_by_quaternion(accel_without_gravity_calibrated, self.orientation_calibrated)
-        self.velocity_calibrated += world_acceleration_calibrated * dt
-        self.position_calibrated += self.velocity_calibrated * dt
+        
+        if not self.rotation_only_mode:
+            # 위치 업데이트는 rotation_only_mode가 아닐 때만
+            accel_without_gravity_calibrated = linear_acceleration_calibrated - self.initial_gravity_vector_calibrated
+            world_acceleration_calibrated = self.rotate_vector_by_quaternion(accel_without_gravity_calibrated, self.orientation_calibrated)
+            self.velocity_calibrated += world_acceleration_calibrated * dt
+            self.position_calibrated += self.velocity_calibrated * dt
         
         # 원본 데이터 처리
         self.update_orientation(angular_velocity_raw, dt, is_calibrated=False)
-        accel_without_gravity_raw = linear_acceleration_raw - self.initial_gravity_vector_raw
-        world_acceleration_raw = self.rotate_vector_by_quaternion(accel_without_gravity_raw, self.orientation_raw)
-        self.velocity_raw += world_acceleration_raw * dt
-        self.position_raw += self.velocity_raw * dt
+        
+        if not self.rotation_only_mode:
+            # 위치 업데이트는 rotation_only_mode가 아닐 때만
+            accel_without_gravity_raw = linear_acceleration_raw - self.initial_gravity_vector_raw
+            world_acceleration_raw = self.rotate_vector_by_quaternion(accel_without_gravity_raw, self.orientation_raw)
+            self.velocity_raw += world_acceleration_raw * dt
+            self.position_raw += self.velocity_raw * dt
         
         # 드리프트 통계 업데이트
         current_drift_calibrated = np.linalg.norm(self.position_calibrated)
@@ -295,16 +511,32 @@ class DeadReckoningNode(Node):
         current_int_seconds = int(log_time_seconds)
         if current_int_seconds % 10 == 0:  # 10초마다 로깅
             if not hasattr(self, '_imu_cb_last_log_sec') or self._imu_cb_last_log_sec != current_int_seconds:
-                velocity_magnitude_calibrated = np.linalg.norm(self.velocity_calibrated)
-                velocity_magnitude_raw = np.linalg.norm(self.velocity_raw)
-                self.get_logger().info(
-                    f'캘리브레이션: 위치[{self.position_calibrated[0]:.2f}, {self.position_calibrated[1]:.2f}, {self.position_calibrated[2]:.2f}] '
-                    f'속도{velocity_magnitude_calibrated:.3f}m/s 드리프트{self.max_drift_distance_calibrated:.2f}m'
-                )
-                self.get_logger().info(
-                    f'원본 데이터: 위치[{self.position_raw[0]:.2f}, {self.position_raw[1]:.2f}, {self.position_raw[2]:.2f}] '
-                    f'속도{velocity_magnitude_raw:.3f}m/s 드리프트{self.max_drift_distance_raw:.2f}m | 샘플: {self.sample_count}'
-                )
+                if self.rotation_only_mode:
+                    # rotation only mode에서는 RPY 각도 차이 출력
+                    rpy_calibrated = self.quaternion_to_rpy(self.orientation_calibrated)
+                    rpy_raw = self.quaternion_to_rpy(self.orientation_raw)
+                    rpy_diff = rpy_calibrated - rpy_raw
+                    
+                    self.get_logger().info(
+                        f'캘리브레이션된 RPY: [R:{rpy_calibrated[0]:.1f}°, P:{rpy_calibrated[1]:.1f}°, Y:{rpy_calibrated[2]:.1f}°]'
+                    )
+                    self.get_logger().info(
+                        f'원본 RPY: [R:{rpy_raw[0]:.1f}°, P:{rpy_raw[1]:.1f}°, Y:{rpy_raw[2]:.1f}°]'
+                    )
+                    self.get_logger().info(
+                        f'각도 차이: [ΔR:{rpy_diff[0]:.1f}°, ΔP:{rpy_diff[1]:.1f}°, ΔY:{rpy_diff[2]:.1f}°] | 샘플: {self.sample_count}'
+                    )
+                else:
+                    velocity_magnitude_calibrated = np.linalg.norm(self.velocity_calibrated)
+                    velocity_magnitude_raw = np.linalg.norm(self.velocity_raw)
+                    self.get_logger().info(
+                        f'캘리브레이션: 위치[{self.position_calibrated[0]:.2f}, {self.position_calibrated[1]:.2f}, {self.position_calibrated[2]:.2f}] '
+                        f'속도{velocity_magnitude_calibrated:.3f}m/s 드리프트{self.max_drift_distance_calibrated:.2f}m'
+                    )
+                    self.get_logger().info(
+                        f'원본 데이터: 위치[{self.position_raw[0]:.2f}, {self.position_raw[1]:.2f}, {self.position_raw[2]:.2f}] '
+                        f'속도{velocity_magnitude_raw:.3f}m/s 드리프트{self.max_drift_distance_raw:.2f}m | 샘플: {self.sample_count}'
+                    )
                 self._imu_cb_last_log_sec = current_int_seconds
         
         # 다음 콜백을 위해 last_time 업데이트
@@ -362,13 +594,23 @@ class DeadReckoningNode(Node):
             w1*y2 - x1*z2 + y1*w2 + z1*x2,
             w1*z2 + x1*y2 - y1*x2 + z1*w2
         ])
+    
+    def quaternion_to_rpy(self, quaternion):
+        """쿼터니언을 roll, pitch, yaw 각도로 변환합니다."""
+        # scipy의 Rotation 사용
+        r = Rotation.from_quat([quaternion[1], quaternion[2], quaternion[3], quaternion[0]])
+        rpy = r.as_euler('xyz', degrees=True)  # degrees로 변환
+        return rpy  # [roll, pitch, yaw] in degrees
 
     def publish_tf_calibrated(self, timestamp):
-        """캘리브레이션된 TF를 발행합니다."""
+        """캘리브레이션된/전처리된 TF를 발행합니다."""
         t = TransformStamped()
         t.header.stamp = timestamp.to_msg()
         t.header.frame_id = "map"
-        t.child_frame_id = "base_link_calibrated"
+        if self.use_processed_topic:
+            t.child_frame_id = "base_link_processed"
+        else:
+            t.child_frame_id = "base_link_calibrated"
         
         # 위치
         t.transform.translation.x = self.position_calibrated[0]
@@ -476,12 +718,15 @@ class DeadReckoningNode(Node):
         origin_marker.color.a = 1.0
         marker_array.markers.append(origin_marker)
         
-        # 캘리브레이션된 현재 위치 마커 (초록색 구)
+        # 캘리브레이션된/전처리된 현재 위치 마커
         if self.is_initialized:
             current_pos_marker_calibrated = Marker()
             current_pos_marker_calibrated.header.frame_id = "map"
             current_pos_marker_calibrated.header.stamp = self.get_clock().now().to_msg()
-            current_pos_marker_calibrated.ns = "current_position_calibrated"
+            if self.use_processed_topic:
+                current_pos_marker_calibrated.ns = "current_position_processed"
+            else:
+                current_pos_marker_calibrated.ns = "current_position_calibrated"
             current_pos_marker_calibrated.id = 0
             current_pos_marker_calibrated.type = Marker.SPHERE
             current_pos_marker_calibrated.action = Marker.ADD
@@ -495,9 +740,16 @@ class DeadReckoningNode(Node):
             current_pos_marker_calibrated.scale.x = 0.15
             current_pos_marker_calibrated.scale.y = 0.15
             current_pos_marker_calibrated.scale.z = 0.15
-            current_pos_marker_calibrated.color.r = 0.0
-            current_pos_marker_calibrated.color.g = 1.0  # 초록색 (캘리브레이션됨)
-            current_pos_marker_calibrated.color.b = 0.0
+            if self.use_processed_topic:
+                # 파란색 (전처리된 데이터)
+                current_pos_marker_calibrated.color.r = 0.0
+                current_pos_marker_calibrated.color.g = 0.0
+                current_pos_marker_calibrated.color.b = 1.0
+            else:
+                # 초록색 (캘리브레이션된 데이터)
+                current_pos_marker_calibrated.color.r = 0.0
+                current_pos_marker_calibrated.color.g = 1.0
+                current_pos_marker_calibrated.color.b = 0.0
             current_pos_marker_calibrated.color.a = 1.0
             marker_array.markers.append(current_pos_marker_calibrated)
             
@@ -596,12 +848,15 @@ class DeadReckoningNode(Node):
         z_axis.color.a = 1.0
         marker_array.markers.append(z_axis)
         
-        # 캘리브레이션된 드리프트 원 표시 (초록색, 반투명)
+        # 캘리브레이션된/전처리된 드리프트 원 표시
         if self.is_initialized and self.max_drift_distance_calibrated > 0.01:
             drift_circle_calibrated = Marker()
             drift_circle_calibrated.header.frame_id = "map"
             drift_circle_calibrated.header.stamp = self.get_clock().now().to_msg()
-            drift_circle_calibrated.ns = "drift_visualization_calibrated"
+            if self.use_processed_topic:
+                drift_circle_calibrated.ns = "drift_visualization_processed"
+            else:
+                drift_circle_calibrated.ns = "drift_visualization_calibrated"
             drift_circle_calibrated.id = 0
             drift_circle_calibrated.type = Marker.CYLINDER
             drift_circle_calibrated.action = Marker.ADD
@@ -612,9 +867,16 @@ class DeadReckoningNode(Node):
             drift_circle_calibrated.scale.x = self.max_drift_distance_calibrated * 2
             drift_circle_calibrated.scale.y = self.max_drift_distance_calibrated * 2
             drift_circle_calibrated.scale.z = 0.01
-            drift_circle_calibrated.color.r = 0.0
-            drift_circle_calibrated.color.g = 1.0
-            drift_circle_calibrated.color.b = 0.0
+            if self.use_processed_topic:
+                # 파란색 (전처리된 데이터)
+                drift_circle_calibrated.color.r = 0.0
+                drift_circle_calibrated.color.g = 0.0
+                drift_circle_calibrated.color.b = 1.0
+            else:
+                # 초록색 (캘리브레이션된 데이터)
+                drift_circle_calibrated.color.r = 0.0
+                drift_circle_calibrated.color.g = 1.0
+                drift_circle_calibrated.color.b = 0.0
             drift_circle_calibrated.color.a = 0.3  # 반투명
             marker_array.markers.append(drift_circle_calibrated)
         
@@ -652,18 +914,51 @@ def main(args=None):
     except KeyboardInterrupt:
         node.get_logger().info('노드가 종료됩니다.')
         if node.is_initialized:
-            node.get_logger().info(f'=== 최종 드리프트 비교 통계 ===')
-            node.get_logger().info(f'총 처리 샘플: {node.sample_count}')
-            node.get_logger().info(f'캘리브레이션된 최대 드리프트: {node.max_drift_distance_calibrated:.4f}m')
-            node.get_logger().info(f'원본 데이터 최대 드리프트: {node.max_drift_distance_raw:.4f}m')
-            
-            improvement_ratio = node.max_drift_distance_raw / node.max_drift_distance_calibrated if node.max_drift_distance_calibrated > 0 else float('inf')
-            node.get_logger().info(f'드리프트 개선 비율: {improvement_ratio:.2f}x')
-            
-            node.get_logger().info(f'캘리브레이션 최종 위치: [{node.position_calibrated[0]:.4f}, {node.position_calibrated[1]:.4f}, {node.position_calibrated[2]:.4f}]')
-            node.get_logger().info(f'원본 데이터 최종 위치: [{node.position_raw[0]:.4f}, {node.position_raw[1]:.4f}, {node.position_raw[2]:.4f}]')
-            node.get_logger().info(f'캘리브레이션 최종 속도: {np.linalg.norm(node.velocity_calibrated):.6f} m/s')
-            node.get_logger().info(f'원본 데이터 최종 속도: {np.linalg.norm(node.velocity_raw):.6f} m/s')
+            if node.rotation_only_mode:
+                node.get_logger().info(f'=== 최종 회전 드리프트 비교 통계 ===')
+                node.get_logger().info(f'총 처리 샘플: {node.sample_count}')
+                
+                # 최종 RPY 각도 계산
+                rpy_calibrated = node.quaternion_to_rpy(node.orientation_calibrated)
+                rpy_raw = node.quaternion_to_rpy(node.orientation_raw)
+                rpy_diff = rpy_calibrated - rpy_raw
+                
+                if node.use_processed_topic:
+                    node.get_logger().info(f'전처리된 최종 RPY: [R:{rpy_calibrated[0]:.2f}°, P:{rpy_calibrated[1]:.2f}°, Y:{rpy_calibrated[2]:.2f}°]')
+                    node.get_logger().info(f'원본 최종 RPY: [R:{rpy_raw[0]:.2f}°, P:{rpy_raw[1]:.2f}°, Y:{rpy_raw[2]:.2f}°]')
+                else:
+                    node.get_logger().info(f'캘리브레이션된 최종 RPY: [R:{rpy_calibrated[0]:.2f}°, P:{rpy_calibrated[1]:.2f}°, Y:{rpy_calibrated[2]:.2f}°]')
+                    node.get_logger().info(f'원본 최종 RPY: [R:{rpy_raw[0]:.2f}°, P:{rpy_raw[1]:.2f}°, Y:{rpy_raw[2]:.2f}°]')
+                
+                node.get_logger().info(f'최종 각도 차이: [ΔR:{rpy_diff[0]:.2f}°, ΔP:{rpy_diff[1]:.2f}°, ΔY:{rpy_diff[2]:.2f}°]')
+                total_angle_diff = np.linalg.norm(rpy_diff)
+                node.get_logger().info(f'총 각도 차이 크기: {total_angle_diff:.2f}°')
+            else:
+                node.get_logger().info(f'=== 최종 드리프트 비교 통계 ===')
+                node.get_logger().info(f'총 처리 샘플: {node.sample_count}')
+                
+                if node.use_processed_topic:
+                    node.get_logger().info(f'전처리된 데이터 최대 드리프트: {node.max_drift_distance_calibrated:.4f}m')
+                    node.get_logger().info(f'원본 데이터 최대 드리프트: {node.max_drift_distance_raw:.4f}m')
+                    
+                    improvement_ratio = node.max_drift_distance_raw / node.max_drift_distance_calibrated if node.max_drift_distance_calibrated > 0 else float('inf')
+                    node.get_logger().info(f'드리프트 개선 비율: {improvement_ratio:.2f}x')
+                    
+                    node.get_logger().info(f'전처리된 최종 위치: [{node.position_calibrated[0]:.4f}, {node.position_calibrated[1]:.4f}, {node.position_calibrated[2]:.4f}]')
+                    node.get_logger().info(f'원본 데이터 최종 위치: [{node.position_raw[0]:.4f}, {node.position_raw[1]:.4f}, {node.position_raw[2]:.4f}]')
+                    node.get_logger().info(f'전처리된 최종 속도: {np.linalg.norm(node.velocity_calibrated):.6f} m/s')
+                    node.get_logger().info(f'원본 데이터 최종 속도: {np.linalg.norm(node.velocity_raw):.6f} m/s')
+                else:
+                    node.get_logger().info(f'캘리브레이션된 최대 드리프트: {node.max_drift_distance_calibrated:.4f}m')
+                    node.get_logger().info(f'원본 데이터 최대 드리프트: {node.max_drift_distance_raw:.4f}m')
+                    
+                    improvement_ratio = node.max_drift_distance_raw / node.max_drift_distance_calibrated if node.max_drift_distance_calibrated > 0 else float('inf')
+                    node.get_logger().info(f'드리프트 개선 비율: {improvement_ratio:.2f}x')
+                    
+                    node.get_logger().info(f'캘리브레이션 최종 위치: [{node.position_calibrated[0]:.4f}, {node.position_calibrated[1]:.4f}, {node.position_calibrated[2]:.4f}]')
+                    node.get_logger().info(f'원본 데이터 최종 위치: [{node.position_raw[0]:.4f}, {node.position_raw[1]:.4f}, {node.position_raw[2]:.4f}]')
+                    node.get_logger().info(f'캘리브레이션 최종 속도: {np.linalg.norm(node.velocity_calibrated):.6f} m/s')
+                    node.get_logger().info(f'원본 데이터 최종 속도: {np.linalg.norm(node.velocity_raw):.6f} m/s')
     finally:
         node.destroy_node()
         if rclpy.ok():

@@ -1,0 +1,870 @@
+[0.000000] (-) TimerEvent: {}
+[0.000250] (cone_stellation) JobQueued: {'identifier': 'cone_stellation', 'dependencies': OrderedDict()}
+[0.000345] (cone_stellation) JobStarted: {'identifier': 'cone_stellation'}
+[0.008688] (cone_stellation) JobProgress: {'identifier': 'cone_stellation', 'progress': 'cmake'}
+[0.009707] (cone_stellation) JobProgress: {'identifier': 'cone_stellation', 'progress': 'build'}
+[0.010285] (cone_stellation) Command: {'cmd': ['/usr/local/bin/cmake', '--build', '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation', '--', '-j16', '-l16'], 'cwd': '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation', 'env': OrderedDict([('USER', 'user1'), ('LC_TIME', 'ko_KR.UTF-8'), ('CLAUDE_CODE_ENTRYPOINT', 'cli'), ('UV_ACTIVE', '1'), ('GIT_EDITOR', 'true'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu:/usr/local/cuda/lib64:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros/lib:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext/lib:/home/user1/ROS2_Workspace/GLIM_ws/install/glim/lib:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros/lib:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/calico/lib:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam/lib:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps/lib:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs/lib:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('LESS', '-R'), ('HOME', '/home/user1'), ('CONDA_SHLVL', '0'), ('OLDPWD', '/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation'), ('DESKTOP_SESSION', 'ubuntu'), ('NVM_BIN', '/home/user1/.nvm/versions/node/v22.17.0/bin'), ('LSCOLORS', 'Gxfxcxdxbxegedabagacad'), ('NVM_INC', '/home/user1/.nvm/versions/node/v22.17.0/include/node'), ('ZSH', '/home/user1/.oh-my-zsh'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('DIRENV_DIFF', 'eJzsVk1z4jgQ_S86QxQDCR9Vc3CIF8ym-DDgGbioZFnYCrZk9AEDU_nvWwSYDUx2We96b9ysRu_pdVPd_X6ADLR-gKE96YIWgLFIKTSKSgumjLOFkBGtQiJ4iAPGW9AoCRNBcAKJCTF8j33AeINxBX0VcqkyTCiUQlXQRkHGlcZJAmPDIywZ5ggrJQjDmgl-IBGZ3l-HsUmDhP5CfHd49EKDujj_PP75w_vH4fgzFuGUqo-4Y0BxnB0Bxy9QAsPZpDvof1Kfi1yFUZrKj9keI4pyJSRKVaSOzyUsgNlWx4JX76x7GDKlyxkmSxztVVwvZ2BYEsKtSASS4h8hTpJOmEsJimmaS8IZ4SG1ghhNkIjvxVJKTdJiGA-Vfz8RnFKJUcJCLNHCKCZytcJfcRQkkWvJMkQSRrmGSpI80s6wxcj5tPH_--QoRlxIcYgkJUvBGY_yqDpHFiSHEKQSnKJI4izOo-YMWFjzEKO0SBHjmsrF_sLfE1_M8XyXr05H8FYCfL-vnl3P6fvo2fVAC5SvpwNKJ8hXe9LuOmPQArT3Xe1ercFmZ0_tQbtO3fpjbR3Hg-Zy7oyizpMYr5oWSdxVxePB3GUvZufXq3ZWRq9WvTrqy3Vv428HTyZMLTKUjabZLLbIWlUrk05_Mo7XFWtDHgbJdmXIffM3XfZFsHZ7s1rtiZRfSa2BxtrgVM7rWtbXsq5nTDu_BytPiqmx7m1ffiPRlJK5Z0cj1Jh1Ng-O9zBexm0_fvQ8_9vOFcnj1On0HUu1m_NGs7l9trqLbcOqLaurxq5h20OE3N7Ty3z05ct-mV1dY6e__25N-fqXNXzzBLk8wXkx_21H3pzFzVncnMXNWdycxf_pLEpg6iO7PXF9B7SABUrAd73J1H5BTt_PMebB29sfAQAA__9-rYqa'), ('PAGER', 'less'), ('LC_MONETARY', 'ko_KR.UTF-8'), ('MANAGERPID', '1885'), ('P9K_TTY', 'old'), ('SYSTEMD_EXEC_PID', '2443'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('TERMINATOR_DBUS_NAME', 'net.tenshu.Terminator23558193cd9818af7fe4d2c2f5bd9d00f'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '3236'), ('NVM_DIR', '/home/user1/.nvm'), ('COLCON_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install:/home/user1/ROS2_Workspace/ouster_ws/install:/home/user1/ROS2_Workspace/ros2_ws/install'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'user1'), ('_', '/home/user1/ROS2_Workspace/ros2_ws/.venv/bin/colcon'), ('_P9K_SSH_TTY', '/dev/pts/2'), ('JOURNAL_STREAM', '8:17169'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'user1'), ('TERM', 'xterm-256color'), ('OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE', 'delta'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/user1/.nvm/versions/node/v22.17.0/bin:/home/user1/ROS2_Workspace/ros2_ws/.venv/bin:/home/user1/miniforge3/condabin:/usr/local/cuda/bin:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association/bin:/opt/ros/humble/bin:/home/user1/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin'), ('SESSION_MANAGER', 'local/user1-LOQ-15ARP9:@/tmp/.ICE-unix/2176,unix/user1-LOQ-15ARP9:/tmp/.ICE-unix/2176'), ('INVOCATION_ID', '1b1343c6ac994d10b3731761f6e548c6'), ('DIRENV_WATCHES', 'eJxszj1OwzAUAOC7eI764vhhO9kZEQgGBoSq91clIq2RnbZIiLuzV73Ap-_j173QNrvJwVyOBudm1cPr89uwfy_1q32TGNTShv21wc5Olyquc09Ft-VobvIJY44Bc-jc48_StuamrZ7tr7vr7tYitEKbqRroUu10AVrXcgUecZRAgQ_8YGw5ER5SkhCVh6RRVXzIol6UEGNE1sC9Z899yD1Hfy814k3q8z8AAP__IJBLZQ=='), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'ko_KR.UTF-8'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('COREPACK_ENABLE_AUTO_PIN', '0'), ('MAMBA_ROOT_PREFIX', '/home/user1/miniforge3'), ('DISPLAY', ':1'), ('TERMINATOR_DBUS_PATH', '/net/tenshu/Terminator2'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('IBUS_DISABLE_SNOOPER', '1'), ('OUSTER_ROS_PATH', '/home/user1/ouster_ws/src/ouster-ros'), ('LC_TELEPHONE', 'ko_KR.UTF-8'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '19'), ('AMENT_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext:/home/user1/ROS2_Workspace/GLIM_ws/install/glim:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_bringup:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/calico:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam:/home/user1/ROS2_Workspace/ros2_ws/install/ublox:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps:/home/user1/ROS2_Workspace/ros2_ws/install/fix2nmea:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_serialization:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/myahrs_ros2_driver:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/gps_imu_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/filc:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation:/home/user1/ROS2_Workspace/ros2_ws/install/cone_detection:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/user1/miniforge3/bin/python'), ('SHELL', '/usr/bin/zsh'), ('LC_NAME', 'ko_KR.UTF-8'), ('TERMINATOR_UUID', 'urn:uuid:74b0cfbe-b563-451a-934c-01861ad1afb5'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('DIRENV_DIR', '-/home/user1/ROS2_Workspace/ros2_ws'), ('LC_MEASUREMENT', 'ko_KR.UTF-8'), ('CLAUDECODE', '1'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo-11'), ('MAMBA_EXE', '/home/user1/miniforge3/bin/mamba'), ('LC_IDENTIFICATION', 'ko_KR.UTF-8'), ('P9K_SSH', '0'), ('VIRTUAL_ENV', '/home/user1/ROS2_Workspace/ros2_ws/.venv'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/user1/ROS2_Workspace/ros2_ws/build/cone_stellation'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/user1/miniforge3/bin/conda'), ('_P9K_TTY', '/dev/pts/2'), ('NVM_CD_FLAGS', '-q'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/user1/ROS2_Workspace/ros2_ws/.venv/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs/local/lib/python3.10/dist-packages:/home/user1/ROS2_Workspace/ros2_ws/build/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/ntrip_client/src:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/build/cc_slam_graph:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph/lib/python3.10/site-packages:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('LC_NUMERIC', 'ko_KR.UTF-8'), ('LC_PAPER', 'ko_KR.UTF-8'), ('COLCON', '1'), ('VTE_VERSION', '6800'), ('CMAKE_PREFIX_PATH', '/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ros:/home/user1/ROS2_Workspace/GLIM_ws/install/glim_ext:/home/user1/ROS2_Workspace/GLIM_ws/install/glim:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_ros:/home/user1/ROS2_Workspace/ouster_ws/install/ouster_sensor_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_bringup:/home/user1/ROS2_Workspace/ros2_ws/install/calico:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/usb_cam:/home/user1/ROS2_Workspace/ros2_ws/install/ublox:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_gps:/home/user1/ROS2_Workspace/ros2_ws/install/fix2nmea:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/ublox_serialization:/home/user1/ROS2_Workspace/ros2_ws/install/rtcm_msgs:/home/user1/ROS2_Workspace/ros2_ws/install/myahrs_ros2_driver:/home/user1/ROS2_Workspace/ros2_ws/install/gps_imu_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/filc:/home/user1/ROS2_Workspace/ros2_ws/install/cone_stellation:/home/user1/ROS2_Workspace/ros2_ws/install/cone_detection:/home/user1/ROS2_Workspace/ros2_ws/install/custom_interface:/home/user1/ROS2_Workspace/ros2_ws/install/yolo_ros:/home/user1/ROS2_Workspace/ros2_ws/install/ros2_camera_lidar_fusion:/home/user1/ROS2_Workspace/ros2_ws/install/ntrip_client:/home/user1/ROS2_Workspace/ros2_ws/install/hungarian_association:/home/user1/ROS2_Workspace/ros2_ws/install/dead_reckoning:/home/user1/ROS2_Workspace/ros2_ws/install/cc_slam_graph:/opt/ros/humble')]), 'shell': False}
+[0.045190] (cone_stellation) StdoutLine: {'line': b'[ 16%] Building CXX object CMakeFiles/cone_stellation_core.dir/src/loop_closure_detector.cpp.o\n'}
+[0.099576] (-) TimerEvent: {}
+[0.199803] (-) TimerEvent: {}
+[0.300030] (-) TimerEvent: {}
+[0.400199] (-) TimerEvent: {}
+[0.500410] (-) TimerEvent: {}
+[0.600982] (-) TimerEvent: {}
+[0.701209] (-) TimerEvent: {}
+[0.801433] (-) TimerEvent: {}
+[0.901656] (-) TimerEvent: {}
+[1.001875] (-) TimerEvent: {}
+[1.102108] (-) TimerEvent: {}
+[1.202350] (-) TimerEvent: {}
+[1.302578] (-) TimerEvent: {}
+[1.402779] (-) TimerEvent: {}
+[1.503332] (-) TimerEvent: {}
+[1.603562] (-) TimerEvent: {}
+[1.703786] (-) TimerEvent: {}
+[1.804004] (-) TimerEvent: {}
+[1.904230] (-) TimerEvent: {}
+[2.004464] (-) TimerEvent: {}
+[2.104690] (-) TimerEvent: {}
+[2.204911] (-) TimerEvent: {}
+[2.305126] (-) TimerEvent: {}
+[2.405364] (-) TimerEvent: {}
+[2.505591] (-) TimerEvent: {}
+[2.605813] (-) TimerEvent: {}
+[2.706039] (-) TimerEvent: {}
+[2.806225] (-) TimerEvent: {}
+[2.906460] (-) TimerEvent: {}
+[3.006682] (-) TimerEvent: {}
+[3.106903] (-) TimerEvent: {}
+[3.207099] (-) TimerEvent: {}
+[3.307312] (-) TimerEvent: {}
+[3.407519] (-) TimerEvent: {}
+[3.507745] (-) TimerEvent: {}
+[3.607960] (-) TimerEvent: {}
+[3.708202] (-) TimerEvent: {}
+[3.808396] (-) TimerEvent: {}
+[3.908614] (-) TimerEvent: {}
+[3.936360] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function \xe2\x80\x98cone_stellation::ConstellationDescriptor cone_stellation::LoopClosureDetector::build_descriptor(const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, const std::vector<gtsam::Pose2>&)\xe2\x80\x99:\n'}
+[3.936530] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:392:31: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::vector<cone_stellation::ConstellationDescriptor::ConeInfo>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} and \xe2\x80\x98int\xe2\x80\x99 [-Wsign-compare]\n'}
+[3.936580] (cone_stellation) StderrLine: {'line': b'  392 |   if (descriptor.cones.size() > config_.max_cones_per_constellation) {\n'}
+[3.936629] (cone_stellation) StderrLine: {'line': b'      |       ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[3.981233] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function \xe2\x80\x98bool cone_stellation::LoopClosureDetector::validate_loop_closure(const Ptr&, const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, cone_stellation::LoopCandidate&)\xe2\x80\x99:\n'}
+[3.981463] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:659:32: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::vector<std::pair<int, int> >::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} and \xe2\x80\x98int\xe2\x80\x99 [-Wsign-compare]\n'}
+[3.981565] (cone_stellation) StderrLine: {'line': b'  659 |   if (tentative_matches.size() < config_.min_matched_cones) {\n'}
+[3.981654] (cone_stellation) StderrLine: {'line': b'      |       ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[3.984147] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function \xe2\x80\x98bool cone_stellation::LoopClosureDetector::estimate_relative_pose(const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<std::pair<int, int> >&, gtsam::Pose2&, std::vector<int>&)\xe2\x80\x99:\n'}
+[3.984254] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:747:32: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::vector<int>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} and \xe2\x80\x98int\xe2\x80\x99 [-Wsign-compare]\n'}
+[3.984302] (cone_stellation) StderrLine: {'line': b'  747 |     if (current_inliers.size() > best_inlier_count) {\n'}
+[3.984342] (cone_stellation) StderrLine: {'line': b'      |         ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~\n'}
+[4.008735] (-) TimerEvent: {}
+[4.108957] (-) TimerEvent: {}
+[4.209192] (-) TimerEvent: {}
+[4.309417] (-) TimerEvent: {}
+[4.409610] (-) TimerEvent: {}
+[4.509825] (-) TimerEvent: {}
+[4.610045] (-) TimerEvent: {}
+[4.710237] (-) TimerEvent: {}
+[4.810459] (-) TimerEvent: {}
+[4.910688] (-) TimerEvent: {}
+[5.010919] (-) TimerEvent: {}
+[5.111157] (-) TimerEvent: {}
+[5.211383] (-) TimerEvent: {}
+[5.311592] (-) TimerEvent: {}
+[5.411819] (-) TimerEvent: {}
+[5.512002] (-) TimerEvent: {}
+[5.612237] (-) TimerEvent: {}
+[5.712466] (-) TimerEvent: {}
+[5.812648] (-) TimerEvent: {}
+[5.912842] (-) TimerEvent: {}
+[6.013054] (-) TimerEvent: {}
+[6.113292] (-) TimerEvent: {}
+[6.213507] (-) TimerEvent: {}
+[6.313742] (-) TimerEvent: {}
+[6.413943] (-) TimerEvent: {}
+[6.512330] (cone_stellation) StdoutLine: {'line': b'[ 33%] Linking CXX shared library libcone_stellation_core.so\n'}
+[6.513999] (-) TimerEvent: {}
+[6.614173] (-) TimerEvent: {}
+[6.714374] (-) TimerEvent: {}
+[6.725178] (cone_stellation) StdoutLine: {'line': b'[ 66%] Built target cone_stellation_core\n'}
+[6.749244] (cone_stellation) StdoutLine: {'line': b'[ 83%] Building CXX object CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o\n'}
+[6.814505] (-) TimerEvent: {}
+[6.914710] (-) TimerEvent: {}
+[7.014918] (-) TimerEvent: {}
+[7.115156] (-) TimerEvent: {}
+[7.215383] (-) TimerEvent: {}
+[7.315631] (-) TimerEvent: {}
+[7.415841] (-) TimerEvent: {}
+[7.516033] (-) TimerEvent: {}
+[7.616245] (-) TimerEvent: {}
+[7.716990] (-) TimerEvent: {}
+[7.817206] (-) TimerEvent: {}
+[7.917431] (-) TimerEvent: {}
+[8.017653] (-) TimerEvent: {}
+[8.117871] (-) TimerEvent: {}
+[8.218620] (-) TimerEvent: {}
+[8.319441] (-) TimerEvent: {}
+[8.419665] (-) TimerEvent: {}
+[8.519882] (-) TimerEvent: {}
+[8.620109] (-) TimerEvent: {}
+[8.720348] (-) TimerEvent: {}
+[8.820549] (-) TimerEvent: {}
+[8.920765] (-) TimerEvent: {}
+[9.020983] (-) TimerEvent: {}
+[9.121205] (-) TimerEvent: {}
+[9.221510] (-) TimerEvent: {}
+[9.321719] (-) TimerEvent: {}
+[9.421931] (-) TimerEvent: {}
+[9.522173] (-) TimerEvent: {}
+[9.622408] (-) TimerEvent: {}
+[9.722638] (-) TimerEvent: {}
+[9.822847] (-) TimerEvent: {}
+[9.923040] (-) TimerEvent: {}
+[10.023242] (-) TimerEvent: {}
+[10.123473] (-) TimerEvent: {}
+[10.223703] (-) TimerEvent: {}
+[10.323934] (-) TimerEvent: {}
+[10.424174] (-) TimerEvent: {}
+[10.524400] (-) TimerEvent: {}
+[10.624599] (-) TimerEvent: {}
+[10.724788] (-) TimerEvent: {}
+[10.824982] (-) TimerEvent: {}
+[10.925208] (-) TimerEvent: {}
+[11.025421] (-) TimerEvent: {}
+[11.125605] (-) TimerEvent: {}
+[11.225824] (-) TimerEvent: {}
+[11.326051] (-) TimerEvent: {}
+[11.426272] (-) TimerEvent: {}
+[11.526494] (-) TimerEvent: {}
+[11.626723] (-) TimerEvent: {}
+[11.726942] (-) TimerEvent: {}
+[11.827187] (-) TimerEvent: {}
+[11.927413] (-) TimerEvent: {}
+[12.027617] (-) TimerEvent: {}
+[12.127848] (-) TimerEvent: {}
+[12.228062] (-) TimerEvent: {}
+[12.328283] (-) TimerEvent: {}
+[12.354881] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:14:\n'}
+[12.355129] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp: In member function \xe2\x80\x98virtual Eigen::Isometry3d cone_stellation::ConeOdometry2D::estimate(const ConstPtr&, const ConstPtr&)\xe2\x80\x99:\n'}
+[12.355307] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp:59:33: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::vector<std::pair<int, int> >::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} and \xe2\x80\x98int\xe2\x80\x99 [-Wsign-compare]\n'}
+[12.355426] (cone_stellation) StderrLine: {'line': b'   59 |     if (correspondences_.size() < config_.min_correspondences) {\n'}
+[12.355529] (cone_stellation) StderrLine: {'line': b'      |         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[12.428406] (-) TimerEvent: {}
+[12.528608] (-) TimerEvent: {}
+[12.628832] (-) TimerEvent: {}
+[12.681679] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.681904] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.682009] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.682097] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.682212] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.682294] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.682367] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.682438] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.682523] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.682617] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.682695] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.682766] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:\n'}
+[12.682853] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:508:5: error: expected unqualified-id before \xe2\x80\x98do\xe2\x80\x99\n'}
+[12.682924] (cone_stellation) StderrLine: {'line': b'  508 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),\n'}
+[12.682992] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~\n'}
+[12.683058] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:508:5: error: expected unqualified-id before \xe2\x80\x98while\xe2\x80\x99\n'}
+[12.683123] (cone_stellation) StderrLine: {'line': b'  508 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),\n'}
+[12.683215] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~\n'}
+[12.683284] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.683350] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:514:5: error: expected unqualified-id before \xe2\x80\x98if\xe2\x80\x99\n'}
+[12.683414] (cone_stellation) StderrLine: {'line': b'  514 |     if (!observed_landmark_ids.empty()) {\n'}
+[12.683464] (cone_stellation) StderrLine: {'line': b'      |     ^~\n'}
+[12.683497] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:524:5: error: expected unqualified-id before \xe2\x80\x98if\xe2\x80\x99\n'}
+[12.683531] (cone_stellation) StderrLine: {'line': b'  524 |     if (config_.enable_inter_landmark_factors && observed_landmark_ids.size() >= 2) {\n'}
+[12.683566] (cone_stellation) StderrLine: {'line': b'      |     ^~\n'}
+[12.683598] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:529:7: error: expected unqualified-id before \xe2\x80\x98else\xe2\x80\x99\n'}
+[12.683632] (cone_stellation) StderrLine: {'line': b'  529 |     } else {\n'}
+[12.683664] (cone_stellation) StderrLine: {'line': b'      |       ^~~~\n'}
+[12.683697] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:537:5: error: expected unqualified-id before \xe2\x80\x98for\xe2\x80\x99\n'}
+[12.683730] (cone_stellation) StderrLine: {'line': b'  537 |     for (const auto& pattern : obs_set.detected_patterns) {\n'}
+[12.683764] (cone_stellation) StderrLine: {'line': b'      |     ^~~\n'}
+[12.683796] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.683828] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.683861] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.683893] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.683926] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.683959] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.683992] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.684024] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.684055] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.684087] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.684119] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.684166] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:541:5: error: expected unqualified-id before \xe2\x80\x98do\xe2\x80\x99\n'}
+[12.684217] (cone_stellation) StderrLine: {'line': b'  541 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),\n'}
+[12.684253] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~\n'}
+[12.684286] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:541:5: error: expected unqualified-id before \xe2\x80\x98while\xe2\x80\x99\n'}
+[12.684319] (cone_stellation) StderrLine: {'line': b'  541 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),\n'}
+[12.684353] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~\n'}
+[12.684386] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.684423] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:543:4: error: expected \xe2\x80\x98;\xe2\x80\x99 after class definition\n'}
+[12.684470] (cone_stellation) StderrLine: {'line': b'  543 |   }\n'}
+[12.684503] (cone_stellation) StderrLine: {'line': b'      |    ^\n'}
+[12.684536] (cone_stellation) StderrLine: {'line': b'      |    ;\n'}
+[12.684568] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In constructor \xe2\x80\x98cone_stellation::ConeMapping::ConeMapping(const cone_stellation::ConeMapping::Config&)\xe2\x80\x99:\n'}
+[12.684603] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:81:7: error: class \xe2\x80\x98cone_stellation::ConeMapping\xe2\x80\x99 does not have any field named \xe2\x80\x98config_\xe2\x80\x99\n'}
+[12.684636] (cone_stellation) StderrLine: {'line': b'   81 |     : config_(config),\n'}
+[12.684669] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~\n'}
+[12.684708] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:82:7: error: class \xe2\x80\x98cone_stellation::ConeMapping\xe2\x80\x99 does not have any field named \xe2\x80\x98next_pose_id_\xe2\x80\x99\n'}
+[12.684746] (cone_stellation) StderrLine: {'line': b'   82 |       next_pose_id_(0),\n'}
+[12.684785] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~\n'}
+[12.684819] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:83:7: error: class \xe2\x80\x98cone_stellation::ConeMapping\xe2\x80\x99 does not have any field named \xe2\x80\x98next_landmark_id_\xe2\x80\x99\n'}
+[12.684859] (cone_stellation) StderrLine: {'line': b'   83 |       next_landmark_id_(0),\n'}
+[12.684893] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~\n'}
+[12.684927] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:84:7: error: class \xe2\x80\x98cone_stellation::ConeMapping\xe2\x80\x99 does not have any field named \xe2\x80\x98next_tentative_id_\xe2\x80\x99\n'}
+[12.684961] (cone_stellation) StderrLine: {'line': b'   84 |       next_tentative_id_(0),\n'}
+[12.684994] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~~\n'}
+[12.685027] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:85:7: error: class \xe2\x80\x98cone_stellation::ConeMapping\xe2\x80\x99 does not have any field named \xe2\x80\x98frames_since_optimization_\xe2\x80\x99\n'}
+[12.685062] (cone_stellation) StderrLine: {'line': b'   85 |       frames_since_optimization_(0) {\n'}
+[12.685094] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[12.688789] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[12.688936] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.689019] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.689092] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.689192] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.689271] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.689340] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.689409] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.689463] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.689499] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.689534] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.689567] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.689600] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:89:17: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98config\xe2\x80\x99?\n'}
+[12.689635] (cone_stellation) StderrLine: {'line': b'   89 |                 config_.enable_inter_landmark_factors ? "ENABLED" : "DISABLED");\n'}
+[12.689669] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~\n'}
+[12.694980] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.695102] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:93:35: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98config\xe2\x80\x99?\n'}
+[12.695204] (cone_stellation) StderrLine: {'line': b'   93 |     params.relinearizeThreshold = config_.isam2_relinearize_threshold;\n'}
+[12.695276] (cone_stellation) StderrLine: {'line': b'      |                                   ^~~~~~~\n'}
+[12.695345] (cone_stellation) StderrLine: {'line': b'      |                                   config\n'}
+[12.701565] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:100:5: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[12.701821] (cone_stellation) StderrLine: {'line': b'  100 |     isam2_ = std::make_shared<gtsam::ISAM2>(params);\n'}
+[12.701925] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~\n'}
+[12.718202] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:121:9: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope\n'}
+[12.718424] (cone_stellation) StderrLine: {'line': b'  121 |         loop_detector_ = std::make_shared<LoopClosureDetector>(loop_config);\n'}
+[12.718513] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~~~~~\n'}
+[12.728908] (-) TimerEvent: {}
+[12.733629] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:127:9: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope\n'}
+[12.733826] (cone_stellation) StderrLine: {'line': b'  127 |         loop_detector_ = nullptr;\n'}
+[12.733926] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~~~~~\n'}
+[12.745256] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:130:11: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope\n'}
+[12.745440] (cone_stellation) StderrLine: {'line': b'  130 |       if (loop_detector_) {\n'}
+[12.745539] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~\n'}
+[12.758183] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:141:7: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope\n'}
+[12.758441] (cone_stellation) StderrLine: {'line': b'  141 |       loop_detector_ = nullptr;\n'}
+[12.758541] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~\n'}
+[12.769424] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::ConeMapping::add_keyframe(const Ptr&)\xe2\x80\x99:\n'}
+[12.769614] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:151:19: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_next_pose_id\xe2\x80\x99?\n'}
+[12.769717] (cone_stellation) StderrLine: {'line': b'  151 |       frame->id = next_pose_id_;\n'}
+[12.769800] (cone_stellation) StderrLine: {'line': b'      |                   ^~~~~~~~~~~~~\n'}
+[12.769880] (cone_stellation) StderrLine: {'line': b'      |                   get_next_pose_id\n'}
+[12.779411] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[12.779583] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.779680] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.779764] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.779843] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.779920] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.779998] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.780074] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.780162] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.780257] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.780339] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.780413] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.780489] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:156:28: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_next_pose_id\xe2\x80\x99?\n'}
+[12.780566] (cone_stellation) StderrLine: {'line': b'  156 |                 frame->id, next_pose_id_);\n'}
+[12.780624] (cone_stellation) StderrLine: {'line': b'      |                            ^~~~~~~~~~~~~\n'}
+[12.788857] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.789054] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:159:33: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_next_pose_id\xe2\x80\x99?\n'}
+[12.789183] (cone_stellation) StderrLine: {'line': b"  159 |     gtsam::Symbol pose_key('x', next_pose_id_);\n"}
+[12.789280] (cone_stellation) StderrLine: {'line': b'      |                                 ^~~~~~~~~~~~~\n'}
+[12.789359] (cone_stellation) StderrLine: {'line': b'      |                                 get_next_pose_id\n'}
+[12.796113] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:185:5: error: \xe2\x80\x98frames_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98frame\xe2\x80\x99?\n'}
+[12.796382] (cone_stellation) StderrLine: {'line': b'  185 |     frames_[next_pose_id_] = frame;\n'}
+[12.796484] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~\n'}
+[12.796571] (cone_stellation) StderrLine: {'line': b'      |     frame\n'}
+[12.802465] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[12.802618] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.802718] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.802812] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.802904] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.802979] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.803055] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.803128] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.803232] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.803314] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.803386] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.803438] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.803471] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:196:17: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98Config\xe2\x80\x99?\n'}
+[12.803508] (cone_stellation) StderrLine: {'line': b'  196 |                 config_.enable_loop_closure ? "true" : "false",\n'}
+[12.803561] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~\n'}
+[12.810099] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:197:17: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98loop_detected\xe2\x80\x99?\n'}
+[12.810356] (cone_stellation) StderrLine: {'line': b'  197 |                 loop_detector_ ? "valid" : "NULL",\n'}
+[12.810459] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~~~~~~~~\n'}
+[12.816007] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.816205] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:200:9: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98Config\xe2\x80\x99?\n'}
+[12.816315] (cone_stellation) StderrLine: {'line': b'  200 |     if (config_.enable_loop_closure && loop_detector_ && next_pose_id_ > config_.min_keyframes_apart) {\n'}
+[12.816401] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~\n'}
+[12.816479] (cone_stellation) StderrLine: {'line': b'      |         Config\n'}
+[12.824316] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:200:40: error: \xe2\x80\x98loop_detector_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98loop_detected\xe2\x80\x99?\n'}
+[12.824509] (cone_stellation) StderrLine: {'line': b'  200 |     if (config_.enable_loop_closure && loop_detector_ && next_pose_id_ > config_.min_keyframes_apart) {\n'}
+[12.824610] (cone_stellation) StderrLine: {'line': b'      |                                        ^~~~~~~~~~~~~~\n'}
+[12.824696] (cone_stellation) StderrLine: {'line': b'      |                                        loop_detected\n'}
+[12.829010] (-) TimerEvent: {}
+[12.837413] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:234:45: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_landmarks\xe2\x80\x99?\n'}
+[12.837579] (cone_stellation) StderrLine: {'line': b'  234 |         loop_detector_->add_keyframe(frame, landmarks_, recent_poses);\n'}
+[12.837677] (cone_stellation) StderrLine: {'line': b'      |                                             ^~~~~~~~~~\n'}
+[12.837759] (cone_stellation) StderrLine: {'line': b'      |                                             get_landmarks\n'}
+[12.855380] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:251:13: error: \xe2\x80\x98add_loop_closure_factor\xe2\x80\x99 was not declared in this scope\n'}
+[12.855628] (cone_stellation) StderrLine: {'line': b'  251 |             add_loop_closure_factor(candidate);\n'}
+[12.855728] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~~~~~~~~~~~~\n'}
+[12.876224] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:267:5: error: \xe2\x80\x98frames_since_optimization_\xe2\x80\x99 was not declared in this scope\n'}
+[12.876423] (cone_stellation) StderrLine: {'line': b'  267 |     frames_since_optimization_++;\n'}
+[12.876519] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[12.882828] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[12.882996] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.883094] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.883200] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.883280] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.883356] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.883431] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.883514] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.883586] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.883659] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.883731] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.883804] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.883857] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:270:45: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98Config\xe2\x80\x99?\n'}
+[12.883908] (cone_stellation) StderrLine: {'line': b'  270 |                 frames_since_optimization_, config_.optimize_every_n_frames,\n'}
+[12.883943] (cone_stellation) StderrLine: {'line': b'      |                                             ^~~~~~~\n'}
+[12.888392] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.888546] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:273:39: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98Config\xe2\x80\x99?\n'}
+[12.888650] (cone_stellation) StderrLine: {'line': b'  273 |     if (frames_since_optimization_ >= config_.optimize_every_n_frames ||\n'}
+[12.888732] (cone_stellation) StderrLine: {'line': b'      |                                       ^~~~~~~\n'}
+[12.888808] (cone_stellation) StderrLine: {'line': b'      |                                       Config\n'}
+[12.895008] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:279:9: error: \xe2\x80\x98optimize\xe2\x80\x99 was not declared in this scope\n'}
+[12.895213] (cone_stellation) StderrLine: {'line': b'  279 |         optimize();\n'}
+[12.895319] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~\n'}
+[12.905334] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[12.905572] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[12.905705] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[12.905798] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[12.905881] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[12.905959] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[12.906036] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[12.906110] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[12.906206] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[12.906293] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[12.906371] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[12.906444] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[12.906518] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:295:17: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[12.906608] (cone_stellation) StderrLine: {'line': b'  295 |                 new_factors_.size(),\n'}
+[12.906643] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~~~~~~\n'}
+[12.914292] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:296:17: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_landmarks\xe2\x80\x99?\n'}
+[12.914518] (cone_stellation) StderrLine: {'line': b'  296 |                 landmarks_.size());\n'}
+[12.914616] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~~~~\n'}
+[12.922380] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[12.922553] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98gtsam::Values cone_stellation::ConeMapping::get_current_estimate() const\xe2\x80\x99:\n'}
+[12.922662] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:303:12: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[12.922747] (cone_stellation) StderrLine: {'line': b'  303 |     return isam2_->calculateEstimate();\n'}
+[12.922825] (cone_stellation) StderrLine: {'line': b'      |            ^~~~~~\n'}
+[12.929112] (-) TimerEvent: {}
+[12.930122] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> > cone_stellation::ConeMapping::get_landmarks() const\xe2\x80\x99:\n'}
+[12.930298] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:310:12: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_landmarks\xe2\x80\x99?\n'}
+[12.930414] (cone_stellation) StderrLine: {'line': b'  310 |     return landmarks_;\n'}
+[12.930498] (cone_stellation) StderrLine: {'line': b'      |            ^~~~~~~~~~\n'}
+[12.930576] (cone_stellation) StderrLine: {'line': b'      |            get_landmarks\n'}
+[12.935933] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98gtsam::NonlinearFactorGraph cone_stellation::ConeMapping::get_factor_graph() const\xe2\x80\x99:\n'}
+[12.936112] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:318:12: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[12.936228] (cone_stellation) StderrLine: {'line': b'  318 |     return isam2_->getFactorsUnsafe();\n'}
+[12.936316] (cone_stellation) StderrLine: {'line': b'      |            ^~~~~~\n'}
+[12.951297] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98std::unordered_map<int, gtsam::Pose2> cone_stellation::ConeMapping::get_poses() const\xe2\x80\x99:\n'}
+[12.951501] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:326:19: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[12.951599] (cone_stellation) StderrLine: {'line': b'  326 |     auto values = isam2_->calculateEstimate();\n'}
+[12.951683] (cone_stellation) StderrLine: {'line': b'      |                   ^~~~~~\n'}
+[12.957517] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:328:36: error: \xe2\x80\x98frames_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98frame\xe2\x80\x99?\n'}
+[12.957671] (cone_stellation) StderrLine: {'line': b'  328 |     for (const auto& [id, frame] : frames_) {\n'}
+[12.957765] (cone_stellation) StderrLine: {'line': b'      |                                    ^~~~~~~\n'}
+[12.957848] (cone_stellation) StderrLine: {'line': b'      |                                    frame\n'}
+[12.957926] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:331:43: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[12.958033] (cone_stellation) StderrLine: {'line': b'  331 |         poses[id] = values.at<gtsam::Pose2>(pose_key);\n'}
+[12.958108] (cone_stellation) StderrLine: {'line': b'      |                                           ^\n'}
+[12.967217] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98int cone_stellation::ConeMapping::get_next_pose_id() const\xe2\x80\x99:\n'}
+[12.967424] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:341:12: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_next_pose_id\xe2\x80\x99?\n'}
+[12.967524] (cone_stellation) StderrLine: {'line': b'  341 |     return next_pose_id_;\n'}
+[12.967606] (cone_stellation) StderrLine: {'line': b'      |            ^~~~~~~~~~~~~\n'}
+[12.967685] (cone_stellation) StderrLine: {'line': b'      |            get_next_pose_id\n'}
+[12.977793] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::ConeMapping::add_prior_factor(const gtsam::Symbol&, const Ptr&)\xe2\x80\x99:\n'}
+[12.977997] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:355:5: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[12.978105] (cone_stellation) StderrLine: {'line': b'  355 |     new_factors_.add(gtsam::PriorFactor<gtsam::Pose2>(pose_key, pose2d, prior_noise));\n'}
+[12.978210] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~\n'}
+[12.989696] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:357:5: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[12.989864] (cone_stellation) StderrLine: {'line': b'  357 |     initial_values_.insert(pose_key, pose2d);\n'}
+[12.989960] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~~~~\n'}
+[12.998717] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::ConeMapping::add_odometry_factor(const gtsam::Symbol&, const Ptr&)\xe2\x80\x99:\n'}
+[12.998893] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:365:38: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98get_next_pose_id\xe2\x80\x99?\n'}
+[12.998993] (cone_stellation) StderrLine: {'line': b"  365 |     gtsam::Symbol prev_pose_key('x', next_pose_id_ - 1);\n"}
+[12.999076] (cone_stellation) StderrLine: {'line': b'      |                                      ^~~~~~~~~~~~~\n'}
+[12.999174] (cone_stellation) StderrLine: {'line': b'      |                                      get_next_pose_id\n'}
+[13.004694] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:368:30: error: \xe2\x80\x98frames_\xe2\x80\x99 was not declared in this scope\n'}
+[13.004871] (cone_stellation) StderrLine: {'line': b'  368 |     const auto& prev_frame = frames_[next_pose_id_ - 1];\n'}
+[13.004967] (cone_stellation) StderrLine: {'line': b'      |                              ^~~~~~~\n'}
+[13.010931] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:384:24: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98Config\xe2\x80\x99?\n'}
+[13.011113] (cone_stellation) StderrLine: {'line': b'  384 |         gtsam::Vector3(config_.odometry_noise, config_.odometry_noise,\n'}
+[13.011232] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~~\n'}
+[13.011318] (cone_stellation) StderrLine: {'line': b'      |                        Config\n'}
+[13.020985] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:387:5: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.021180] (cone_stellation) StderrLine: {'line': b'  387 |     new_factors_.emplace_shared<gtsam::BetweenFactor<gtsam::Pose2>>(\n'}
+[13.021292] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~\n'}
+[13.021377] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:387:66: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.021457] (cone_stellation) StderrLine: {'line': b'  387 |     new_factors_.emplace_shared<gtsam::BetweenFactor<gtsam::Pose2>>(\n'}
+[13.021542] (cone_stellation) StderrLine: {'line': b'      |                                                                  ^~\n'}
+[13.021622] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:388:9: warning: left operand of comma operator has no effect [-Wunused-value]\n'}
+[13.021700] (cone_stellation) StderrLine: {'line': b'  388 |         prev_pose_key, current_pose_key, odom_delta, odom_noise);\n'}
+[13.021776] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~~~~\n'}
+[13.021849] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:388:24: warning: right operand of comma operator has no effect [-Wunused-value]\n'}
+[13.021884] (cone_stellation) StderrLine: {'line': b'  388 |         prev_pose_key, current_pose_key, odom_delta, odom_noise);\n'}
+[13.021917] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~~~~~~~~~~~\n'}
+[13.026828] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:391:24: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[13.027008] (cone_stellation) StderrLine: {'line': b'  391 |     auto prev_values = isam2_->calculateEstimate();\n'}
+[13.027107] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~\n'}
+[13.027217] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:393:59: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.027305] (cone_stellation) StderrLine: {'line': b'  393 |       gtsam::Pose2 prev_pose = prev_values.at<gtsam::Pose2>(prev_pose_key);\n'}
+[13.027397] (cone_stellation) StderrLine: {'line': b'      |                                                           ^\n'}
+[13.029191] (-) TimerEvent: {}
+[13.038179] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:394:7: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.038394] (cone_stellation) StderrLine: {'line': b'  394 |       initial_values_.insert(current_pose_key, prev_pose * odom_delta);\n'}
+[13.038494] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~\n'}
+[13.050663] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:399:7: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.050869] (cone_stellation) StderrLine: {'line': b'  399 |       initial_values_.insert(current_pose_key,\n'}
+[13.050983] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~\n'}
+[13.065495] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::ConeMapping::process_cone_observations(const Ptr&, const gtsam::Symbol&)\xe2\x80\x99:\n'}
+[13.065682] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:422:5: error: \xe2\x80\x98tentative_to_landmark_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98TentativeLandmark\xe2\x80\x99?\n'}
+[13.065782] (cone_stellation) StderrLine: {'line': b'  422 |     tentative_to_landmark_.clear();\n'}
+[13.065873] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.065953] (cone_stellation) StderrLine: {'line': b'      |     TentativeLandmark\n'}
+[13.091006] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:429:25: error: \xe2\x80\x98associate_with_confirmed_landmark\xe2\x80\x99 was not declared in this scope\n'}
+[13.091244] (cone_stellation) StderrLine: {'line': b'  429 |       int landmark_id = associate_with_confirmed_landmark(obs, frame);\n'}
+[13.091344] (cone_stellation) StderrLine: {'line': b'      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.105207] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:434:9: error: \xe2\x80\x98add_observation_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeObservationFactor\xe2\x80\x99?\n'}
+[13.105409] (cone_stellation) StderrLine: {'line': b'  434 |         add_observation_factor(pose_key, landmark_id, obs);\n'}
+[13.105511] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.105584] (cone_stellation) StderrLine: {'line': b'      |         ConeObservationFactor\n'}
+[13.112587] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:436:9: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark_id\xe2\x80\x99?\n'}
+[13.112706] (cone_stellation) StderrLine: {'line': b'  436 |         landmarks_[landmark_id]->increment_observations();\n'}
+[13.112778] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~\n'}
+[13.112862] (cone_stellation) StderrLine: {'line': b'      |         landmark_id\n'}
+[13.119858] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:443:13: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark_id\xe2\x80\x99?\n'}
+[13.119970] (cone_stellation) StderrLine: {'line': b'  443 |         if (landmarks_.size() < 10 || tentative_landmarks_.empty()) {  // Reduced threshold\n'}
+[13.120039] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~\n'}
+[13.120103] (cone_stellation) StderrLine: {'line': b'      |             landmark_id\n'}
+[13.129262] (-) TimerEvent: {}
+[13.130569] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:443:39: error: \xe2\x80\x98tentative_landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98TentativeLandmark\xe2\x80\x99?\n'}
+[13.130714] (cone_stellation) StderrLine: {'line': b'  443 |         if (landmarks_.size() < 10 || tentative_landmarks_.empty()) {  // Reduced threshold\n'}
+[13.130796] (cone_stellation) StderrLine: {'line': b'      |                                       ^~~~~~~~~~~~~~~~~~~~\n'}
+[13.130883] (cone_stellation) StderrLine: {'line': b'      |                                       TentativeLandmark\n'}
+[13.140448] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:446:33: error: \xe2\x80\x98next_landmark_id_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98new_landmark_id\xe2\x80\x99?\n'}
+[13.140582] (cone_stellation) StderrLine: {'line': b'  446 |           int new_landmark_id = next_landmark_id_++;\n'}
+[13.140655] (cone_stellation) StderrLine: {'line': b'      |                                 ^~~~~~~~~~~~~~~~~\n'}
+[13.140721] (cone_stellation) StderrLine: {'line': b'      |                                 new_landmark_id\n'}
+[13.152741] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:452:11: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.152857] (cone_stellation) StderrLine: {'line': b'  452 |           initial_values_.insert(landmark_key, gtsam::Point2(world_pos));\n'}
+[13.152931] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~~\n'}
+[13.161978] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:457:13: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.162122] (cone_stellation) StderrLine: {'line': b'  457 |             new_factors_.emplace_shared<gtsam::PriorFactor<gtsam::Point2>>(\n'}
+[13.162230] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~\n'}
+[13.162304] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:457:73: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.162382] (cone_stellation) StderrLine: {'line': b'  457 |             new_factors_.emplace_shared<gtsam::PriorFactor<gtsam::Point2>>(\n'}
+[13.162447] (cone_stellation) StderrLine: {'line': b'      |                                                                         ^~\n'}
+[13.162510] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:458:17: warning: left operand of comma operator has no effect [-Wunused-value]\n'}
+[13.162577] (cone_stellation) StderrLine: {'line': b'  458 |                 landmark_key, gtsam::Point2(world_pos), prior_noise);\n'}
+[13.162657] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~~~~~~\n'}
+[13.176280] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:466:11: error: \xe2\x80\x98add_observation_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeObservationFactor\xe2\x80\x99?\n'}
+[13.176451] (cone_stellation) StderrLine: {'line': b'  466 |           add_observation_factor(pose_key, new_landmark_id, obs);\n'}
+[13.176524] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.176599] (cone_stellation) StderrLine: {'line': b'      |           ConeObservationFactor\n'}
+[13.201159] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:470:30: error: \xe2\x80\x98associate_with_tentative_landmark\xe2\x80\x99 was not declared in this scope\n'}
+[13.201337] (cone_stellation) StderrLine: {'line': b'  470 |           int tentative_id = associate_with_tentative_landmark(obs, frame);\n'}
+[13.201416] (cone_stellation) StderrLine: {'line': b'      |                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.221668] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:480:5: error: \xe2\x80\x98promote_tentative_landmarks\xe2\x80\x99 was not declared in this scope\n'}
+[13.221819] (cone_stellation) StderrLine: {'line': b'  480 |     promote_tentative_landmarks();\n'}
+[13.221916] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.229333] (-) TimerEvent: {}
+[13.235533] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:496:15: error: \xe2\x80\x98add_observation_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeObservationFactor\xe2\x80\x99?\n'}
+[13.235691] (cone_stellation) StderrLine: {'line': b'  496 |               add_observation_factor(pose_key, landmark_id, obs);\n'}
+[13.235783] (cone_stellation) StderrLine: {'line': b'      |               ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.235854] (cone_stellation) StderrLine: {'line': b'      |               ConeObservationFactor\n'}
+[13.241299] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98int cone_stellation::associate_with_confirmed_landmark(const cone_stellation::ConeObservation&, const Ptr&)\xe2\x80\x99:\n'}
+[13.241414] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:554:28: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.241485] (cone_stellation) StderrLine: {'line': b'  554 |     double best_distance = config_.max_association_distance;\n'}
+[13.241551] (cone_stellation) StderrLine: {'line': b'      |                            ^~~~~~~\n'}
+[13.245843] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:556:39: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark\xe2\x80\x99?\n'}
+[13.245950] (cone_stellation) StderrLine: {'line': b'  556 |     for (const auto& [id, landmark] : landmarks_) {\n'}
+[13.246018] (cone_stellation) StderrLine: {'line': b'      |                                       ^~~~~~~~~~\n'}
+[13.246082] (cone_stellation) StderrLine: {'line': b'      |                                       landmark\n'}
+[13.250611] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::add_observation_factor(const gtsam::Symbol&, int, const cone_stellation::ConeObservation&)\xe2\x80\x99:\n'}
+[13.250742] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:583:24: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.250822] (cone_stellation) StderrLine: {'line': b'  583 |         gtsam::Vector2(config_.cone_observation_noise, config_.cone_observation_noise));\n'}
+[13.250891] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~~\n'}
+[13.257441] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:587:5: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.257567] (cone_stellation) StderrLine: {'line': b'  587 |     new_factors_.emplace_shared<ConeObservationFactor>(\n'}
+[13.257637] (cone_stellation) StderrLine: {'line': b'      |     ^~~~~~~~~~~~\n'}
+[13.257722] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:587:54: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.257791] (cone_stellation) StderrLine: {'line': b'  587 |     new_factors_.emplace_shared<ConeObservationFactor>(\n'}
+[13.257866] (cone_stellation) StderrLine: {'line': b'      |                                                      ^\n'}
+[13.257931] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:588:9: warning: left operand of comma operator has no effect [-Wunused-value]\n'}
+[13.258024] (cone_stellation) StderrLine: {'line': b'  588 |         pose_key, landmark_key, gtsam::Point2(obs.position.x(), obs.position.y()), obs_noise);\n'}
+[13.258103] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~\n'}
+[13.258196] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:588:81: warning: right operand of comma operator has no effect [-Wunused-value]\n'}
+[13.258248] (cone_stellation) StderrLine: {'line': b'  588 |         pose_key, landmark_key, gtsam::Point2(obs.position.x(), obs.position.y()), obs_noise);\n'}
+[13.258282] (cone_stellation) StderrLine: {'line': b'      |                                                                                 ^\n'}
+[13.265016] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::create_inter_landmark_factors(const std::vector<int>&, const Ptr&)\xe2\x80\x99:\n'}
+[13.265146] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:620:13: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark_ids\xe2\x80\x99?\n'}
+[13.265229] (cone_stellation) StderrLine: {'line': b'  620 |         if (landmarks_.find(id1) != landmarks_.end() &&\n'}
+[13.265298] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~\n'}
+[13.265366] (cone_stellation) StderrLine: {'line': b'      |             landmark_ids\n'}
+[13.269511] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:629:9: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.269639] (cone_stellation) StderrLine: {'line': b'  629 |     if (config_.use_clustering) {\n'}
+[13.269713] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~\n'}
+[13.289500] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:630:7: error: \xe2\x80\x98create_clustered_inter_landmark_factors\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.289666] (cone_stellation) StderrLine: {'line': b'  630 |       create_clustered_inter_landmark_factors(landmark_ids, frame);\n'}
+[13.289713] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.289755] (cone_stellation) StderrLine: {'line': b'      |       create_inter_landmark_factors\n'}
+[13.304064] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:632:7: error: \xe2\x80\x98create_simple_inter_landmark_factors\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.304300] (cone_stellation) StderrLine: {'line': b'  632 |       create_simple_inter_landmark_factors(landmark_ids, frame);\n'}
+[13.304423] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.304522] (cone_stellation) StderrLine: {'line': b'      |       create_inter_landmark_factors\n'}
+[13.313261] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::create_clustered_inter_landmark_factors(const std::vector<int>&, const Ptr&)\xe2\x80\x99:\n'}
+[13.313417] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:654:25: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark_ids\xe2\x80\x99?\n'}
+[13.313537] (cone_stellation) StderrLine: {'line': b'  654 |       const auto& lm1 = landmarks_[landmark_ids[i]];\n'}
+[13.313621] (cone_stellation) StderrLine: {'line': b'      |                         ^~~~~~~~~~\n'}
+[13.313698] (cone_stellation) StderrLine: {'line': b'      |                         landmark_ids\n'}
+[13.329467] (-) TimerEvent: {}
+[13.331305] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:686:13: error: \xe2\x80\x98should_create_inter_landmark_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.331441] (cone_stellation) StderrLine: {'line': b'  686 |         if (should_create_inter_landmark_factor(cluster[i], cluster[i+1])) {\n'}
+[13.331539] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.331621] (cone_stellation) StderrLine: {'line': b'      |             create_inter_landmark_factors\n'}
+[13.344200] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:687:11: error: \xe2\x80\x98create_distance_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeDistanceFactor\xe2\x80\x99?\n'}
+[13.344377] (cone_stellation) StderrLine: {'line': b'  687 |           create_distance_factor(cluster[i], cluster[i+1], frame);\n'}
+[13.344481] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.344567] (cone_stellation) StderrLine: {'line': b'      |           ConeDistanceFactor\n'}
+[13.361180] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:694:13: error: \xe2\x80\x98should_create_inter_landmark_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.361362] (cone_stellation) StderrLine: {'line': b'  694 |         if (should_create_inter_landmark_factor(cluster[0], cluster.back())) {\n'}
+[13.361467] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.361543] (cone_stellation) StderrLine: {'line': b'      |             create_inter_landmark_factors\n'}
+[13.373735] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:695:11: error: \xe2\x80\x98create_distance_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeDistanceFactor\xe2\x80\x99?\n'}
+[13.373941] (cone_stellation) StderrLine: {'line': b'  695 |           create_distance_factor(cluster[0], cluster.back(), frame);\n'}
+[13.374038] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.374121] (cone_stellation) StderrLine: {'line': b'      |           ConeDistanceFactor\n'}
+[13.390619] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:709:15: error: \xe2\x80\x98should_create_inter_landmark_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.390810] (cone_stellation) StderrLine: {'line': b'  709 |           if (should_create_inter_landmark_factor(id1, id2)) {\n'}
+[13.390906] (cone_stellation) StderrLine: {'line': b'      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.390990] (cone_stellation) StderrLine: {'line': b'      |               create_inter_landmark_factors\n'}
+[13.403142] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:710:13: error: \xe2\x80\x98create_distance_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeDistanceFactor\xe2\x80\x99?\n'}
+[13.403317] (cone_stellation) StderrLine: {'line': b'  710 |             create_distance_factor(id1, id2, frame);\n'}
+[13.403439] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.403523] (cone_stellation) StderrLine: {'line': b'      |             ConeDistanceFactor\n'}
+[13.407819] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:718:27: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.407984] (cone_stellation) StderrLine: {'line': b'  718 |     if (factors_created > config_.max_inter_factors_per_frame) {\n'}
+[13.408078] (cone_stellation) StderrLine: {'line': b'      |                           ^~~~~~~\n'}
+[13.413582] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::create_simple_inter_landmark_factors(const std::vector<int>&, const Ptr&)\xe2\x80\x99:\n'}
+[13.413748] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:739:69: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.413852] (cone_stellation) StderrLine: {'line': b'  739 |     for (size_t i = 0; i < landmark_ids.size() && factors_created < config_.max_inter_factors_per_frame; ++i) {\n'}
+[13.413935] (cone_stellation) StderrLine: {'line': b'      |                                                                     ^~~~~~~\n'}
+[13.429570] (-) TimerEvent: {}
+[13.430513] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:744:13: error: \xe2\x80\x98should_create_inter_landmark_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98create_inter_landmark_factors\xe2\x80\x99?\n'}
+[13.430701] (cone_stellation) StderrLine: {'line': b'  744 |         if (should_create_inter_landmark_factor(id1, id2)) {\n'}
+[13.430801] (cone_stellation) StderrLine: {'line': b'      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.430883] (cone_stellation) StderrLine: {'line': b'      |             create_inter_landmark_factors\n'}
+[13.443279] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:745:11: error: \xe2\x80\x98create_distance_factor\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98ConeDistanceFactor\xe2\x80\x99?\n'}
+[13.443442] (cone_stellation) StderrLine: {'line': b'  745 |           create_distance_factor(id1, id2, frame);\n'}
+[13.443538] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.443619] (cone_stellation) StderrLine: {'line': b'      |           ConeDistanceFactor\n'}
+[13.443878] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:\n'}
+[13.444013] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:758:62: error: non-member function \xe2\x80\x98bool cone_stellation::should_create_inter_landmark_factor(int, int)\xe2\x80\x99 cannot have cv-qualifier\n'}
+[13.444130] (cone_stellation) StderrLine: {'line': b'  758 |   bool should_create_inter_landmark_factor(int id1, int id2) const {\n'}
+[13.444252] (cone_stellation) StderrLine: {'line': b'      |                                                              ^~~~~\n'}
+[13.451445] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98bool cone_stellation::should_create_inter_landmark_factor(int, int)\xe2\x80\x99:\n'}
+[13.451630] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:763:9: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope\n'}
+[13.451736] (cone_stellation) StderrLine: {'line': b'  763 |     if (landmarks_.find(id1) == landmarks_.end() || landmarks_.find(id2) == landmarks_.end()) {\n'}
+[13.451812] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~\n'}
+[13.458974] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:771:23: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope\n'}
+[13.459098] (cone_stellation) StderrLine: {'line': b'  771 |     const auto& lm1 = landmarks_.at(id1);\n'}
+[13.459232] (cone_stellation) StderrLine: {'line': b'      |                       ^~~~~~~~~~\n'}
+[13.464064] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[13.464195] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[13.464276] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[13.464358] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[13.464436] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[13.464502] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[13.464573] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[13.464639] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[13.464710] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[13.464773] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[13.464835] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[13.464897] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[13.464958] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:778:58: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.465021] (cone_stellation) StderrLine: {'line': b'  778 |                 id1, id2, co_obs_count, static_cast<int>(config_.min_covisibility_count));\n'}
+[13.465082] (cone_stellation) StderrLine: {'line': b'      |                                                          ^~~~~~~\n'}
+[13.468508] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[13.468610] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:780:24: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.468678] (cone_stellation) StderrLine: {'line': b'  780 |     if (co_obs_count < config_.min_covisibility_count) {\n'}
+[13.468754] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~~\n'}
+[13.473346] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[13.473451] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[13.473517] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[13.473593] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[13.473658] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[13.473727] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[13.473788] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[13.473851] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[13.473915] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[13.473979] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[13.474046] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[13.474108] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[13.474220] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:791:37: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.474275] (cone_stellation) StderrLine: {'line': b'  791 |                 id1, id2, distance, config_.min_landmark_distance, config_.max_landmark_distance);\n'}
+[13.474308] (cone_stellation) StderrLine: {'line': b'      |                                     ^~~~~~~\n'}
+[13.477351] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[13.477454] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:793:20: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.477522] (cone_stellation) StderrLine: {'line': b'  793 |     if (distance < config_.min_landmark_distance) {\n'}
+[13.477585] (cone_stellation) StderrLine: {'line': b'      |                    ^~~~~~~\n'}
+[13.481626] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:800:20: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.481746] (cone_stellation) StderrLine: {'line': b'  800 |     if (distance > config_.max_landmark_distance) {\n'}
+[13.481816] (cone_stellation) StderrLine: {'line': b'      |                    ^~~~~~~\n'}
+[13.488904] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::create_distance_factor(int, int, const Ptr&)\xe2\x80\x99:\n'}
+[13.489060] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:821:9: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope\n'}
+[13.489182] (cone_stellation) StderrLine: {'line': b'  821 |     if (landmarks_.find(id1) == landmarks_.end() || landmarks_.find(id2) == landmarks_.end()) {\n'}
+[13.489265] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~\n'}
+[13.493436] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:832:31: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[13.493561] (cone_stellation) StderrLine: {'line': b'  832 |       auto current_estimate = isam2_->calculateEstimate();\n'}
+[13.493633] (cone_stellation) StderrLine: {'line': b'      |                               ^~~~~~\n'}
+[13.502177] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:833:73: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.502321] (cone_stellation) StderrLine: {'line': b'  833 |       bool landmark1_exists = current_estimate.exists(landmark1_key) || initial_values_.exists(landmark1_key);\n'}
+[13.502410] (cone_stellation) StderrLine: {'line': b'      |                                                                         ^~~~~~~~~~~~~~~\n'}
+[13.507330] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:844:25: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark2_key\xe2\x80\x99?\n'}
+[13.507468] (cone_stellation) StderrLine: {'line': b'  844 |       const auto& lm1 = landmarks_.at(id1);\n'}
+[13.507558] (cone_stellation) StderrLine: {'line': b'      |                         ^~~~~~~~~~\n'}
+[13.507637] (cone_stellation) StderrLine: {'line': b'      |                         landmark2_key\n'}
+[13.511144] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:849:58: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.511274] (cone_stellation) StderrLine: {'line': b'  849 |       if (measured_distance < 0.1 || measured_distance > config_.max_landmark_distance) {\n'}
+[13.511353] (cone_stellation) StderrLine: {'line': b'      |                                                          ^~~~~~~\n'}
+[13.515474] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:856:28: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.515585] (cone_stellation) StderrLine: {'line': b'  856 |       double noise_sigma = config_.inter_landmark_distance_noise *\n'}
+[13.515655] (cone_stellation) StderrLine: {'line': b'      |                            ^~~~~~~\n'}
+[13.522650] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:861:7: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.522769] (cone_stellation) StderrLine: {'line': b'  861 |       new_factors_.emplace_shared<ConeDistanceFactor>(\n'}
+[13.522837] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~\n'}
+[13.522902] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:861:53: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.522967] (cone_stellation) StderrLine: {'line': b'  861 |       new_factors_.emplace_shared<ConeDistanceFactor>(\n'}
+[13.523030] (cone_stellation) StderrLine: {'line': b'      |                                                     ^\n'}
+[13.523092] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:11: warning: left operand of comma operator has no effect [-Wunused-value]\n'}
+[13.523189] (cone_stellation) StderrLine: {'line': b'  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);\n'}
+[13.523274] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~~\n'}
+[13.523338] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:41: warning: right operand of comma operator has no effect [-Wunused-value]\n'}
+[13.523466] (cone_stellation) StderrLine: {'line': b'  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);\n'}
+[13.523502] (cone_stellation) StderrLine: {'line': b'      |                                         ^~~~~~~~~~~~~~~~~\n'}
+[13.523543] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:60: warning: right operand of comma operator has no effect [-Wunused-value]\n'}
+[13.523576] (cone_stellation) StderrLine: {'line': b'  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);\n'}
+[13.523609] (cone_stellation) StderrLine: {'line': b'      |                                                            ^~~~~~~~~~~~~~\n'}
+[13.523642] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:819:77: warning: unused parameter \xe2\x80\x98frame\xe2\x80\x99 [-Wunused-parameter]\n'}
+[13.523676] (cone_stellation) StderrLine: {'line': b'  819 |   void create_distance_factor(int id1, int id2, const EstimationFrame::Ptr& frame) {\n'}
+[13.523708] (cone_stellation) StderrLine: {'line': b'      |                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n'}
+[13.528277] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::create_pattern_factors(const cone_stellation::ConePattern&, const Ptr&)\xe2\x80\x99:\n'}
+[13.528387] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:900:34: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.528470] (cone_stellation) StderrLine: {'line': b'  900 |                   gtsam::Vector1(config_.pattern_factor_noise));\n'}
+[13.528538] (cone_stellation) StderrLine: {'line': b'      |                                  ^~~~~~~\n'}
+[13.529616] (-) TimerEvent: {}
+[13.535276] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:15: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.535414] (cone_stellation) StderrLine: {'line': b'  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);\n'}
+[13.535499] (cone_stellation) StderrLine: {'line': b'      |               ^~~~~~~~~~~~\n'}
+[13.535579] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:57: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.535656] (cone_stellation) StderrLine: {'line': b'  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);\n'}
+[13.535729] (cone_stellation) StderrLine: {'line': b'      |                                                         ^\n'}
+[13.535800] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:59: warning: left operand of comma operator has no effect [-Wunused-value]\n'}
+[13.535872] (cone_stellation) StderrLine: {'line': b'  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);\n'}
+[13.535943] (cone_stellation) StderrLine: {'line': b'      |                                                           ^~\n'}
+[13.536011] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:67: warning: right operand of comma operator has no effect [-Wunused-value]\n'}
+[13.536087] (cone_stellation) StderrLine: {'line': b'  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);\n'}
+[13.536182] (cone_stellation) StderrLine: {'line': b'      |                                                                   ^~\n'}
+[13.542535] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::optimize()\xe2\x80\x99:\n'}
+[13.542715] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:914:9: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.542814] (cone_stellation) StderrLine: {'line': b'  914 |     if (new_factors_.empty() && initial_values_.empty()) {\n'}
+[13.542896] (cone_stellation) StderrLine: {'line': b'      |         ^~~~~~~~~~~~\n'}
+[13.551471] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:914:33: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.551647] (cone_stellation) StderrLine: {'line': b'  914 |     if (new_factors_.empty() && initial_values_.empty()) {\n'}
+[13.551764] (cone_stellation) StderrLine: {'line': b'      |                                 ^~~~~~~~~~~~~~~\n'}
+[13.559930] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[13.560095] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[13.560239] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[13.560329] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[13.560405] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[13.560481] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[13.560558] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[13.560634] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[13.560668] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[13.560703] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[13.560740] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[13.560774] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[13.560808] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:922:17: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.560844] (cone_stellation) StderrLine: {'line': b'  922 |                 new_factors_.size(), initial_values_.size());\n'}
+[13.560878] (cone_stellation) StderrLine: {'line': b'      |                 ^~~~~~~~~~~~\n'}
+[13.568876] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:922:38: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.569041] (cone_stellation) StderrLine: {'line': b'  922 |                 new_factors_.size(), initial_values_.size());\n'}
+[13.569154] (cone_stellation) StderrLine: {'line': b'      |                                      ^~~~~~~~~~~~~~~\n'}
+[13.573554] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:928:19: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[13.573718] (cone_stellation) StderrLine: {'line': b'  928 |                   isam2_->getFactorsUnsafe().size());\n'}
+[13.573814] (cone_stellation) StderrLine: {'line': b'      |                   ^~~~~~\n'}
+[13.580500] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[13.580717] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:931:30: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.580816] (cone_stellation) StderrLine: {'line': b'  931 |       for (size_t i = 0; i < new_factors_.size(); ++i) {\n'}
+[13.580900] (cone_stellation) StderrLine: {'line': b'      |                              ^~~~~~~~~~~~\n'}
+[13.588373] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:941:11: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.588571] (cone_stellation) StderrLine: {'line': b'  941 |       if (new_factors_.empty() && initial_values_.empty()) {\n'}
+[13.588667] (cone_stellation) StderrLine: {'line': b'      |           ^~~~~~~~~~~~\n'}
+[13.597660] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:941:35: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.597831] (cone_stellation) StderrLine: {'line': b'  941 |       if (new_factors_.empty() && initial_values_.empty()) {\n'}
+[13.597931] (cone_stellation) StderrLine: {'line': b'      |                                   ^~~~~~~~~~~~~~~\n'}
+[13.601640] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:35: error: \xe2\x80\x98isam2_\xe2\x80\x99 was not declared in this scope\n'}
+[13.601803] (cone_stellation) StderrLine: {'line': b'  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);\n'}
+[13.601900] (cone_stellation) StderrLine: {'line': b'      |                                   ^~~~~~\n'}
+[13.608468] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:50: error: \xe2\x80\x98new_factors_\xe2\x80\x99 was not declared in this scope\n'}
+[13.608646] (cone_stellation) StderrLine: {'line': b'  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);\n'}
+[13.608741] (cone_stellation) StderrLine: {'line': b'      |                                                  ^~~~~~~~~~~~\n'}
+[13.617782] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:64: error: \xe2\x80\x98initial_values_\xe2\x80\x99 was not declared in this scope\n'}
+[13.617987] (cone_stellation) StderrLine: {'line': b'  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);\n'}
+[13.618087] (cone_stellation) StderrLine: {'line': b'      |                                                                ^~~~~~~~~~~~~~~\n'}
+[13.629722] (-) TimerEvent: {}
+[13.634660] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:960:7: error: \xe2\x80\x98frames_since_optimization_\xe2\x80\x99 was not declared in this scope\n'}
+[13.634825] (cone_stellation) StderrLine: {'line': b'  960 |       frames_since_optimization_ = 0;\n'}
+[13.634923] (cone_stellation) StderrLine: {'line': b'      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.638546] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:964:35: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98landmark\xe2\x80\x99?\n'}
+[13.638701] (cone_stellation) StderrLine: {'line': b'  964 |       for (auto& [id, landmark] : landmarks_) {\n'}
+[13.638797] (cone_stellation) StderrLine: {'line': b'      |                                   ^~~~~~~~~~\n'}
+[13.638899] (cone_stellation) StderrLine: {'line': b'      |                                   landmark\n'}
+[13.638978] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:967:74: error: expected primary-expression before \xe2\x80\x98>\xe2\x80\x99 token\n'}
+[13.639054] (cone_stellation) StderrLine: {'line': b'  967 |           gtsam::Point2 optimized_pos = current_estimate.at<gtsam::Point2>(landmark_key);\n'}
+[13.639128] (cone_stellation) StderrLine: {'line': b'      |                                                                          ^\n'}
+[13.646669] (cone_stellation) StderrLine: {'line': b'In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,\n'}
+[13.646858] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,\n'}
+[13.646954] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,\n'}
+[13.647037] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[13.647117] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[13.647314] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[13.647418] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,\n'}
+[13.647503] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,\n'}
+[13.647581] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[13.647658] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[13.647733] (cone_stellation) StderrLine: {'line': b'                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,\n'}
+[13.647808] (cone_stellation) StderrLine: {'line': b'                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:\n'}
+[13.647881] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:974:19: error: \xe2\x80\x98next_pose_id_\xe2\x80\x99 was not declared in this scope\n'}
+[13.647953] (cone_stellation) StderrLine: {'line': b'  974 |                   next_pose_id_, landmarks_.size());\n'}
+[13.648048] (cone_stellation) StderrLine: {'line': b'      |                   ^~~~~~~~~~~~~\n'}
+[13.653930] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:974:34: error: \xe2\x80\x98landmarks_\xe2\x80\x99 was not declared in this scope\n'}
+[13.654140] (cone_stellation) StderrLine: {'line': b'  974 |                   next_pose_id_, landmarks_.size());\n'}
+[13.654255] (cone_stellation) StderrLine: {'line': b'      |                                  ^~~~~~~~~~\n'}
+[13.656518] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:\n'}
+[13.656590] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:\n'}
+[13.656635] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:983:3: error: \xe2\x80\x98Config\xe2\x80\x99 does not name a type\n'}
+[13.656702] (cone_stellation) StderrLine: {'line': b'  983 |   Config config_;\n'}
+[13.656778] (cone_stellation) StderrLine: {'line': b'      |   ^~~~~~\n'}
+[13.671962] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98void cone_stellation::add_loop_closure_factor(const cone_stellation::LoopCandidate&)\xe2\x80\x99:\n'}
+[13.672207] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1016:24: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.672313] (cone_stellation) StderrLine: {'line': b' 1016 |         gtsam::Vector3(config_.loop_closure_noise, config_.loop_closure_noise,\n'}
+[13.672400] (cone_stellation) StderrLine: {'line': b'      |                        ^~~~~~~\n'}
+[13.679354] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function \xe2\x80\x98int cone_stellation::associate_with_tentative_landmark(const cone_stellation::ConeObservation&, const Ptr&)\xe2\x80\x99:\n'}
+[13.679588] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1055:28: error: \xe2\x80\x98config_\xe2\x80\x99 was not declared in this scope\n'}
+[13.679689] (cone_stellation) StderrLine: {'line': b' 1055 |     double best_distance = config_.max_association_distance; // Use same threshold\n'}
+[13.679774] (cone_stellation) StderrLine: {'line': b'      |                            ^~~~~~~\n'}
+[13.684954] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:\n'}
+[13.685127] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1193:1: error: expected declaration before \xe2\x80\x98}\xe2\x80\x99 token\n'}
+[13.685289] (cone_stellation) StderrLine: {'line': b' 1193 | } // namespace cone_stellation\n'}
+[13.685402] (cone_stellation) StderrLine: {'line': b'      | ^\n'}
+[13.729832] (-) TimerEvent: {}
+[13.736733] (cone_stellation) StderrLine: {'line': b'In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:17:\n'}
+[13.736954] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp: In member function \xe2\x80\x98void cone_stellation::SimpleConeMapping::add_keyframe(const Ptr&)\xe2\x80\x99:\n'}
+[13.737053] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:134:21: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::tuple_element<0, const std::pair<const int, int> >::type\xe2\x80\x99 {aka \xe2\x80\x98const int\xe2\x80\x99} and \xe2\x80\x98std::vector<cone_stellation::ConeObservation>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} [-Wsign-compare]\n'}
+[13.737152] (cone_stellation) StderrLine: {'line': b'  134 |         if (obs_idx >= world_observations.size()) continue;\n'}
+[13.737248] (cone_stellation) StderrLine: {'line': b'      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.737325] (cone_stellation) StderrLine: {'line': b'/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:135:21: warning: comparison of integer expressions of different signedness: \xe2\x80\x98std::tuple_element<0, const std::pair<const int, int> >::type\xe2\x80\x99 {aka \xe2\x80\x98const int\xe2\x80\x99} and \xe2\x80\x98std::vector<cone_stellation::ConeObservation>::size_type\xe2\x80\x99 {aka \xe2\x80\x98long unsigned int\xe2\x80\x99} [-Wsign-compare]\n'}
+[13.737408] (cone_stellation) StderrLine: {'line': b'  135 |         if (obs_idx >= obs_set.cones.size()) continue;\n'}
+[13.737483] (cone_stellation) StderrLine: {'line': b'      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~\n'}
+[13.830217] (-) TimerEvent: {}
+[13.930443] (-) TimerEvent: {}
+[14.030615] (-) TimerEvent: {}
+[14.130784] (-) TimerEvent: {}
+[14.231296] (-) TimerEvent: {}
+[14.331460] (-) TimerEvent: {}
+[14.431687] (-) TimerEvent: {}
+[14.531852] (-) TimerEvent: {}
+[14.632014] (-) TimerEvent: {}
+[14.732197] (-) TimerEvent: {}
+[14.832419] (-) TimerEvent: {}
+[14.932652] (-) TimerEvent: {}
+[15.032891] (-) TimerEvent: {}
+[15.133095] (-) TimerEvent: {}
+[15.233375] (-) TimerEvent: {}
+[15.333594] (-) TimerEvent: {}
+[15.433819] (-) TimerEvent: {}
+[15.534044] (-) TimerEvent: {}
+[15.634238] (-) TimerEvent: {}
+[15.734468] (-) TimerEvent: {}
+[15.834668] (-) TimerEvent: {}
+[15.934896] (-) TimerEvent: {}
+[16.035124] (-) TimerEvent: {}
+[16.135368] (-) TimerEvent: {}
+[16.235604] (-) TimerEvent: {}
+[16.335833] (-) TimerEvent: {}
+[16.436062] (-) TimerEvent: {}
+[16.536299] (-) TimerEvent: {}
+[16.636529] (-) TimerEvent: {}
+[16.736759] (-) TimerEvent: {}
+[16.836961] (-) TimerEvent: {}
+[16.937191] (-) TimerEvent: {}
+[17.037423] (-) TimerEvent: {}
+[17.137661] (-) TimerEvent: {}
+[17.237936] (-) TimerEvent: {}
+[17.338182] (-) TimerEvent: {}
+[17.438558] (-) TimerEvent: {}
+[17.538785] (-) TimerEvent: {}
+[17.638977] (-) TimerEvent: {}
+[17.739178] (-) TimerEvent: {}
+[17.839372] (-) TimerEvent: {}
+[17.939563] (-) TimerEvent: {}
+[18.039765] (-) TimerEvent: {}
+[18.139962] (-) TimerEvent: {}
+[18.240190] (-) TimerEvent: {}
+[18.340423] (-) TimerEvent: {}
+[18.440633] (-) TimerEvent: {}
+[18.540851] (-) TimerEvent: {}
+[18.641065] (-) TimerEvent: {}
+[18.741289] (-) TimerEvent: {}
+[18.841498] (-) TimerEvent: {}
+[18.941711] (-) TimerEvent: {}
+[19.042272] (-) TimerEvent: {}
+[19.142498] (-) TimerEvent: {}
+[19.242723] (-) TimerEvent: {}
+[19.342950] (-) TimerEvent: {}
+[19.443192] (-) TimerEvent: {}
+[19.543428] (-) TimerEvent: {}
+[19.643630] (-) TimerEvent: {}
+[19.744371] (-) TimerEvent: {}
+[19.844677] (-) TimerEvent: {}
+[19.944872] (-) TimerEvent: {}
+[20.045084] (-) TimerEvent: {}
+[20.145329] (-) TimerEvent: {}
+[20.245567] (-) TimerEvent: {}
+[20.345766] (-) TimerEvent: {}
+[20.445983] (-) TimerEvent: {}
+[20.546209] (-) TimerEvent: {}
+[20.646434] (-) TimerEvent: {}
+[20.746670] (-) TimerEvent: {}
+[20.846902] (-) TimerEvent: {}
+[20.947158] (-) TimerEvent: {}
+[21.008154] (cone_stellation) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/cone_slam_node.dir/build.make:79: CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o] Error 1\n'}
+[21.008670] (cone_stellation) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:188: CMakeFiles/cone_slam_node.dir/all] Error 2\n'}
+[21.009048] (cone_stellation) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[21.011145] (cone_stellation) CommandEnded: {'returncode': 2}
+[21.021944] (cone_stellation) JobEnded: {'identifier': 'cone_stellation', 'rc': 2}
+[21.032480] (-) EventReactorShutdown: {}

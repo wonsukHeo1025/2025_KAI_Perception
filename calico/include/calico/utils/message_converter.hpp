@@ -12,6 +12,7 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <Eigen/Core>
+#include <kalman_filters/tracking/tracking_types.hpp>
 
 namespace calico {
 namespace utils {
@@ -116,6 +117,26 @@ public:
      * @return Cone color string
      */
     static std::string mapClassToColor(const std::string& class_name);
+    
+    /**
+     * @brief Convert between Cone and kalman_filters Detection types
+     */
+    static kalman_filters::tracking::Detection coneToDetection(const Cone& cone);
+    static Cone detectionToCone(const kalman_filters::tracking::Detection& detection);
+    static std::vector<kalman_filters::tracking::Detection> conesToDetections(const std::vector<Cone>& cones);
+    static std::vector<Cone> detectionsToCones(const std::vector<kalman_filters::tracking::Detection>& detections);
+    
+    /**
+     * @brief Convert TrackedObject to Cone with velocity
+     */
+    static Cone trackedObjectToCone(const kalman_filters::tracking::TrackedObject& obj);
+    static std::vector<Cone> trackedObjectsToCones(const std::vector<kalman_filters::tracking::TrackedObject>& objects);
+    
+    /**
+     * @brief Convert IMUData between calico and kalman_filters formats
+     */
+    static kalman_filters::tracking::IMUData toKalmanIMUData(const IMUData& imu_data);
+    static IMUData fromKalmanIMUData(const kalman_filters::tracking::IMUData& kf_imu_data);
 };
 
 } // namespace utils

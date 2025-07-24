@@ -4,8 +4,8 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include "calico/tracking/ukf_tracker.hpp"
-#include "calico/tracking/imu_compensator.hpp"
+#include <kalman_filters/tracking/multi_tracker.hpp>
+#include "calico/utils/imu_compensator.hpp"
 #include "calico/utils/message_converter.hpp"
 
 namespace calico {
@@ -46,8 +46,8 @@ public:
         };
         this->declare_parameter<std::vector<double>>("imu_to_sensor_transform", default_transform);
         
-        // Initialize UKF config from parameters
-        tracking::UKFConfig config;
+        // Initialize tracking config from parameters
+        kalman_filters::tracking::TrackingConfig config;
         config.q_pos = this->get_parameter("ukf.Q_process_diag_pos").as_double();
         config.q_vel = this->get_parameter("ukf.Q_process_diag_vel").as_double();
         config.r_pos = this->get_parameter("ukf.R_measurement").as_double();
@@ -56,9 +56,9 @@ public:
         config.alpha = 0.1;  // Fixed as in Python
         config.beta = 2.0;   // Fixed as in Python
         config.kappa = -1.0; // Will be computed as 3 - dim_x
-        config.max_age_before_deletion = this->get_parameter("max_missed_detections").as_int();
-        config.min_hits_before_confirmation = 3;  // Fixed as in Python
-        config.max_association_distance = this->get_parameter("distance_threshold").as_double();
+        config.max_age = this->get_parameter("max_missed_detections").as_int();
+        config.min_hits = 3;  // Fixed as in Python
+        config.max_association_dist = this->get_parameter("distance_threshold").as_double();
         
         use_imu_ = this->get_parameter("use_imu").as_bool();
         fixed_dt_ = this->get_parameter("fixed_dt").as_double();
@@ -72,26 +72,27 @@ public:
             }
         }
         config.imu_to_sensor_transform = imu_to_sensor_transform_;
+        config.enable_imu_compensation = use_imu_;
         
-        tracker_ = std::make_unique<tracking::UKFTracker>(config);
+        tracker_ = std::make_shared<kalman_filters::tracking::MultiTracker>(config);
         
         // Initialize IMU compensator if IMU is used
         if (use_imu_) {
-            tracking::IMUCompensatorConfig imu_config;
+            utils::IMUCompensatorConfig imu_config;
             auto filter_type = this->get_parameter("imu_filter.type").as_string();
             if (filter_type == "ema") {
-                imu_config.filter_type = tracking::IMUFilterType::EMA;
+                imu_config.filter_type = utils::IMUFilterType::EMA;
             } else if (filter_type == "butterworth") {
-                imu_config.filter_type = tracking::IMUFilterType::BUTTERWORTH;
+                imu_config.filter_type = utils::IMUFilterType::BUTTERWORTH;
             } else {
-                imu_config.filter_type = tracking::IMUFilterType::NONE;
+                imu_config.filter_type = utils::IMUFilterType::NONE;
             }
             imu_config.ema_alpha = this->get_parameter("imu_filter.ema_alpha").as_double();
             imu_config.butterworth_cutoff = this->get_parameter("imu_filter.butterworth_cutoff").as_double();
             imu_config.butterworth_order = this->get_parameter("imu_filter.butterworth_order").as_int();
             imu_config.remove_gravity = true;
             
-            imu_compensator_ = std::make_unique<tracking::IMUCompensator>(imu_config);
+            imu_compensator_ = std::make_unique<utils::IMUCompensator>(imu_config);
         }
         
         // Setup QoS
@@ -143,8 +144,9 @@ private:
             if (param.get_name() == "max_missed_detections") {
                 int value = param.as_int();
                 if (value > 0 && value < 100) {
-                    tracker_->setConfig(updateConfigField(
-                        tracker_->getConfig(), "max_age_before_deletion", value));
+                    kalman_filters::tracking::TrackingConfig new_config = tracker_->getConfig();
+                    new_config.max_age = value;
+                    tracker_->setConfig(new_config);
                     RCLCPP_INFO(this->get_logger(), 
                                "Updated max_missed_detections to %d", value);
                 } else {
@@ -155,8 +157,9 @@ private:
             else if (param.get_name() == "distance_threshold") {
                 double value = param.as_double();
                 if (value > 0.0 && value < 10.0) {
-                    tracker_->setConfig(updateConfigField(
-                        tracker_->getConfig(), "max_association_distance", value));
+                    kalman_filters::tracking::TrackingConfig new_config = tracker_->getConfig();
+                    new_config.max_association_dist = value;
+                    tracker_->setConfig(new_config);
                     RCLCPP_INFO(this->get_logger(), 
                                "Updated distance_threshold to %.2f", value);
                 } else {
@@ -167,9 +170,9 @@ private:
             else if (param.get_name() == "ukf.R_measurement") {
                 double value = param.as_double();
                 if (value > 0.0 && value < 10.0) {
-                    tracker_->setConfig(updateConfigField(
-                        tracker_->getConfig(), "r_pos", value));
-                    updateExistingTracks("R", value);
+                    kalman_filters::tracking::TrackingConfig new_config = tracker_->getConfig();
+                    new_config.r_pos = value;
+                    tracker_->setConfig(new_config);
                     RCLCPP_INFO(this->get_logger(), 
                                "Updated R_measurement to %.3f", value);
                 } else {
@@ -180,9 +183,9 @@ private:
             else if (param.get_name() == "ukf.Q_process_diag_pos") {
                 double value = param.as_double();
                 if (value > 0.0 && value < 10.0) {
-                    tracker_->setConfig(updateConfigField(
-                        tracker_->getConfig(), "q_pos", value));
-                    updateExistingTracks("Q_pos", value);
+                    kalman_filters::tracking::TrackingConfig new_config = tracker_->getConfig();
+                    new_config.q_pos = value;
+                    tracker_->setConfig(new_config);
                     RCLCPP_INFO(this->get_logger(), 
                                "Updated Q_process_diag_pos to %.3f", value);
                 } else {
@@ -193,9 +196,9 @@ private:
             else if (param.get_name() == "ukf.Q_process_diag_vel") {
                 double value = param.as_double();
                 if (value > 0.0 && value < 10.0) {
-                    tracker_->setConfig(updateConfigField(
-                        tracker_->getConfig(), "q_vel", value));
-                    updateExistingTracks("Q_vel", value);
+                    kalman_filters::tracking::TrackingConfig new_config = tracker_->getConfig();
+                    new_config.q_vel = value;
+                    tracker_->setConfig(new_config);
                     RCLCPP_INFO(this->get_logger(), 
                                "Updated Q_process_diag_vel to %.3f", value);
                 } else {
@@ -219,37 +222,7 @@ private:
         return result;
     }
     
-    tracking::UKFConfig updateConfigField(const tracking::UKFConfig& config,
-                                         const std::string& field,
-                                         double value) {
-        tracking::UKFConfig new_config = config;
-        if (field == "max_age_before_deletion") {
-            new_config.max_age_before_deletion = static_cast<int>(value);
-        } else if (field == "max_association_distance") {
-            new_config.max_association_distance = value;
-        } else if (field == "r_pos") {
-            new_config.r_pos = value;
-        } else if (field == "q_pos") {
-            new_config.q_pos = value;
-        } else if (field == "q_vel") {
-            new_config.q_vel = value;
-        }
-        return new_config;
-    }
-    
-    void updateExistingTracks(const std::string& param_type, double value) {
-        // Update existing tracks' UKF parameters
-        auto& tracks = tracker_->getTracks();
-        for (auto& [id, track] : tracks) {
-            if (param_type == "R") {
-                track->setMeasurementNoise(value);
-            } else if (param_type == "Q_pos" || param_type == "Q_vel") {
-                // Need to get current Q values and update
-                auto current_config = tracker_->getConfig();
-                track->setProcessNoise(current_config.q_pos, current_config.q_vel);
-            }
-        }
-    }
+    // Removed updateConfigField and updateExistingTracks functions as they're no longer needed
     
     void synchronizedCallback(
         const custom_interface::msg::ModifiedFloat32MultiArray::ConstSharedPtr cone_msg,
@@ -257,6 +230,9 @@ private:
         
         // Convert cone message to internal representation
         auto cones = utils::MessageConverter::fromModifiedFloat32MultiArray(*cone_msg);
+        
+        // Convert to kalman_filters Detection format
+        auto detections = utils::MessageConverter::conesToDetections(cones);
         
         // Get timestamp
         double timestamp = cone_msg->header.stamp.sec + cone_msg->header.stamp.nanosec * 1e-9;
@@ -278,12 +254,14 @@ private:
             filtered_imu.angular_vel_y = angular_vel.y();
             filtered_imu.angular_vel_z = angular_vel.z();
             
-            // Update tracker with filtered IMU
-            tracker_->update(cones, timestamp, &filtered_imu);
+            // Convert to kalman_filters IMU format and update tracker
+            auto kf_imu = utils::MessageConverter::toKalmanIMUData(filtered_imu);
+            tracker_->update(detections, timestamp, &kf_imu);
         } else {
             // Fallback if compensator not initialized
             auto imu_data = utils::MessageConverter::fromImuMsg(*imu_msg);
-            tracker_->update(cones, timestamp, &imu_data);
+            auto kf_imu = utils::MessageConverter::toKalmanIMUData(imu_data);
+            tracker_->update(detections, timestamp, &kf_imu);
         }
         
         publishTrackedCones(cone_msg->header);
@@ -293,18 +271,24 @@ private:
         // Convert message to internal representation
         auto cones = utils::MessageConverter::fromModifiedFloat32MultiArray(*msg);
         
+        // Convert to kalman_filters Detection format
+        auto detections = utils::MessageConverter::conesToDetections(cones);
+        
         // Get timestamp
         double timestamp = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
         
         // Update tracker without IMU
-        tracker_->update(cones, timestamp, nullptr);
+        tracker_->update(detections, timestamp, nullptr);
         
         publishTrackedCones(msg->header);
     }
     
     void publishTrackedCones(const std_msgs::msg::Header& header) {
-        // Get tracked cones
-        auto tracked_cones = tracker_->getTrackedCones();
+        // Get tracked objects from kalman_filters
+        auto tracked_objects = tracker_->getTrackedObjects();
+        
+        // Convert to calico Cone format with velocity
+        auto tracked_cones = utils::MessageConverter::trackedObjectsToCones(tracked_objects);
         
         // Convert to ROS message
         auto output_msg = utils::MessageConverter::toTrackedConeArray(tracked_cones);
@@ -318,14 +302,14 @@ private:
         if (++update_count % 100 == 0) {
             RCLCPP_INFO(this->get_logger(), 
                        "Tracking %zu cones, %zu active tracks",
-                       tracked_cones.size(), tracker_->getTracks().size());
+                       tracked_cones.size(), tracker_->getNumTracks());
         }
     }
     
 private:
     // Tracker
-    std::unique_ptr<tracking::UKFTracker> tracker_;
-    std::unique_ptr<tracking::IMUCompensator> imu_compensator_;
+    std::shared_ptr<kalman_filters::tracking::MultiTracker> tracker_;
+    std::unique_ptr<utils::IMUCompensator> imu_compensator_;
     
     // Synchronized subscribers
     message_filters::Subscriber<custom_interface::msg::ModifiedFloat32MultiArray> cones_sub_;

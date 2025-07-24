@@ -27,13 +27,28 @@ def generate_launch_description():
         description='RViz를 실행할지 여부'
     )
     
+    processed_topic_arg = DeclareLaunchArgument(
+        'processed_topic',
+        default_value='',
+        description='전처리된 IMU 토픽 이름 (비어있으면 캘리브레이션 파일 사용)'
+    )
+    
+    rotation_only_mode_arg = DeclareLaunchArgument(
+        'rotation_only_mode',
+        default_value='false',
+        description='위치 변화를 무시하고 회전 드리프트만 시각화'
+    )
+    
     # Dead reckoning 노드
     dead_reckoning_node = Node(
         package='dead_reckoning',
         executable='dead_reckoning_node',
         name='dead_reckoning_node',
         output='screen',
-        parameters=[],
+        parameters=[{
+            'processed_topic': LaunchConfiguration('processed_topic'),
+            'rotation_only_mode': LaunchConfiguration('rotation_only_mode')
+        }],
         remappings=[]
     )
     
@@ -49,6 +64,8 @@ def generate_launch_description():
     
     return LaunchDescription([
         use_rviz_arg,
+        processed_topic_arg,
+        rotation_only_mode_arg,
         dead_reckoning_node,
         rviz_node
     ]) 

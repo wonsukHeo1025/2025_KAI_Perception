@@ -1,0 +1,4 @@
+[ 16%] Building CXX object CMakeFiles/cone_stellation_core.dir/src/loop_closure_detector.cpp.o
+[ 33%] Linking CXX shared library libcone_stellation_core.so
+[ 66%] Built target cone_stellation_core
+[ 83%] Building CXX object CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o

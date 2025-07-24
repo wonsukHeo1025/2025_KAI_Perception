@@ -43,16 +43,20 @@ public:
             "/fused_sorted_cones_ukf", qos,
             std::bind(&VisualizationNode::trackedConesCallback, this, std::placeholders::_1));
         
-        // Create publishers with Python-compatible topic names
+        // Create publishers with organized topic names
         marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/visualization_marker_fused_colored", qos);
+            "/vis/cone/fused/ukf", qos);
         
         arrow_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/visualization_marker_velocity_arrows", qos);
+            "/vis/cone/fused/velocity", qos);
+        
+        text_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/vis/cone/fused/text", qos);
         
         RCLCPP_INFO(this->get_logger(), "Visualization Node initialized successfully");
-        RCLCPP_INFO(this->get_logger(), "Publishing markers to: /visualization_marker_fused_colored");
-        RCLCPP_INFO(this->get_logger(), "Publishing velocity arrows to: /visualization_marker_velocity_arrows");
+        RCLCPP_INFO(this->get_logger(), "Publishing fused UKF cones to: /vis/cone/fused/ukf");
+        RCLCPP_INFO(this->get_logger(), "Publishing velocity arrows to: /vis/cone/fused/velocity");
+        RCLCPP_INFO(this->get_logger(), "Publishing track ID text to: /vis/cone/fused/text");
         RCLCPP_INFO(this->get_logger(), "Show track IDs: %s", show_track_ids_ ? "yes" : "no");
         RCLCPP_INFO(this->get_logger(), "Show color labels: %s", show_color_labels_ ? "yes" : "no");
     }
@@ -79,14 +83,17 @@ private:
         auto marker_array = marker_publisher_->createMarkerArray(
             cones, frame_id, msg->header.stamp);
         
-        // Separate velocity arrows from main marker array
+        // Separate markers by type
         visualization_msgs::msg::MarkerArray main_markers;
         visualization_msgs::msg::MarkerArray arrow_markers;
+        visualization_msgs::msg::MarkerArray text_markers;
         
         // Split markers by namespace
         for (const auto& marker : marker_array.markers) {
             if (marker.ns == "velocity_arrows") {
                 arrow_markers.markers.push_back(marker);
+            } else if (marker.ns == "track_id_text") {
+                text_markers.markers.push_back(marker);
             } else {
                 main_markers.markers.push_back(marker);
             }
@@ -98,6 +105,9 @@ private:
         }
         if (!arrow_markers.markers.empty()) {
             arrow_marker_pub_->publish(arrow_markers);
+        }
+        if (!text_markers.markers.empty() && show_track_ids_) {
+            text_marker_pub_->publish(text_markers);
         }
         
         // Log statistics
@@ -119,6 +129,7 @@ private:
     // Publishers
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr arrow_marker_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr text_marker_pub_;
     
     // Parameters
     bool show_track_ids_;

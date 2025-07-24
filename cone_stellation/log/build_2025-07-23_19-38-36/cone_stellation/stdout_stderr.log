@@ -1,0 +1,652 @@
+[ 16%] Building CXX object CMakeFiles/cone_stellation_core.dir/src/loop_closure_detector.cpp.o
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘cone_stellation::ConstellationDescriptor cone_stellation::LoopClosureDetector::build_descriptor(const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, const std::vector<gtsam::Pose2>&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:392:31: warning: comparison of integer expressions of different signedness: ‘std::vector<cone_stellation::ConstellationDescriptor::ConeInfo>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  392 |   if (descriptor.cones.size() > config_.max_cones_per_constellation) {
+      |       ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘bool cone_stellation::LoopClosureDetector::validate_loop_closure(const Ptr&, const Ptr&, const std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> >&, cone_stellation::LoopCandidate&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:659:32: warning: comparison of integer expressions of different signedness: ‘std::vector<std::pair<int, int> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  659 |   if (tentative_matches.size() < config_.min_matched_cones) {
+      |       ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp: In member function ‘bool cone_stellation::LoopClosureDetector::estimate_relative_pose(const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<Eigen::Matrix<double, 2, 1> >&, const std::vector<std::pair<int, int> >&, gtsam::Pose2&, std::vector<int>&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/loop_closure_detector.cpp:747:32: warning: comparison of integer expressions of different signedness: ‘std::vector<int>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  747 |     if (current_inliers.size() > best_inlier_count) {
+      |         ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+[ 33%] Linking CXX shared library libcone_stellation_core.so
+[ 66%] Built target cone_stellation_core
+[ 83%] Building CXX object CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:14:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp: In member function ‘virtual Eigen::Isometry3d cone_stellation::ConeOdometry2D::estimate(const ConstPtr&, const ConstPtr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/odometry/cone_odometry_2d.hpp:59:33: warning: comparison of integer expressions of different signedness: ‘std::vector<std::pair<int, int> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+   59 |     if (correspondences_.size() < config_.min_correspondences) {
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:508:5: error: expected unqualified-id before ‘do’
+  508 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),
+      |     ^~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:508:5: error: expected unqualified-id before ‘while’
+  508 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),
+      |     ^~~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:514:5: error: expected unqualified-id before ‘if’
+  514 |     if (!observed_landmark_ids.empty()) {
+      |     ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:524:5: error: expected unqualified-id before ‘if’
+  524 |     if (config_.enable_inter_landmark_factors && observed_landmark_ids.size() >= 2) {
+      |     ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:529:7: error: expected unqualified-id before ‘else’
+  529 |     } else {
+      |       ^~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:537:5: error: expected unqualified-id before ‘for’
+  537 |     for (const auto& pattern : obs_set.detected_patterns) {
+      |     ^~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:541:5: error: expected unqualified-id before ‘do’
+  541 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),
+      |     ^~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:541:5: error: expected unqualified-id before ‘while’
+  541 |     RCLCPP_INFO(rclcpp::get_logger("cone_mapping"),
+      |     ^~~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:543:4: error: expected ‘;’ after class definition
+  543 |   }
+      |    ^
+      |    ;
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In constructor ‘cone_stellation::ConeMapping::ConeMapping(const cone_stellation::ConeMapping::Config&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:81:7: error: class ‘cone_stellation::ConeMapping’ does not have any field named ‘config_’
+   81 |     : config_(config),
+      |       ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:82:7: error: class ‘cone_stellation::ConeMapping’ does not have any field named ‘next_pose_id_’
+   82 |       next_pose_id_(0),
+      |       ^~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:83:7: error: class ‘cone_stellation::ConeMapping’ does not have any field named ‘next_landmark_id_’
+   83 |       next_landmark_id_(0),
+      |       ^~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:84:7: error: class ‘cone_stellation::ConeMapping’ does not have any field named ‘next_tentative_id_’
+   84 |       next_tentative_id_(0),
+      |       ^~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:85:7: error: class ‘cone_stellation::ConeMapping’ does not have any field named ‘frames_since_optimization_’
+   85 |       frames_since_optimization_(0) {
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:89:17: error: ‘config_’ was not declared in this scope; did you mean ‘config’?
+   89 |                 config_.enable_inter_landmark_factors ? "ENABLED" : "DISABLED");
+      |                 ^~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:93:35: error: ‘config_’ was not declared in this scope; did you mean ‘config’?
+   93 |     params.relinearizeThreshold = config_.isam2_relinearize_threshold;
+      |                                   ^~~~~~~
+      |                                   config
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:100:5: error: ‘isam2_’ was not declared in this scope
+  100 |     isam2_ = std::make_shared<gtsam::ISAM2>(params);
+      |     ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:121:9: error: ‘loop_detector_’ was not declared in this scope
+  121 |         loop_detector_ = std::make_shared<LoopClosureDetector>(loop_config);
+      |         ^~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:127:9: error: ‘loop_detector_’ was not declared in this scope
+  127 |         loop_detector_ = nullptr;
+      |         ^~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:130:11: error: ‘loop_detector_’ was not declared in this scope
+  130 |       if (loop_detector_) {
+      |           ^~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:141:7: error: ‘loop_detector_’ was not declared in this scope
+  141 |       loop_detector_ = nullptr;
+      |       ^~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘void cone_stellation::ConeMapping::add_keyframe(const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:151:19: error: ‘next_pose_id_’ was not declared in this scope; did you mean ‘get_next_pose_id’?
+  151 |       frame->id = next_pose_id_;
+      |                   ^~~~~~~~~~~~~
+      |                   get_next_pose_id
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:156:28: error: ‘next_pose_id_’ was not declared in this scope; did you mean ‘get_next_pose_id’?
+  156 |                 frame->id, next_pose_id_);
+      |                            ^~~~~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:159:33: error: ‘next_pose_id_’ was not declared in this scope; did you mean ‘get_next_pose_id’?
+  159 |     gtsam::Symbol pose_key('x', next_pose_id_);
+      |                                 ^~~~~~~~~~~~~
+      |                                 get_next_pose_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:185:5: error: ‘frames_’ was not declared in this scope; did you mean ‘frame’?
+  185 |     frames_[next_pose_id_] = frame;
+      |     ^~~~~~~
+      |     frame
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:196:17: error: ‘config_’ was not declared in this scope; did you mean ‘Config’?
+  196 |                 config_.enable_loop_closure ? "true" : "false",
+      |                 ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:197:17: error: ‘loop_detector_’ was not declared in this scope; did you mean ‘loop_detected’?
+  197 |                 loop_detector_ ? "valid" : "NULL",
+      |                 ^~~~~~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:200:9: error: ‘config_’ was not declared in this scope; did you mean ‘Config’?
+  200 |     if (config_.enable_loop_closure && loop_detector_ && next_pose_id_ > config_.min_keyframes_apart) {
+      |         ^~~~~~~
+      |         Config
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:200:40: error: ‘loop_detector_’ was not declared in this scope; did you mean ‘loop_detected’?
+  200 |     if (config_.enable_loop_closure && loop_detector_ && next_pose_id_ > config_.min_keyframes_apart) {
+      |                                        ^~~~~~~~~~~~~~
+      |                                        loop_detected
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:234:45: error: ‘landmarks_’ was not declared in this scope; did you mean ‘get_landmarks’?
+  234 |         loop_detector_->add_keyframe(frame, landmarks_, recent_poses);
+      |                                             ^~~~~~~~~~
+      |                                             get_landmarks
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:251:13: error: ‘add_loop_closure_factor’ was not declared in this scope
+  251 |             add_loop_closure_factor(candidate);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:267:5: error: ‘frames_since_optimization_’ was not declared in this scope
+  267 |     frames_since_optimization_++;
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:270:45: error: ‘config_’ was not declared in this scope; did you mean ‘Config’?
+  270 |                 frames_since_optimization_, config_.optimize_every_n_frames,
+      |                                             ^~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:273:39: error: ‘config_’ was not declared in this scope; did you mean ‘Config’?
+  273 |     if (frames_since_optimization_ >= config_.optimize_every_n_frames ||
+      |                                       ^~~~~~~
+      |                                       Config
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:279:9: error: ‘optimize’ was not declared in this scope
+  279 |         optimize();
+      |         ^~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:295:17: error: ‘new_factors_’ was not declared in this scope
+  295 |                 new_factors_.size(),
+      |                 ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:296:17: error: ‘landmarks_’ was not declared in this scope; did you mean ‘get_landmarks’?
+  296 |                 landmarks_.size());
+      |                 ^~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘gtsam::Values cone_stellation::ConeMapping::get_current_estimate() const’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:303:12: error: ‘isam2_’ was not declared in this scope
+  303 |     return isam2_->calculateEstimate();
+      |            ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘std::unordered_map<int, std::shared_ptr<cone_stellation::ConeLandmark> > cone_stellation::ConeMapping::get_landmarks() const’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:310:12: error: ‘landmarks_’ was not declared in this scope; did you mean ‘get_landmarks’?
+  310 |     return landmarks_;
+      |            ^~~~~~~~~~
+      |            get_landmarks
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘gtsam::NonlinearFactorGraph cone_stellation::ConeMapping::get_factor_graph() const’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:318:12: error: ‘isam2_’ was not declared in this scope
+  318 |     return isam2_->getFactorsUnsafe();
+      |            ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘std::unordered_map<int, gtsam::Pose2> cone_stellation::ConeMapping::get_poses() const’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:326:19: error: ‘isam2_’ was not declared in this scope
+  326 |     auto values = isam2_->calculateEstimate();
+      |                   ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:328:36: error: ‘frames_’ was not declared in this scope; did you mean ‘frame’?
+  328 |     for (const auto& [id, frame] : frames_) {
+      |                                    ^~~~~~~
+      |                                    frame
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:331:43: error: expected primary-expression before ‘>’ token
+  331 |         poses[id] = values.at<gtsam::Pose2>(pose_key);
+      |                                           ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘int cone_stellation::ConeMapping::get_next_pose_id() const’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:341:12: error: ‘next_pose_id_’ was not declared in this scope; did you mean ‘get_next_pose_id’?
+  341 |     return next_pose_id_;
+      |            ^~~~~~~~~~~~~
+      |            get_next_pose_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘void cone_stellation::ConeMapping::add_prior_factor(const gtsam::Symbol&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:355:5: error: ‘new_factors_’ was not declared in this scope
+  355 |     new_factors_.add(gtsam::PriorFactor<gtsam::Pose2>(pose_key, pose2d, prior_noise));
+      |     ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:357:5: error: ‘initial_values_’ was not declared in this scope
+  357 |     initial_values_.insert(pose_key, pose2d);
+      |     ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘void cone_stellation::ConeMapping::add_odometry_factor(const gtsam::Symbol&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:365:38: error: ‘next_pose_id_’ was not declared in this scope; did you mean ‘get_next_pose_id’?
+  365 |     gtsam::Symbol prev_pose_key('x', next_pose_id_ - 1);
+      |                                      ^~~~~~~~~~~~~
+      |                                      get_next_pose_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:368:30: error: ‘frames_’ was not declared in this scope
+  368 |     const auto& prev_frame = frames_[next_pose_id_ - 1];
+      |                              ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:384:24: error: ‘config_’ was not declared in this scope; did you mean ‘Config’?
+  384 |         gtsam::Vector3(config_.odometry_noise, config_.odometry_noise,
+      |                        ^~~~~~~
+      |                        Config
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:387:5: error: ‘new_factors_’ was not declared in this scope
+  387 |     new_factors_.emplace_shared<gtsam::BetweenFactor<gtsam::Pose2>>(
+      |     ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:387:66: error: expected primary-expression before ‘>’ token
+  387 |     new_factors_.emplace_shared<gtsam::BetweenFactor<gtsam::Pose2>>(
+      |                                                                  ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:388:9: warning: left operand of comma operator has no effect [-Wunused-value]
+  388 |         prev_pose_key, current_pose_key, odom_delta, odom_noise);
+      |         ^~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:388:24: warning: right operand of comma operator has no effect [-Wunused-value]
+  388 |         prev_pose_key, current_pose_key, odom_delta, odom_noise);
+      |                        ^~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:391:24: error: ‘isam2_’ was not declared in this scope
+  391 |     auto prev_values = isam2_->calculateEstimate();
+      |                        ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:393:59: error: expected primary-expression before ‘>’ token
+  393 |       gtsam::Pose2 prev_pose = prev_values.at<gtsam::Pose2>(prev_pose_key);
+      |                                                           ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:394:7: error: ‘initial_values_’ was not declared in this scope
+  394 |       initial_values_.insert(current_pose_key, prev_pose * odom_delta);
+      |       ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:399:7: error: ‘initial_values_’ was not declared in this scope
+  399 |       initial_values_.insert(current_pose_key,
+      |       ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In member function ‘void cone_stellation::ConeMapping::process_cone_observations(const Ptr&, const gtsam::Symbol&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:422:5: error: ‘tentative_to_landmark_’ was not declared in this scope; did you mean ‘TentativeLandmark’?
+  422 |     tentative_to_landmark_.clear();
+      |     ^~~~~~~~~~~~~~~~~~~~~~
+      |     TentativeLandmark
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:429:25: error: ‘associate_with_confirmed_landmark’ was not declared in this scope
+  429 |       int landmark_id = associate_with_confirmed_landmark(obs, frame);
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:434:9: error: ‘add_observation_factor’ was not declared in this scope; did you mean ‘ConeObservationFactor’?
+  434 |         add_observation_factor(pose_key, landmark_id, obs);
+      |         ^~~~~~~~~~~~~~~~~~~~~~
+      |         ConeObservationFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:436:9: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark_id’?
+  436 |         landmarks_[landmark_id]->increment_observations();
+      |         ^~~~~~~~~~
+      |         landmark_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:443:13: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark_id’?
+  443 |         if (landmarks_.size() < 10 || tentative_landmarks_.empty()) {  // Reduced threshold
+      |             ^~~~~~~~~~
+      |             landmark_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:443:39: error: ‘tentative_landmarks_’ was not declared in this scope; did you mean ‘TentativeLandmark’?
+  443 |         if (landmarks_.size() < 10 || tentative_landmarks_.empty()) {  // Reduced threshold
+      |                                       ^~~~~~~~~~~~~~~~~~~~
+      |                                       TentativeLandmark
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:446:33: error: ‘next_landmark_id_’ was not declared in this scope; did you mean ‘new_landmark_id’?
+  446 |           int new_landmark_id = next_landmark_id_++;
+      |                                 ^~~~~~~~~~~~~~~~~
+      |                                 new_landmark_id
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:452:11: error: ‘initial_values_’ was not declared in this scope
+  452 |           initial_values_.insert(landmark_key, gtsam::Point2(world_pos));
+      |           ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:457:13: error: ‘new_factors_’ was not declared in this scope
+  457 |             new_factors_.emplace_shared<gtsam::PriorFactor<gtsam::Point2>>(
+      |             ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:457:73: error: expected primary-expression before ‘>’ token
+  457 |             new_factors_.emplace_shared<gtsam::PriorFactor<gtsam::Point2>>(
+      |                                                                         ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:458:17: warning: left operand of comma operator has no effect [-Wunused-value]
+  458 |                 landmark_key, gtsam::Point2(world_pos), prior_noise);
+      |                 ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:466:11: error: ‘add_observation_factor’ was not declared in this scope; did you mean ‘ConeObservationFactor’?
+  466 |           add_observation_factor(pose_key, new_landmark_id, obs);
+      |           ^~~~~~~~~~~~~~~~~~~~~~
+      |           ConeObservationFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:470:30: error: ‘associate_with_tentative_landmark’ was not declared in this scope
+  470 |           int tentative_id = associate_with_tentative_landmark(obs, frame);
+      |                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:480:5: error: ‘promote_tentative_landmarks’ was not declared in this scope
+  480 |     promote_tentative_landmarks();
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:496:15: error: ‘add_observation_factor’ was not declared in this scope; did you mean ‘ConeObservationFactor’?
+  496 |               add_observation_factor(pose_key, landmark_id, obs);
+      |               ^~~~~~~~~~~~~~~~~~~~~~
+      |               ConeObservationFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘int cone_stellation::associate_with_confirmed_landmark(const cone_stellation::ConeObservation&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:554:28: error: ‘config_’ was not declared in this scope
+  554 |     double best_distance = config_.max_association_distance;
+      |                            ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:556:39: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark’?
+  556 |     for (const auto& [id, landmark] : landmarks_) {
+      |                                       ^~~~~~~~~~
+      |                                       landmark
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::add_observation_factor(const gtsam::Symbol&, int, const cone_stellation::ConeObservation&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:583:24: error: ‘config_’ was not declared in this scope
+  583 |         gtsam::Vector2(config_.cone_observation_noise, config_.cone_observation_noise));
+      |                        ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:587:5: error: ‘new_factors_’ was not declared in this scope
+  587 |     new_factors_.emplace_shared<ConeObservationFactor>(
+      |     ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:587:54: error: expected primary-expression before ‘>’ token
+  587 |     new_factors_.emplace_shared<ConeObservationFactor>(
+      |                                                      ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:588:9: warning: left operand of comma operator has no effect [-Wunused-value]
+  588 |         pose_key, landmark_key, gtsam::Point2(obs.position.x(), obs.position.y()), obs_noise);
+      |         ^~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:588:81: warning: right operand of comma operator has no effect [-Wunused-value]
+  588 |         pose_key, landmark_key, gtsam::Point2(obs.position.x(), obs.position.y()), obs_noise);
+      |                                                                                 ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::create_inter_landmark_factors(const std::vector<int>&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:620:13: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark_ids’?
+  620 |         if (landmarks_.find(id1) != landmarks_.end() &&
+      |             ^~~~~~~~~~
+      |             landmark_ids
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:629:9: error: ‘config_’ was not declared in this scope
+  629 |     if (config_.use_clustering) {
+      |         ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:630:7: error: ‘create_clustered_inter_landmark_factors’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  630 |       create_clustered_inter_landmark_factors(landmark_ids, frame);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |       create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:632:7: error: ‘create_simple_inter_landmark_factors’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  632 |       create_simple_inter_landmark_factors(landmark_ids, frame);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |       create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::create_clustered_inter_landmark_factors(const std::vector<int>&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:654:25: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark_ids’?
+  654 |       const auto& lm1 = landmarks_[landmark_ids[i]];
+      |                         ^~~~~~~~~~
+      |                         landmark_ids
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:686:13: error: ‘should_create_inter_landmark_factor’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  686 |         if (should_create_inter_landmark_factor(cluster[i], cluster[i+1])) {
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |             create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:687:11: error: ‘create_distance_factor’ was not declared in this scope; did you mean ‘ConeDistanceFactor’?
+  687 |           create_distance_factor(cluster[i], cluster[i+1], frame);
+      |           ^~~~~~~~~~~~~~~~~~~~~~
+      |           ConeDistanceFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:694:13: error: ‘should_create_inter_landmark_factor’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  694 |         if (should_create_inter_landmark_factor(cluster[0], cluster.back())) {
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |             create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:695:11: error: ‘create_distance_factor’ was not declared in this scope; did you mean ‘ConeDistanceFactor’?
+  695 |           create_distance_factor(cluster[0], cluster.back(), frame);
+      |           ^~~~~~~~~~~~~~~~~~~~~~
+      |           ConeDistanceFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:709:15: error: ‘should_create_inter_landmark_factor’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  709 |           if (should_create_inter_landmark_factor(id1, id2)) {
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |               create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:710:13: error: ‘create_distance_factor’ was not declared in this scope; did you mean ‘ConeDistanceFactor’?
+  710 |             create_distance_factor(id1, id2, frame);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+      |             ConeDistanceFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:718:27: error: ‘config_’ was not declared in this scope
+  718 |     if (factors_created > config_.max_inter_factors_per_frame) {
+      |                           ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::create_simple_inter_landmark_factors(const std::vector<int>&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:739:69: error: ‘config_’ was not declared in this scope
+  739 |     for (size_t i = 0; i < landmark_ids.size() && factors_created < config_.max_inter_factors_per_frame; ++i) {
+      |                                                                     ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:744:13: error: ‘should_create_inter_landmark_factor’ was not declared in this scope; did you mean ‘create_inter_landmark_factors’?
+  744 |         if (should_create_inter_landmark_factor(id1, id2)) {
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |             create_inter_landmark_factors
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:745:11: error: ‘create_distance_factor’ was not declared in this scope; did you mean ‘ConeDistanceFactor’?
+  745 |           create_distance_factor(id1, id2, frame);
+      |           ^~~~~~~~~~~~~~~~~~~~~~
+      |           ConeDistanceFactor
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:758:62: error: non-member function ‘bool cone_stellation::should_create_inter_landmark_factor(int, int)’ cannot have cv-qualifier
+  758 |   bool should_create_inter_landmark_factor(int id1, int id2) const {
+      |                                                              ^~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘bool cone_stellation::should_create_inter_landmark_factor(int, int)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:763:9: error: ‘landmarks_’ was not declared in this scope
+  763 |     if (landmarks_.find(id1) == landmarks_.end() || landmarks_.find(id2) == landmarks_.end()) {
+      |         ^~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:771:23: error: ‘landmarks_’ was not declared in this scope
+  771 |     const auto& lm1 = landmarks_.at(id1);
+      |                       ^~~~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:778:58: error: ‘config_’ was not declared in this scope
+  778 |                 id1, id2, co_obs_count, static_cast<int>(config_.min_covisibility_count));
+      |                                                          ^~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:780:24: error: ‘config_’ was not declared in this scope
+  780 |     if (co_obs_count < config_.min_covisibility_count) {
+      |                        ^~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:791:37: error: ‘config_’ was not declared in this scope
+  791 |                 id1, id2, distance, config_.min_landmark_distance, config_.max_landmark_distance);
+      |                                     ^~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:793:20: error: ‘config_’ was not declared in this scope
+  793 |     if (distance < config_.min_landmark_distance) {
+      |                    ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:800:20: error: ‘config_’ was not declared in this scope
+  800 |     if (distance > config_.max_landmark_distance) {
+      |                    ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::create_distance_factor(int, int, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:821:9: error: ‘landmarks_’ was not declared in this scope
+  821 |     if (landmarks_.find(id1) == landmarks_.end() || landmarks_.find(id2) == landmarks_.end()) {
+      |         ^~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:832:31: error: ‘isam2_’ was not declared in this scope
+  832 |       auto current_estimate = isam2_->calculateEstimate();
+      |                               ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:833:73: error: ‘initial_values_’ was not declared in this scope
+  833 |       bool landmark1_exists = current_estimate.exists(landmark1_key) || initial_values_.exists(landmark1_key);
+      |                                                                         ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:844:25: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark2_key’?
+  844 |       const auto& lm1 = landmarks_.at(id1);
+      |                         ^~~~~~~~~~
+      |                         landmark2_key
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:849:58: error: ‘config_’ was not declared in this scope
+  849 |       if (measured_distance < 0.1 || measured_distance > config_.max_landmark_distance) {
+      |                                                          ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:856:28: error: ‘config_’ was not declared in this scope
+  856 |       double noise_sigma = config_.inter_landmark_distance_noise *
+      |                            ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:861:7: error: ‘new_factors_’ was not declared in this scope
+  861 |       new_factors_.emplace_shared<ConeDistanceFactor>(
+      |       ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:861:53: error: expected primary-expression before ‘>’ token
+  861 |       new_factors_.emplace_shared<ConeDistanceFactor>(
+      |                                                     ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:11: warning: left operand of comma operator has no effect [-Wunused-value]
+  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);
+      |           ^~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:41: warning: right operand of comma operator has no effect [-Wunused-value]
+  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);
+      |                                         ^~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:862:60: warning: right operand of comma operator has no effect [-Wunused-value]
+  862 |           landmark1_key, landmark2_key, measured_distance, distance_noise);
+      |                                                            ^~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:819:77: warning: unused parameter ‘frame’ [-Wunused-parameter]
+  819 |   void create_distance_factor(int id1, int id2, const EstimationFrame::Ptr& frame) {
+      |                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::create_pattern_factors(const cone_stellation::ConePattern&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:900:34: error: ‘config_’ was not declared in this scope
+  900 |                   gtsam::Vector1(config_.pattern_factor_noise));
+      |                                  ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:15: error: ‘new_factors_’ was not declared in this scope
+  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);
+      |               ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:57: error: expected primary-expression before ‘>’ token
+  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);
+      |                                                         ^
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:59: warning: left operand of comma operator has no effect [-Wunused-value]
+  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);
+      |                                                           ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:902:67: warning: right operand of comma operator has no effect [-Wunused-value]
+  902 |               new_factors_.emplace_shared<ConeLineFactor>(l1, l2, l3, line_noise);
+      |                                                                   ^~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::optimize()’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:914:9: error: ‘new_factors_’ was not declared in this scope
+  914 |     if (new_factors_.empty() && initial_values_.empty()) {
+      |         ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:914:33: error: ‘initial_values_’ was not declared in this scope
+  914 |     if (new_factors_.empty() && initial_values_.empty()) {
+      |                                 ^~~~~~~~~~~~~~~
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:922:17: error: ‘new_factors_’ was not declared in this scope
+  922 |                 new_factors_.size(), initial_values_.size());
+      |                 ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:922:38: error: ‘initial_values_’ was not declared in this scope
+  922 |                 new_factors_.size(), initial_values_.size());
+      |                                      ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:928:19: error: ‘isam2_’ was not declared in this scope
+  928 |                   isam2_->getFactorsUnsafe().size());
+      |                   ^~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:931:30: error: ‘new_factors_’ was not declared in this scope
+  931 |       for (size_t i = 0; i < new_factors_.size(); ++i) {
+      |                              ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:941:11: error: ‘new_factors_’ was not declared in this scope
+  941 |       if (new_factors_.empty() && initial_values_.empty()) {
+      |           ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:941:35: error: ‘initial_values_’ was not declared in this scope
+  941 |       if (new_factors_.empty() && initial_values_.empty()) {
+      |                                   ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:35: error: ‘isam2_’ was not declared in this scope
+  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);
+      |                                   ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:50: error: ‘new_factors_’ was not declared in this scope
+  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);
+      |                                                  ^~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:948:64: error: ‘initial_values_’ was not declared in this scope
+  948 |       gtsam::ISAM2Result result = isam2_->update(new_factors_, initial_values_);
+      |                                                                ^~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:960:7: error: ‘frames_since_optimization_’ was not declared in this scope
+  960 |       frames_since_optimization_ = 0;
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:964:35: error: ‘landmarks_’ was not declared in this scope; did you mean ‘landmark’?
+  964 |       for (auto& [id, landmark] : landmarks_) {
+      |                                   ^~~~~~~~~~
+      |                                   landmark
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:967:74: error: expected primary-expression before ‘>’ token
+  967 |           gtsam::Point2 optimized_pos = current_estimate.at<gtsam::Point2>(landmark_key);
+      |                                                                          ^
+In file included from /opt/ros/humble/include/rclcpp/rclcpp/logging.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/client.hpp:40,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/callback_group.hpp:24,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/any_executable.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategy.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/memory_strategies.hpp:18,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor_options.hpp:20,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executor.hpp:37,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/executors.hpp:21,
+                 from /opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp:155,
+                 from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:1:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:974:19: error: ‘next_pose_id_’ was not declared in this scope
+  974 |                   next_pose_id_, landmarks_.size());
+      |                   ^~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:974:34: error: ‘landmarks_’ was not declared in this scope
+  974 |                   next_pose_id_, landmarks_.size());
+      |                                  ^~~~~~~~~~
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:16:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:983:3: error: ‘Config’ does not name a type
+  983 |   Config config_;
+      |   ^~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘void cone_stellation::add_loop_closure_factor(const cone_stellation::LoopCandidate&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1016:24: error: ‘config_’ was not declared in this scope
+ 1016 |         gtsam::Vector3(config_.loop_closure_noise, config_.loop_closure_noise,
+      |                        ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: In function ‘int cone_stellation::associate_with_tentative_landmark(const cone_stellation::ConeObservation&, const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1055:28: error: ‘config_’ was not declared in this scope
+ 1055 |     double best_distance = config_.max_association_distance; // Use same threshold
+      |                            ^~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp: At global scope:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/cone_mapping.hpp:1193:1: error: expected declaration before ‘}’ token
+ 1193 | } // namespace cone_stellation
+      | ^
+In file included from /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/src/cone_stellation/ros/cone_slam_node.cpp:17:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp: In member function ‘void cone_stellation::SimpleConeMapping::add_keyframe(const Ptr&)’:
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:134:21: warning: comparison of integer expressions of different signedness: ‘std::tuple_element<0, const std::pair<const int, int> >::type’ {aka ‘const int’} and ‘std::vector<cone_stellation::ConeObservation>::size_type’ {aka ‘long unsigned int’} [-Wsign-compare]
+  134 |         if (obs_idx >= world_observations.size()) continue;
+      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/include/cone_stellation/mapping/simple_cone_mapping.hpp:135:21: warning: comparison of integer expressions of different signedness: ‘std::tuple_element<0, const std::pair<const int, int> >::type’ {aka ‘const int’} and ‘std::vector<cone_stellation::ConeObservation>::size_type’ {aka ‘long unsigned int’} [-Wsign-compare]
+  135 |         if (obs_idx >= obs_set.cones.size()) continue;
+      |             ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+gmake[2]: *** [CMakeFiles/cone_slam_node.dir/build.make:79: CMakeFiles/cone_slam_node.dir/src/cone_stellation/ros/cone_slam_node.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:188: CMakeFiles/cone_slam_node.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2
