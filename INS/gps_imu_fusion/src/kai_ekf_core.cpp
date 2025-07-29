@@ -54,40 +54,6 @@ void KaiEkfCore::resetCovarianceMatrix() {
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "공분산 행렬 초기화 완료");
 }
 
-void KaiEkfCore::setImuCalibration(const ImuCalibrationData& calibData) {
-  // IMU calibration bias 값 설정
-  abx = calibData.accel_bias.x;
-  aby = calibData.accel_bias.y;
-  abz = calibData.accel_bias.z;
-  
-  gbx = calibData.gyro_bias.x;
-  gby = calibData.gyro_bias.y;
-  gbz = calibData.gyro_bias.z;
-  
-  RCLCPP_INFO(rclcpp::get_logger("KaiEkfCore"), 
-    "IMU Calibration 적용 완료:\n"
-    "  가속도계 bias: [%.6f, %.6f, %.6f] m/s²\n"
-    "  자이로 bias: [%.6f, %.6f, %.6f] rad/s",
-    abx, aby, abz, gbx, gby, gbz);
-    
-  // Allan variance 결과를 사용하여 프로세스 노이즈 파라미터 업데이트 (옵션)
-  if (!calibData.stats.bias_stability_accel.empty() && calibData.stats.bias_stability_accel.size() >= 3) {
-    // bias stability 값을 기반으로 프로세스 노이즈 조정
-    // bias_stability는 Allan variance에서 최소값을 나타내며, 센서의 최적 안정성을 나타냄
-    float avg_accel_stability = (calibData.stats.bias_stability_accel[0] + 
-                                 calibData.stats.bias_stability_accel[1] + 
-                                 calibData.stats.bias_stability_accel[2]) / 3.0f;
-    float avg_gyro_stability = (calibData.stats.bias_stability_gyro[0] + 
-                               calibData.stats.bias_stability_gyro[1] + 
-                               calibData.stats.bias_stability_gyro[2]) / 3.0f;
-    
-    RCLCPP_INFO(rclcpp::get_logger("KaiEkfCore"),
-      "Allan Variance Bias Stability:\n"
-      "  가속도계: %.6f m/s²\n"
-      "  자이로: %.6f rad/s",
-      avg_accel_stability, avg_gyro_stability);
-  }
-}
 
 void KaiEkfCore::ekfInit(uint64_t time, 
                     double vn, double ve, double vd, 
@@ -95,12 +61,10 @@ void KaiEkfCore::ekfInit(uint64_t time,
                     float p, float q, float r, 
                     float ax, float ay, float az,
                     float hx, float hy, float hz) {
-  // 자이로 bias가 calibration에서 설정되지 않은 경우에만 초기 측정값 사용
-  if (gbx == 0.0f && gby == 0.0f && gbz == 0.0f) {
-    gbx = p;
-    gby = q;
-    gbz = r;
-  }
+  // 자이로 바이어스 초기화 (0으로 시작)
+  gbx = 0.0f;
+  gby = 0.0f;
+  gbz = 0.0f;
   
   std::tie(theta, phi, psi) = getPitchRollYaw(ax, ay, az, hx, hy, hz);
   
@@ -141,7 +105,7 @@ void KaiEkfCore::ekfUpdate(uint64_t time,
     float dt = ((float)(time - _tprev)) / 1e6;
     RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "dt: %f 초", dt);
     
-    updateBias(ax, ay, az, p, q, r);
+    updateImuData(ax, ay, az, p, q, r);
     
     updateIns();
     
@@ -305,9 +269,9 @@ void KaiEkfCore::update15StatesAfterKf() {
   
   std::tie(phi, theta, psi) = quaternionToEuler(quat);
   
-  abx += x(9,0);
-  aby += x(10,0);
-  abz += x(11,0);
+  // 가속도계 바이어스는 EKF에서 추정하지 않음 (imu_preprocess에서 처리)
+  // x(9,0), x(10,0), x(11,0)는 사용하지 않음
+  
   gbx += x(12,0);
   gby += x(13,0);
   gbz += x(14,0);
@@ -315,18 +279,18 @@ void KaiEkfCore::update15StatesAfterKf() {
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "15 상태 변수 업데이트 완료");
 }
 
-void KaiEkfCore::updateBias(float ax, float ay, float az, float p, float q, float r) {
+void KaiEkfCore::updateImuData(float ax, float ay, float az, float p, float q, float r) {
   // IMU 전처리 노드에서 이미 바이어스가 제거되었으므로 그대로 사용
   f_b(0,0) = ax;
   f_b(1,0) = ay;
   f_b(2,0) = az;
 
-  // 자이로 데이터도 전처리 노드에서 바이어스가 제거되었으므로 그대로 사용
-  om_ib(0,0) = p;
-  om_ib(1,0) = q;
-  om_ib(2,0) = r;
+  // 자이로 데이터에서 EKF가 추정한 바이어스 제거
+  om_ib(0,0) = p - gbx;
+  om_ib(1,0) = q - gby;
+  om_ib(2,0) = r - gbz;
 
-  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "바이어스 업데이트: ax=%.3f, ay=%.3f, az=%.3f, p=%.3f, q=%.3f, r=%.3f", ax, ay, az, p, q, r);
+  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "IMU 데이터 업데이트: ax=%.3f, ay=%.3f, az=%.3f, p=%.3f, q=%.3f, r=%.3f", ax, ay, az, p, q, r);
 }
 
 void KaiEkfCore::updateProcessNoiseAndCovariance(float dt) {

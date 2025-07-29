@@ -93,7 +93,6 @@ private:
   
   void configureEkfParameters();
   
-  void loadImuCalibration(const std::string& filepath);
 };
 
 } 

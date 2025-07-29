@@ -29,13 +29,13 @@ def generate_launch_description():
     
     processed_topic_arg = DeclareLaunchArgument(
         'processed_topic',
-        default_value='',
+        default_value='/imu/processed',
         description='전처리된 IMU 토픽 이름 (비어있으면 캘리브레이션 파일 사용)'
     )
     
     rotation_only_mode_arg = DeclareLaunchArgument(
         'rotation_only_mode',
-        default_value='false',
+        default_value='true',
         description='위치 변화를 무시하고 회전 드리프트만 시각화'
     )
     

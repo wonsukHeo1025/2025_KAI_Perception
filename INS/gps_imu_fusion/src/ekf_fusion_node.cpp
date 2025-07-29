@@ -73,7 +73,6 @@ void EkfFusionNode::loadParameters() {
     this->declare_parameter("init_hdg_unc", 3.14159);
     this->declare_parameter("init_accel_bias_unc", 0.981);
     this->declare_parameter("init_gyro_bias_unc", 0.01745);
-    this->declare_parameter("imu_calibration_file", "");
   } else {
     RCLCPP_INFO(this->get_logger(), "Parameters loaded from file");
   }
@@ -127,24 +126,8 @@ void EkfFusionNode::configureEkfParameters() {
   RCLCPP_INFO(this->get_logger(), "  IMU accel/gyro noise: %.3f m/s² / %.5f rad/s", 
               params.accel_noise, params.gyro_noise);
               
-  // IMU calibration 파일 로드 및 적용
-  std::string calibration_file = this->get_parameter("imu_calibration_file").as_string();
-  if (!calibration_file.empty()) {
-    loadImuCalibration(calibration_file);
-  }
 }
 
-void EkfFusionNode::loadImuCalibration(const std::string& filepath) {
-  RCLCPP_INFO(this->get_logger(), "IMU calibration 파일 로드 시도: %s", filepath.c_str());
-  
-  auto calibData = kai::ImuCalibrationLoader::loadFromFile(filepath);
-  if (calibData.has_value()) {
-    ekf_->setImuCalibration(calibData.value());
-    RCLCPP_INFO(this->get_logger(), "IMU calibration 파일 로드 및 적용 성공");
-  } else {
-    RCLCPP_WARN(this->get_logger(), "IMU calibration 파일 로드 실패. 기본값 사용.");
-  }
-}
 
 EkfFusionNode::UTMCoordinate EkfFusionNode::llToUtm(double lat, double lon) {
   UTMCoordinate result;

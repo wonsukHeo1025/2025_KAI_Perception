@@ -8,7 +8,6 @@
 #include <tuple>
 #include <mutex>
 #include <shared_mutex>
-#include "gps_imu_fusion/imu_calibration_v2.hpp"
 
 namespace kai {
 
@@ -70,23 +69,62 @@ public:
   
   bool initialized() const { return initialized_; }
   
-  float getPitch_rad() const { return theta; }
-  float getRoll_rad() const { return phi; }
-  float getHeading_rad() const { return psi; }
-  float getHeadingConstrainAngle180_rad() const { return constrainAngle180(psi); }
-  double getLatitude_rad() const { return lat_ins; }
-  double getLongitude_rad() const { return lon_ins; }
-  double getAltitude_m() const { return alt_ins; }
-  double getVelNorth_ms() const { return vn_ins; }
-  double getVelEast_ms() const { return ve_ins; }
-  double getVelDown_ms() const { return vd_ins; }
-  float getGroundTrack_rad() const { return atan2f((float)ve_ins, (float)vn_ins); }
-  float getGyroBiasX_rads() const { return gbx; }
-  float getGyroBiasY_rads() const { return gby; }
-  float getGyroBiasZ_rads() const { return gbz; }
-  float getAccelBiasX_mss() const { return abx; }
-  float getAccelBiasY_mss() const { return aby; }
-  float getAccelBiasZ_mss() const { return abz; }
+  float getPitch_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return theta; 
+  }
+  float getRoll_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return phi; 
+  }
+  float getHeading_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return psi; 
+  }
+  float getHeadingConstrainAngle180_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return constrainAngle180(psi); 
+  }
+  double getLatitude_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return lat_ins; 
+  }
+  double getLongitude_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return lon_ins; 
+  }
+  double getAltitude_m() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return alt_ins; 
+  }
+  double getVelNorth_ms() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return vn_ins; 
+  }
+  double getVelEast_ms() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return ve_ins; 
+  }
+  double getVelDown_ms() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return vd_ins; 
+  }
+  float getGroundTrack_rad() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return atan2f((float)ve_ins, (float)vn_ins); 
+  }
+  float getGyroBiasX_rads() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return gbx; 
+  }
+  float getGyroBiasY_rads() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return gby; 
+  }
+  float getGyroBiasZ_rads() const { 
+    std::shared_lock<std::shared_mutex> lock(shMutex);
+    return gbz; 
+  }
   
   std::tuple<float,float,float> getPitchRollYaw(float ax, float ay, float az, float hx, float hy, float hz);
   
@@ -103,7 +141,6 @@ public:
   void updateProcessNoiseMatrix();
   void resetCovarianceMatrix();
   
-  void setImuCalibration(const ImuCalibrationData& calibData);
 
 
 private:
@@ -121,7 +158,6 @@ private:
   double vn_ins, ve_ins, vd_ins;
   double lat_ins, lon_ins, alt_ins;
   float Bxc, Byc;
-  float abx = 0.0f, aby = 0.0f, abz = 0.0f;
   float gbx = 0.0f, gby = 0.0f, gbz = 0.0f;
   Eigen::Matrix<float,15,15> Fs = Eigen::Matrix<float,15,15>::Identity();
   Eigen::Matrix<float,15,15> PHI = Eigen::Matrix<float,15,15>::Zero();
@@ -175,7 +211,7 @@ private:
  
   void updateJacobianMatrix();
   void updateProcessNoiseAndCovariance(float dt);
-  void updateBias(float ax, float ay, float az, float p, float q, float r);
+  void updateImuData(float ax, float ay, float az, float p, float q, float r);
   void update15StatesAfterKf();
   void updateMeasurementResidual();
   void updateIns();
