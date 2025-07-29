@@ -1,5 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <array>
 #include <cmath>
 #include <fstream>
@@ -16,8 +17,18 @@ public:
     /* ---------- 파라미터 ---------- */
     calib_duration_ = declare_parameter<double>("calib_duration", 20.0); // 정적 캘리브레이션 시간 [s]
     lpf_cutoff_     = declare_parameter<double>("lpf_cutoff",    15.0);  // 1차 IIR LPF 컷오프 [Hz]
-    calib_file_path_ = declare_parameter<std::string>("calibration_file", 
-      "/home/user1/ROS2_Workspace/ros2_ws/src/INS/imu_preprocess/config/improved_imu_calibration.json");
+    
+    // 패키지 share 디렉토리를 찾아서 기본 경로 설정
+    std::string default_calib_path;
+    try {
+      std::string package_share_dir = ament_index_cpp::get_package_share_directory("imu_preprocess");
+      default_calib_path = package_share_dir + "/config/improved_imu_calibration.json";
+    } catch (const std::exception& e) {
+      RCLCPP_WARN(get_logger(), "Failed to get package share directory: %s. Using relative path.", e.what());
+      default_calib_path = "config/improved_imu_calibration.json";
+    }
+    
+    calib_file_path_ = declare_parameter<std::string>("calibration_file", default_calib_path);
     use_json_bias_ = declare_parameter<bool>("use_json_bias", true);  // JSON 파일의 바이어스 사용 여부
     use_adaptive_filter_ = declare_parameter<bool>("use_adaptive_filter", true);  // Allan variance 기반 필터 사용
     bias_window_size_ = declare_parameter<int>("bias_window_size", 100);  // 동적 바이어스 추정 윈도우 크기

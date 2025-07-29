@@ -132,11 +132,14 @@ void KaiEkfCore::ekfUpdate(uint64_t time,
     ekfInit(time, vn, ve, vd, lat, lon, alt, p, q, r, ax, ay, az, hx, hy, hz);
     initialized_ = true;
   } else {
+    // 시간이 역행하거나 동일한 경우 건너뜀
+    if (time <= _tprev) {
+      RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "중복된 시간 또는 시간 역행: time=%lu, _tprev=%lu", time, _tprev);
+      return;
+    }
+    
     float dt = ((float)(time - _tprev)) / 1e6;
     RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "dt: %f 초", dt);
-    if(dt <= 0.0f) {
-      RCLCPP_WARN(rclcpp::get_logger("KaiEkfCore"), "dt가 0 이하입니다: dt=%f", dt);
-    }
     
     updateBias(ax, ay, az, p, q, r);
     
@@ -177,33 +180,30 @@ void KaiEkfCore::ekfUpdate(uint64_t time,
     
     updateProcessNoiseAndCovariance(dt);
     
-    if ((time - _tprev) > 0) {
-      lla_gps(0,0) = lat;
-      lla_gps(1,0) = lon;
-      lla_gps(2,0) = alt;
-      
-      V_gps(0,0) = vn;
-      V_gps(1,0) = ve;
-      V_gps(2,0) = vd;
-      
-      updateIns();
-      
-      updateMeasurementResidual();
-      RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "측정 잔차 업데이트 완료");
-      
-      K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
-      
-      P = (Eigen::Matrix<float,15,15>::Identity() - K * H) * P * (Eigen::Matrix<float,15,15>::Identity() - K * H).transpose() + 
-          K * R * K.transpose();
-      
-      x = K * y;
-      
-      update15StatesAfterKf();
-      
-      _tprev = time;
-      RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "EKF 업데이트 완료, 새로운 시간: %lu", time);
-    }
-    updateBias(ax, ay, az, p, q, r);
+    lla_gps(0,0) = lat;
+    lla_gps(1,0) = lon;
+    lla_gps(2,0) = alt;
+    
+    V_gps(0,0) = vn;
+    V_gps(1,0) = ve;
+    V_gps(2,0) = vd;
+    
+    updateIns();
+    
+    updateMeasurementResidual();
+    RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "측정 잔차 업데이트 완료");
+    
+    K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
+    
+    P = (Eigen::Matrix<float,15,15>::Identity() - K * H) * P * (Eigen::Matrix<float,15,15>::Identity() - K * H).transpose() + 
+        K * R * K.transpose();
+    
+    x = K * y;
+    
+    update15StatesAfterKf();
+    
+    _tprev = time;
+    RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "EKF 업데이트 완료, 새로운 시간: %lu", time);
   }
 }
 

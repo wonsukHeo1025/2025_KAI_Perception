@@ -274,7 +274,15 @@ void EkfFusionNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
                  mag_declination_ * 180.0 / M_PI, imu_data.hX, imu_data.hY);
   }
   
-  uint64_t time_us = msg->header.stamp.sec * 1000000LL + msg->header.stamp.nanosec / 1000LL;
+  // 타임스탬프 처리: 헤더에 타임스탬프가 없으면 현재 시간 사용
+  uint64_t time_us;
+  if (msg->header.stamp.sec == 0 && msg->header.stamp.nanosec == 0) {
+    auto now = this->now();
+    time_us = now.seconds() * 1000000LL + now.nanoseconds() / 1000LL;
+    RCLCPP_WARN_ONCE(this->get_logger(), "IMU message has no timestamp, using current time");
+  } else {
+    time_us = msg->header.stamp.sec * 1000000LL + msg->header.stamp.nanosec / 1000LL;
+  }
   
   RCLCPP_DEBUG(this->get_logger(), "Updating EKF with IMU data, timestamp: %ld us", time_us);
   ekf_->imuUpdateEkf(time_us, imu_data);

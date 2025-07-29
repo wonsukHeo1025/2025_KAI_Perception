@@ -7,7 +7,7 @@ ekf_fusion_node:
     imu_frame_id: "imu_link"
     
     # 일반 설정
-    update_rate: 100.0       # EKF 업데이트 주기 (Hz)
+    update_rate: 50.0       # EKF 업데이트 주기 (Hz)
     # update_rate:
     #   높일수록 더 빠른 응답을 얻을 수 있지만 CPU 사용량이 증가함
     #   10-50Hz 범위가 적당함
