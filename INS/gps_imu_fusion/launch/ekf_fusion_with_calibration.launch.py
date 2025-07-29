@@ -41,24 +41,6 @@ def generate_launch_description():
             description='Use simulation (Gazebo) clock if true'
         ),
         
-        # IMU Preprocess Node
-        Node(
-            package='imu_preprocess',
-            executable='imu_preprocess_node',
-            name='imu_preprocess_node',
-            output='screen',
-            parameters=[{
-                'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'calibration_file': LaunchConfiguration('imu_calibration_file'),
-                'use_json_bias': True,
-                'use_adaptive_filter': True
-            }],
-            remappings=[
-                ('/imu/data', '/imu/data'),
-                ('/imu/processed', '/imu/processed')
-            ]
-        ),
-        
         # EKF Fusion Node
         Node(
             package='gps_imu_fusion',
