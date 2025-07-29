@@ -1,7 +1,6 @@
 #ifndef KAI_EKF_CORE_HPP
 #define KAI_EKF_CORE_HPP
 
-#include <rclcpp/rclcpp.hpp>
 #include <stdint.h>
 #include <math.h>
 #include <Eigen/Core>
@@ -9,6 +8,7 @@
 #include <tuple>
 #include <mutex>
 #include <shared_mutex>
+#include "gps_imu_fusion/imu_calibration_v2.hpp"
 
 namespace kai {
 
@@ -102,6 +102,8 @@ public:
   void gpsVelocityUpdateEkf(const GpsVelocity& vel);
   void updateProcessNoiseMatrix();
   void resetCovarianceMatrix();
+  
+  void setImuCalibration(const ImuCalibrationData& calibData);
 
 
 private:

@@ -1,6 +1,6 @@
 #include "gps_imu_fusion/kai_ekf_core.hpp"
 #include <cmath>
-
+#include "rclcpp/rclcpp.hpp"  
 namespace kai {
 
 KaiEkfCore::KaiEkfCore() {
@@ -54,15 +54,53 @@ void KaiEkfCore::resetCovarianceMatrix() {
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "공분산 행렬 초기화 완료");
 }
 
+void KaiEkfCore::setImuCalibration(const ImuCalibrationData& calibData) {
+  // IMU calibration bias 값 설정
+  abx = calibData.accel_bias.x;
+  aby = calibData.accel_bias.y;
+  abz = calibData.accel_bias.z;
+  
+  gbx = calibData.gyro_bias.x;
+  gby = calibData.gyro_bias.y;
+  gbz = calibData.gyro_bias.z;
+  
+  RCLCPP_INFO(rclcpp::get_logger("KaiEkfCore"), 
+    "IMU Calibration 적용 완료:\n"
+    "  가속도계 bias: [%.6f, %.6f, %.6f] m/s²\n"
+    "  자이로 bias: [%.6f, %.6f, %.6f] rad/s",
+    abx, aby, abz, gbx, gby, gbz);
+    
+  // Allan variance 결과를 사용하여 프로세스 노이즈 파라미터 업데이트 (옵션)
+  if (!calibData.stats.bias_stability_accel.empty() && calibData.stats.bias_stability_accel.size() >= 3) {
+    // bias stability 값을 기반으로 프로세스 노이즈 조정
+    // bias_stability는 Allan variance에서 최소값을 나타내며, 센서의 최적 안정성을 나타냄
+    float avg_accel_stability = (calibData.stats.bias_stability_accel[0] + 
+                                 calibData.stats.bias_stability_accel[1] + 
+                                 calibData.stats.bias_stability_accel[2]) / 3.0f;
+    float avg_gyro_stability = (calibData.stats.bias_stability_gyro[0] + 
+                               calibData.stats.bias_stability_gyro[1] + 
+                               calibData.stats.bias_stability_gyro[2]) / 3.0f;
+    
+    RCLCPP_INFO(rclcpp::get_logger("KaiEkfCore"),
+      "Allan Variance Bias Stability:\n"
+      "  가속도계: %.6f m/s²\n"
+      "  자이로: %.6f rad/s",
+      avg_accel_stability, avg_gyro_stability);
+  }
+}
+
 void KaiEkfCore::ekfInit(uint64_t time, 
                     double vn, double ve, double vd, 
                     double lat, double lon, double alt,
                     float p, float q, float r, 
                     float ax, float ay, float az,
                     float hx, float hy, float hz) {
-  gbx = p;
-  gby = q;
-  gbz = r;
+  // 자이로 bias가 calibration에서 설정되지 않은 경우에만 초기 측정값 사용
+  if (gbx == 0.0f && gby == 0.0f && gbz == 0.0f) {
+    gbx = p;
+    gby = q;
+    gbz = r;
+  }
   
   std::tie(theta, phi, psi) = getPitchRollYaw(ax, ay, az, hx, hy, hz);
   
@@ -155,8 +193,7 @@ void KaiEkfCore::ekfUpdate(uint64_t time,
       
       K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
       
-      P = (Eigen::Matrix<float,15,15>::Identity() - K * H) * P * 
-          (Eigen::Matrix<float,15,15>::Identity() - K * H).transpose() + 
+      P = (Eigen::Matrix<float,15,15>::Identity() - K * H) * P * (Eigen::Matrix<float,15,15>::Identity() - K * H).transpose() + 
           K * R * K.transpose();
       
       x = K * y;
@@ -195,15 +232,31 @@ void KaiEkfCore::gpsVelocityUpdateEkf(const GpsVelocity& vel) {
 }
 
 std::tuple<float,float,float> KaiEkfCore::getPitchRollYaw(float ax, float ay, float az, float hx, float hy, float hz) {
+  // --- Pitch 계산 수정 ---
+  float pitch_input = ax / GRAVITY;
+  // 입력값이 -1.0 ~ 1.0 범위를 벗어나지 않도록 강제
+  if (pitch_input > 1.0f) {
+    pitch_input = 1.0f;
+  } else if (pitch_input < -1.0f) {
+    pitch_input = -1.0f;
+  }
+  float pitch = asinf(pitch_input);
 
-  float pitch = asinf(ax / GRAVITY);
-  float roll = -asinf(ay / (GRAVITY * cosf(pitch)));
-  
-  Bxc = hx * cosf(pitch) + (hy * sinf(roll) + hz * cosf(roll)) * sinf(pitch);
-  Byc = hy * cosf(roll) - hz * sinf(roll);
-  
+  // --- Roll 계산 수정 ---
+  float roll_input = -ay / (GRAVITY * cosf(pitch));
+  // 입력값이 -1.0 ~ 1.0 범위를 벗어나지 않도록 강제
+  if (roll_input > 1.0f) {
+    roll_input = 1.0f;
+  } else if (roll_input < -1.0f) {
+    roll_input = -1.0f;
+  }
+  float roll = -asinf(roll_input);
+
+  // ... (yaw 계산은 동일)
+  float Bxc = hx * cosf(pitch) + (hy * sinf(roll) + hz * cosf(roll)) * sinf(pitch);
+  float Byc = hy * cosf(roll) - hz * sinf(roll);
   float yaw = -atan2f(Byc, Bxc);
-
+  
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "초기 자세 추정: pitch=%.3f, roll=%.3f, yaw=%.3f", pitch, roll, yaw);
   
   return std::make_tuple(pitch, roll, yaw);
@@ -263,13 +316,15 @@ void KaiEkfCore::update15StatesAfterKf() {
 }
 
 void KaiEkfCore::updateBias(float ax, float ay, float az, float p, float q, float r) {
-  f_b(0,0) = ax - abx;
-  f_b(1,0) = ay - aby;
-  f_b(2,0) = az - abz;
+  // IMU 전처리 노드에서 이미 바이어스가 제거되었으므로 그대로 사용
+  f_b(0,0) = ax;
+  f_b(1,0) = ay;
+  f_b(2,0) = az;
 
-  om_ib(0,0) = p - gbx;
-  om_ib(1,0) = q - gby;
-  om_ib(2,0) = r - gbz;
+  // 자이로 데이터도 전처리 노드에서 바이어스가 제거되었으므로 그대로 사용
+  om_ib(0,0) = p;
+  om_ib(1,0) = q;
+  om_ib(2,0) = r;
 
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "바이어스 업데이트: ax=%.3f, ay=%.3f, az=%.3f, p=%.3f, q=%.3f, r=%.3f", ax, ay, az, p, q, r);
 }
@@ -451,17 +506,23 @@ Eigen::Matrix<float,4,1> KaiEkfCore::eulerToQuaternion(float yaw, float pitch, f
 }
 
 std::tuple<float,float,float> KaiEkfCore::quaternionToEuler(const Eigen::Matrix<float,4,1>& q) {
+  // -------------------- 이 함수를 수정합니다 --------------------
   float roll, pitch, yaw;
   
   float sinr_cosp = 2.0f * (q(0,0) * q(1,0) + q(2,0) * q(3,0));
   float cosr_cosp = 1.0f - 2.0f * (q(1,0) * q(1,0) + q(2,0) * q(2,0));
   roll = atan2f(sinr_cosp, cosr_cosp);
   
+  // --- Pitch 계산 수정 ---
   float sinp = 2.0f * (q(0,0) * q(2,0) - q(3,0) * q(1,0));
-  if (std::abs(sinp) >= 1.0f)
-    pitch = std::copysign(M_PI / 2.0f, sinp);  
-  else
-    pitch = asinf(sinp);
+  // 입력값이 -1.0 ~ 1.0 범위를 벗어나지 않도록 강제합니다.
+  if (sinp > 1.0f) {
+      sinp = 1.0f;
+  } else if (sinp < -1.0f) {
+      sinp = -1.0f;
+  }
+  pitch = asinf(sinp);
+  // --- 여기까지 수정 ---
     
   float siny_cosp = 2.0f * (q(0,0) * q(3,0) + q(1,0) * q(2,0));
   float cosy_cosp = 1.0f - 2.0f * (q(2,0) * q(2,0) + q(3,0) * q(3,0));

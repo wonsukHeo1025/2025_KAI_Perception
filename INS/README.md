@@ -156,7 +156,7 @@ gps_imu_fusion 패키지는 GPS 데이터와 IMU 데이터를 Extended Kalman Fi
 
 1. **EKF 노드 실행**
    ```bash
-   ros2 launch gps_imu_fusion ekf_fusion.launch.py 
+   ros2 launch gps_imu_fusion ekf_launch.py
    ```
 
 2. **파라미터 튜닝**
@@ -231,7 +231,7 @@ visualization_tutorials 패키지는 ROS의 시각화 도구인 RViz를 활용�
 
 1. **IMU 드라이버 실행**
    ```bash
-   ros2 launch myahrs_ros2_driver myahrs_ros2_driver.launch.py 
+   ros2 run myahrs_ros2_driver myahrs_ros2_node
    ```
 
 2. **GPS 드라이버 실행**
@@ -239,19 +239,19 @@ visualization_tutorials 패키지는 ROS의 시각화 도구인 RViz를 활용�
    ros2 launch ublox_gps ublox_gps_node-launch.py
    ```
 
-3. **NTRIP 클라이언트 실행**
+3. **NTRIP 클라이언트 실행 (필요한 경우)**
    ```bash
-   ros2 launch ntrip_client ntrip_client_launch.py
+   ros2 run ntrip_client ntrip_client_node
    ```
 
-4. **gps nmea fix**
+4. **EKF 융합 노드 실행**
    ```bash
-   ros2 run fix2nmea fix2nmea
+   ros2 launch gps_imu_fusion ekf_launch.py
    ```
 
-5. **EKF 융합 노드 실행**
+5. **시각화 (선택사항)**
    ```bash
-   ros2 launch gps_imu_fusion ekf_fusion.launch.py 
+   ros2 run rviz2 rviz2
    ```
 
 ## 주의사항 및 팁

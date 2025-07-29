@@ -23,16 +23,19 @@ EkfFusionNode::EkfFusionNode(const rclcpp::NodeOptions& options)
     "/ublox_gps_node/fix_velocity", 10, std::bind(&EkfFusionNode::gnssVelCallback, this, std::placeholders::_1));
     
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-    "imu/data", 10, std::bind(&EkfFusionNode::imuCallback, this, std::placeholders::_1));
+    "imu/processed", rclcpp::SensorDataQoS(), std::bind(&EkfFusionNode::imuCallback, this, std::placeholders::_1));
 
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odometry/filtered", 10);
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose/filtered", 10);
+  path_pub_ = this->create_publisher<nav_msgs::msg::Path>("path", 10);
   
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   
   timer_ = this->create_wall_timer(
     std::chrono::duration<double>(1.0 / update_rate_),
     std::bind(&EkfFusionNode::updateAndPublish, this));
+    
+  path_msg_.header.frame_id = world_frame_id_;
     
   RCLCPP_INFO(this->get_logger(), "EKF Fusion Node initialized");
   RCLCPP_INFO(this->get_logger(), "Listening to GNSS on: %s", gnss_sub_->get_topic_name());
@@ -41,7 +44,6 @@ EkfFusionNode::EkfFusionNode(const rclcpp::NodeOptions& options)
 }
 
 void EkfFusionNode::loadParameters() {
-
   if (!this->has_parameter("world_frame_id")) {
     RCLCPP_INFO(this->get_logger(), "Parameters not loaded from file, using defaults");
     
@@ -71,6 +73,7 @@ void EkfFusionNode::loadParameters() {
     this->declare_parameter("init_hdg_unc", 3.14159);
     this->declare_parameter("init_accel_bias_unc", 0.981);
     this->declare_parameter("init_gyro_bias_unc", 0.01745);
+    this->declare_parameter("imu_calibration_file", "");
   } else {
     RCLCPP_INFO(this->get_logger(), "Parameters loaded from file");
   }
@@ -123,6 +126,24 @@ void EkfFusionNode::configureEkfParameters() {
               params.gps_vel_noise_ne, params.gps_vel_noise_d);
   RCLCPP_INFO(this->get_logger(), "  IMU accel/gyro noise: %.3f m/s² / %.5f rad/s", 
               params.accel_noise, params.gyro_noise);
+              
+  // IMU calibration 파일 로드 및 적용
+  std::string calibration_file = this->get_parameter("imu_calibration_file").as_string();
+  if (!calibration_file.empty()) {
+    loadImuCalibration(calibration_file);
+  }
+}
+
+void EkfFusionNode::loadImuCalibration(const std::string& filepath) {
+  RCLCPP_INFO(this->get_logger(), "IMU calibration 파일 로드 시도: %s", filepath.c_str());
+  
+  auto calibData = kai::ImuCalibrationLoader::loadFromFile(filepath);
+  if (calibData.has_value()) {
+    ekf_->setImuCalibration(calibData.value());
+    RCLCPP_INFO(this->get_logger(), "IMU calibration 파일 로드 및 적용 성공");
+  } else {
+    RCLCPP_WARN(this->get_logger(), "IMU calibration 파일 로드 실패. 기본값 사용.");
+  }
 }
 
 EkfFusionNode::UTMCoordinate EkfFusionNode::llToUtm(double lat, double lon) {
@@ -155,11 +176,15 @@ void EkfFusionNode::gnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr ms
                latest_utm_.zone, latest_utm_.band, latest_utm_.easting, latest_utm_.northing);
   
   if (!origin_set_) {
-    origin_utm_x_ = latest_utm_.easting;
-    origin_utm_y_ = latest_utm_.northing;
+    // 건국대 일감호를 원점으로 설정
+    double ref_lat = 37.540091;
+    double ref_lon = 127.076555;
+    auto ref_utm = llToUtm(ref_lat, ref_lon);
+    origin_utm_x_ = ref_utm.easting;
+    origin_utm_y_ = ref_utm.northing;
     origin_set_ = true;
-    RCLCPP_INFO(this->get_logger(), "Origin set at UTM: %.2f, %.2f (zone %d%c)", 
-                origin_utm_x_, origin_utm_y_, latest_utm_.zone, latest_utm_.band);
+    RCLCPP_INFO(this->get_logger(), "Origin set at Konkuk University Ilgamho: %.2f, %.2f (zone %d%c)", 
+                origin_utm_x_, origin_utm_y_, ref_utm.zone, ref_utm.band);
   }
   
   kai::GpsCoordinate coor;
@@ -202,6 +227,7 @@ void EkfFusionNode::gnssVelCallback(const geometry_msgs::msg::TwistWithCovarianc
 }
 
 void EkfFusionNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
+  // -------------------- 이 함수를 수정합니다 --------------------
   std::lock_guard<std::mutex> lock(data_mutex_);
   
   RCLCPP_DEBUG(this->get_logger(), "Received IMU data: gyro=[%.3f, %.3f, %.3f] rad/s, accel=[%.3f, %.3f, %.3f] m/s²",
@@ -210,6 +236,19 @@ void EkfFusionNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
   
   latest_imu_ = *msg;
   
+  if (!received_imu_) {
+    RCLCPP_INFO(this->get_logger(), "First IMU data received");
+  }
+  received_imu_ = true;
+  
+  // --- 여기에 가드 조건 추가 ---
+  // GPS 위치 및 속도 데이터가 아직 도착하지 않았다면, 
+  // EKF 업데이트를 시작하지 않고 함수를 종료합니다.
+  if (!received_gnss_ || !received_gnss_vel_) {
+    return;
+  }
+  // --- 여기까지 추가 ---
+
   kai::ImuData imu_data;
   
   imu_data.gyroX = msg->angular_velocity.x;
@@ -237,11 +276,6 @@ void EkfFusionNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
   
   uint64_t time_us = msg->header.stamp.sec * 1000000LL + msg->header.stamp.nanosec / 1000LL;
   
-  if (!received_imu_) {
-    RCLCPP_INFO(this->get_logger(), "First IMU data received");
-  }
-  received_imu_ = true;
-  
   RCLCPP_DEBUG(this->get_logger(), "Updating EKF with IMU data, timestamp: %ld us", time_us);
   ekf_->imuUpdateEkf(time_us, imu_data);
 }
@@ -263,8 +297,10 @@ void EkfFusionNode::updateAndPublish() {
                       "EKF initialization status: %s", is_initialized ? "INITIALIZED" : "NOT INITIALIZED");
   
   if (!is_initialized) {
-    RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-                         "EKF not initialized yet. All sensors are receiving data but initialization may not be complete.");
+    // 이 부분은 이제 imuCallback의 가드 조건 때문에 거의 호출되지 않지만,
+    // 만약을 위해 안전장치로 남겨둡니다.
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                         "EKF not initialized yet, though all sensors are being received. Waiting for IMU callback to trigger initialization.");
     return;
   }
   
@@ -286,7 +322,7 @@ void EkfFusionNode::publishOdometry() {
   
   nav_msgs::msg::Odometry odom;
   odom.header.stamp = now;
-  odom.header.frame_id = world_frame_id_;
+  odom.header.frame_id = "odom";
   odom.child_frame_id = base_frame_id_;
   
   if (origin_set_) {
@@ -321,6 +357,12 @@ void EkfFusionNode::publishOdometry() {
   
   RCLCPP_DEBUG(this->get_logger(), "Attitude: roll=%.2f, pitch=%.2f, heading=%.2f rad", roll, pitch, heading);
   
+  // NaN 방지를 위해 roll, pitch, heading 값 확인 (안전장치로 유지)
+  if (std::isnan(roll) || std::isnan(pitch) || std::isnan(heading)) {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "NaN detected in roll, pitch, or heading. Skipping odometry publication.");
+    return;
+  }
+
   tf2::Quaternion q;
   q.setRPY(roll, pitch, heading);
   
@@ -369,6 +411,15 @@ void EkfFusionNode::publishOdometry() {
   pose.header = odom.header;
   pose.pose = odom.pose.pose;
   pose_pub_->publish(pose);
+
+  // 경로 업데이트 및 발행 코드
+  geometry_msgs::msg::PoseStamped current_pose;
+  current_pose.header = odom.header;
+  current_pose.pose = odom.pose.pose;
+
+  path_msg_.poses.push_back(current_pose);
+  path_msg_.header.stamp = now;
+  path_pub_->publish(path_msg_);
 }
 
 void EkfFusionNode::publishTransform() {
@@ -395,13 +446,19 @@ void EkfFusionNode::publishTransform() {
   } else {
     heading = ekf_->getHeading_rad();  
   }
+
+  // NaN 방지를 위해 roll, pitch, heading 값 확인 (안전장치로 유지)
+  if (std::isnan(roll) || std::isnan(pitch) || std::isnan(heading)) {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "NaN detected in roll, pitch, or heading. Skipping transform publication.");
+    return;
+  }
   
   tf2::Quaternion q;
   q.setRPY(roll, pitch, heading);
   
   geometry_msgs::msg::TransformStamped transform;
   transform.header.stamp = now;
-  transform.header.frame_id = world_frame_id_;
+  transform.header.frame_id = "odom";
   transform.child_frame_id = base_frame_id_;
   
   transform.transform.translation.x = latest_utm_.easting - origin_utm_x_;

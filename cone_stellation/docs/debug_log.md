@@ -18,6 +18,20 @@
 **Decision**: POSTPONED - Not suitable for landmark-based SLAM. May revisit if memory becomes issue.
 **Result**: Focus shifted to loop closure implementation instead.
 
+## 2025-07-24 - IMU-GPS Integration Development
+**Problem**: Need realistic IMU and GPS simulators for EKF fusion testing  
+**Solution**: Created enhanced sensor simulators with:
+- IMU: Temperature drift, scale factors, misalignment, Allan variance noise
+- GPS: WGS84/UTM conversion, RTK status transitions, DOP effects  
+**Result**: ✅ Resolved - Enhanced simulators working, ready for robot_localization integration
+
+**Key Implementation Details**:
+- Used `utm` library for proper coordinate transformation
+- RTK Fix covariance set to realistic 0.00002 (2cm) as observed in real data
+- Added multipath and satellite geometry effects
+- Created test script with various motion profiles
+- Integrated with dummy_publisher via `simulation.use_gps` flag
+
 ## 2025-07-22 - Loop Closure Implementation Discovery
 **Issue**: User requested loop closure implementation, but it was already implemented!
 **Finding**: Complete loop closure system already exists:
@@ -349,3 +363,56 @@
 1. Loop closure 안정적으로 재구현
 2. False positive 추가 필터링
 3. GPS/IMU integration
+
+
+## 2025-07-28: IMU-GPS EKF Fusion 구현 완료
+
+### 구현 내용:
+1. **실제 토픽 형식과 일치하는 센서 퍼블리셔**
+   - /ouster/imu: 100Hz IMU 데이터 (os_imu frame)
+   - /ublox_gps_node/fix: 8Hz GPS fix 데이터
+   - /ublox_gps_node/fix_velocity: GPS 속도 데이터
+   - EnhancedImuSimulator와 EnhancedGpsSimulator 활용
+
+2. **GPS to Cartesian 변환 노드**
+   - WGS84 위도/경도를 UTM 좌표계로 변환
+   - 서울 기준점 (37.5413753°N, 127.0779785°E) 사용
+   - /gps/odometry와 /gps/pose 토픽 퍼블리시
+   - TF 트리에 gps 프레임 추가
+
+3. **robot_localization EKF 설정**
+   - 100Hz 융합 주파수
+   - IMU: 자세, 각속도, 가속도 사용
+   - GPS: 위치만 사용 (자세 없음)
+   - GPS 속도: 선속도만 사용
+   - 프로세스 노이즈 및 공분산 매트릭스 조정
+
+4. **통합 런치 파일**
+   - 모든 노드를 함께 실행
+   - 다양한 모션 프로파일 지원: circular, figure8, straight, stop_and_go
+   - RViz 시각화 옵션
+   - TF 트리: map → odom → base_link → {os_imu, gps}
+
+### 문서 정리:
+- PRD.md: 제품 요구사항 문서 생성
+- DEVELOPMENT_PLAN.md: 모든 기술 세부사항 통합
+- 중복 문서 10개 제거 (이미 통합된 내용)
+- debug_log.md는 유지 (증분 기록용)
+
+### 테스트 방법:
+```bash
+# 가상환경 활성화
+source /home/user1/ROS2_Workspace/ros2_ws/.venv/bin/activate
+
+# 빌드
+cd /home/user1/ROS2_Workspace/ros2_ws
+colcon build --packages-select cone_stellation
+
+# 실행
+ros2 launch cone_stellation imu_gps_ekf_launch.py motion_type:=circular
+
+# 다른 모션 타입 테스트
+ros2 launch cone_stellation imu_gps_ekf_launch.py motion_type:=figure8 radius:=30.0
+```
+
+### 상태: ✅ 구현 완료, 테스트 준비 완료

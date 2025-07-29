@@ -12,6 +12,9 @@
 #include <memory>
 #include <GeographicLib/UTMUPS.hpp>
 
+// -------------------- 1. Path 메시지 헤더 추가 --------------------
+#include <nav_msgs/msg/path.hpp>
+
 #include "gps_imu_fusion/kai_ekf_core.hpp"
 
 namespace gps_imu_fusion {
@@ -28,6 +31,7 @@ private:
   
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   
@@ -44,6 +48,9 @@ private:
   geometry_msgs::msg::TwistWithCovarianceStamped latest_gnss_vel_;
   sensor_msgs::msg::Imu latest_imu_;
   UTMCoordinate latest_utm_;
+
+  // -------------------- 3. Path 메시지 저장 변수 추가 --------------------
+  nav_msgs::msg::Path path_msg_;
   
   bool received_gnss_ = false;
   bool received_gnss_vel_ = false;
@@ -85,8 +92,10 @@ private:
   void loadParameters();
   
   void configureEkfParameters();
+  
+  void loadImuCalibration(const std::string& filepath);
 };
 
 } 
 
-#endif 
+#endif

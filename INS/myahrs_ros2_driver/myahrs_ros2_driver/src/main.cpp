@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
 
   if (argc < 6) {
     std::cout << "please check argument!!! use like..." << std::endl;
-    std::cout << "arguments = ['/dev/ttyACM0','115200']" << std::endl;
+    std::cout << "arguments = ['/dev/ttyACM1','115200']" << std::endl;
     exit(0);
   }
 

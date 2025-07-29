@@ -15,7 +15,7 @@ from rclpy.time import Time
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from std_msgs.msg import Header
 from sensor_msgs.msg import Imu, NavSatFix
-from geometry_msgs.msg import PoseStamped, TwistStamped, TransformStamped, TwistWithCovarianceStamped, Point
+from geometry_msgs.msg import PoseStamped, TwistStamped, TransformStamped, TwistWithCovarianceStamped, PoseWithCovarianceStamped, Point
 from visualization_msgs.msg import MarkerArray, Marker
 from nav_msgs.msg import Path, Odometry
 from custom_interface.msg import TrackedConeArray, TrackedCone
@@ -30,11 +30,13 @@ import yaml
 try:
     from cone_definitions import GROUND_TRUTH_CONES_SCENARIO_1, GROUND_TRUTH_CONES_SCENARIO_2
     from sensor_simulator import SensorSimulator, SensorNoiseConfig
+    from sensor_simulator_enhanced import EnhancedSensorSimulator, EnhancedImuConfig, EnhancedGpsConfig
     from motion_controller import MotionController, MotionScenario, VehicleState
 except ImportError:
     # If running as a module
     from .cone_definitions import GROUND_TRUTH_CONES_SCENARIO_1, GROUND_TRUTH_CONES_SCENARIO_2
     from .sensor_simulator import SensorSimulator, SensorNoiseConfig
+    from .sensor_simulator_enhanced import EnhancedSensorSimulator, EnhancedImuConfig, EnhancedGpsConfig
     from .motion_controller import MotionController, MotionScenario, VehicleState
 
 # We'll create a simple visualization module adapter
@@ -363,31 +365,88 @@ class DummyPublisher(Node):
         # Get noise parameters
         self.cone_position_noise = self.get_parameter('sensors.noise.position_stddev').value
         
-        # Create sensor noise configuration
-        noise_config = SensorNoiseConfig(
-            # IMU Allan variance parameters
-            imu_gyro_noise_density=self.get_parameter('sensors.noise.imu_gyro_noise_density').value,
-            imu_gyro_bias_stability=self.get_parameter('sensors.noise.imu_gyro_bias_stability').value,
-            imu_gyro_random_walk=self.get_parameter('sensors.noise.imu_gyro_random_walk').value,
-            imu_accel_noise_density=self.get_parameter('sensors.noise.imu_accel_noise_density').value,
-            imu_accel_bias_stability=self.get_parameter('sensors.noise.imu_accel_bias_stability').value,
-            imu_accel_random_walk=self.get_parameter('sensors.noise.imu_accel_random_walk').value,
-            # GPS RTK mode parameters
-            gps_mode=self.get_parameter('sensors.noise.gps_mode').value,
-            gps_rtk_fix_noise_h=self.get_parameter('sensors.noise.gps_rtk_fix_noise_h').value,
-            gps_rtk_fix_noise_v=self.get_parameter('sensors.noise.gps_rtk_fix_noise_v').value,
-            gps_rtk_float_noise_h=self.get_parameter('sensors.noise.gps_rtk_float_noise_h').value,
-            gps_rtk_float_noise_v=self.get_parameter('sensors.noise.gps_rtk_float_noise_v').value,
-            gps_single_noise_h=self.get_parameter('sensors.noise.gps_single_noise_h').value,
-            gps_single_noise_v=self.get_parameter('sensors.noise.gps_single_noise_v').value,
-            # Per-axis drift parameters
-            odom_drift_x_systematic=self.get_parameter('sensors.noise.odom_drift_x.systematic').value,
-            odom_drift_x_random=self.get_parameter('sensors.noise.odom_drift_x.random_stddev').value,
-            odom_drift_y_systematic=self.get_parameter('sensors.noise.odom_drift_y.systematic').value,
-            odom_drift_y_random=self.get_parameter('sensors.noise.odom_drift_y.random_stddev').value,
-            odom_drift_theta_systematic=self.get_parameter('sensors.noise.odom_drift_theta.systematic').value,
-            odom_drift_theta_random=self.get_parameter('sensors.noise.odom_drift_theta.random_stddev').value
-        )
+        # Decide whether to use enhanced simulator
+        self.use_enhanced_simulator = self.get_parameter('simulation.use_gps').value
+        
+        if self.use_enhanced_simulator:
+            # Create enhanced sensor configurations
+            imu_config = EnhancedImuConfig(
+                gyro_noise_density=self.get_parameter('sensors.noise.imu_gyro_noise_density').value,
+                gyro_bias_stability=self.get_parameter('sensors.noise.imu_gyro_bias_stability').value,
+                gyro_random_walk=self.get_parameter('sensors.noise.imu_gyro_random_walk').value,
+                accel_noise_density=self.get_parameter('sensors.noise.imu_accel_noise_density').value,
+                accel_bias_stability=self.get_parameter('sensors.noise.imu_accel_bias_stability').value,
+                accel_random_walk=self.get_parameter('sensors.noise.imu_accel_random_walk').value,
+                # Enhanced parameters with defaults
+                temperature_reference=25.0,
+                gyro_temp_coefficient=0.01,
+                accel_temp_coefficient=0.001,
+                temperature_time_constant=300.0,
+                gyro_scale_factor_ppm=500,
+                accel_scale_factor_ppm=1000,
+                gyro_misalignment_rad=0.001,
+                accel_misalignment_rad=0.002,
+                gyro_g_sensitivity=0.0001
+            )
+            
+            gps_config = EnhancedGpsConfig(
+                rtk_mode=self.get_parameter('sensors.noise.gps_mode').value,
+                rtk_fix_noise_h=self.get_parameter('sensors.noise.gps_rtk_fix_noise_h').value,
+                rtk_fix_noise_v=self.get_parameter('sensors.noise.gps_rtk_fix_noise_v').value,
+                rtk_float_noise_h=self.get_parameter('sensors.noise.gps_rtk_float_noise_h').value,
+                rtk_float_noise_v=self.get_parameter('sensors.noise.gps_rtk_float_noise_v').value,
+                single_noise_h=self.get_parameter('sensors.noise.gps_single_noise_h').value,
+                single_noise_v=self.get_parameter('sensors.noise.gps_single_noise_v').value,
+                # Enhanced parameters
+                fix_loss_probability=0.001,
+                float_to_fix_probability=0.1,
+                single_to_float_probability=0.05,
+                hdop_min=0.8,
+                hdop_max=2.0,
+                vdop_min=1.0,
+                vdop_max=3.0,
+                multipath_amplitude=0.5,
+                multipath_frequency=0.1,
+                update_rate=self.gps_rate
+            )
+            
+            # For odometry, still use basic config
+            odom_config = SensorNoiseConfig(
+                odom_drift_x_systematic=self.get_parameter('sensors.noise.odom_drift_x.systematic').value,
+                odom_drift_x_random=self.get_parameter('sensors.noise.odom_drift_x.random_stddev').value,
+                odom_drift_y_systematic=self.get_parameter('sensors.noise.odom_drift_y.systematic').value,
+                odom_drift_y_random=self.get_parameter('sensors.noise.odom_drift_y.random_stddev').value,
+                odom_drift_theta_systematic=self.get_parameter('sensors.noise.odom_drift_theta.systematic').value,
+                odom_drift_theta_random=self.get_parameter('sensors.noise.odom_drift_theta.random_stddev').value
+            )
+            
+            self.get_logger().info("Using enhanced IMU-GPS simulator with realistic error models")
+        else:
+            # Create basic sensor noise configuration for compatibility
+            noise_config = SensorNoiseConfig(
+                # IMU Allan variance parameters
+                imu_gyro_noise_density=self.get_parameter('sensors.noise.imu_gyro_noise_density').value,
+                imu_gyro_bias_stability=self.get_parameter('sensors.noise.imu_gyro_bias_stability').value,
+                imu_gyro_random_walk=self.get_parameter('sensors.noise.imu_gyro_random_walk').value,
+                imu_accel_noise_density=self.get_parameter('sensors.noise.imu_accel_noise_density').value,
+                imu_accel_bias_stability=self.get_parameter('sensors.noise.imu_accel_bias_stability').value,
+                imu_accel_random_walk=self.get_parameter('sensors.noise.imu_accel_random_walk').value,
+                # GPS RTK mode parameters
+                gps_mode=self.get_parameter('sensors.noise.gps_mode').value,
+                gps_rtk_fix_noise_h=self.get_parameter('sensors.noise.gps_rtk_fix_noise_h').value,
+                gps_rtk_fix_noise_v=self.get_parameter('sensors.noise.gps_rtk_fix_noise_v').value,
+                gps_rtk_float_noise_h=self.get_parameter('sensors.noise.gps_rtk_float_noise_h').value,
+                gps_rtk_float_noise_v=self.get_parameter('sensors.noise.gps_rtk_float_noise_v').value,
+                gps_single_noise_h=self.get_parameter('sensors.noise.gps_single_noise_h').value,
+                gps_single_noise_v=self.get_parameter('sensors.noise.gps_single_noise_v').value,
+                # Per-axis drift parameters
+                odom_drift_x_systematic=self.get_parameter('sensors.noise.odom_drift_x.systematic').value,
+                odom_drift_x_random=self.get_parameter('sensors.noise.odom_drift_x.random_stddev').value,
+                odom_drift_y_systematic=self.get_parameter('sensors.noise.odom_drift_y.systematic').value,
+                odom_drift_y_random=self.get_parameter('sensors.noise.odom_drift_y.random_stddev').value,
+                odom_drift_theta_systematic=self.get_parameter('sensors.noise.odom_drift_theta.systematic').value,
+                odom_drift_theta_random=self.get_parameter('sensors.noise.odom_drift_theta.random_stddev').value
+            )
         
         # Get detection error parameters
         self.detection_errors_enabled = self.get_parameter('sensors.detection_errors.enable').value
@@ -407,7 +466,10 @@ class DummyPublisher(Node):
             motion_scenario = MotionScenario.FORMULA_STUDENT
         
         # Initialize modular components
-        self.sensor_sim = SensorSimulator(noise_config)
+        if self.use_enhanced_simulator:
+            self.sensor_sim = EnhancedSensorSimulator(imu_config, gps_config, odom_config)
+        else:
+            self.sensor_sim = SensorSimulator(noise_config)
         self.motion_controller = MotionController(motion_scenario, self.vehicle_speed)
         
         # QoS for ground truth (TRANSIENT_LOCAL)
@@ -426,6 +488,9 @@ class DummyPublisher(Node):
         self.gps_vel_pub = self.create_publisher(TwistWithCovarianceStamped, '/ublox_gps_node/fix_velocity_sim', 10)
         # Direct GPS odometry for robot_localization (bypasses navsat_transform)
         self.gps_odom_pub = self.create_publisher(Odometry, '/gps/odom', 10)
+        # UTM pose for enhanced GPS simulator
+        if self.use_enhanced_simulator:
+            self.utm_pose_pub = self.create_publisher(PoseWithCovarianceStamped, '/gps/utm', 10)
         self.pose_pub = self.create_publisher(PoseStamped, '/robot/pose', 10)
         self.path_pub = self.create_publisher(Path, '/robot/path', 10)
         self.gt_cones_pub = self.create_publisher(MarkerArray, '/ground_truth_map_cones', gt_qos)
@@ -867,30 +932,56 @@ class DummyPublisher(Node):
         """Publish IMU data using sensor simulator"""
         dt = 1.0 / self.imu_rate
         
-        # Generate IMU message using sensor simulator
-        imu_msg = self.sensor_sim.imu_sim.generate_imu_data(
-            self.vehicle_state.linear_acceleration,
-            self.vehicle_state.angular_velocity,
-            quaternion_from_euler(
-                self.vehicle_state.orientation[0],
-                self.vehicle_state.orientation[1],
-                self.vehicle_state.orientation[2]
-            ),
-            dt,
-            self.get_clock().now()
-        )
+        if self.use_enhanced_simulator:
+            # Use enhanced simulator
+            sensor_data = self.sensor_sim.generate_all_sensors(
+                self.vehicle_state.to_dict(),
+                dt,
+                self.get_clock().now()
+            )
+            imu_msg = sensor_data['imu']
+        else:
+            # Use basic simulator
+            imu_msg = self.sensor_sim.imu_sim.generate_imu_data(
+                self.vehicle_state.linear_acceleration,
+                self.vehicle_state.angular_velocity,
+                quaternion_from_euler(
+                    self.vehicle_state.orientation[0],
+                    self.vehicle_state.orientation[1],
+                    self.vehicle_state.orientation[2]
+                ),
+                dt,
+                self.get_clock().now()
+            )
         
         self.imu_pub.publish(imu_msg)
     
     def publish_gps(self):
         """Publish GPS data using sensor simulator"""
-        # Generate GPS message (for compatibility)
-        gps_msg = self.sensor_sim.gps_sim.generate_gps_data(
-            self.vehicle_state.position[0],
-            self.vehicle_state.position[1],
-            self.vehicle_state.position[2],
-            self.get_clock().now()
-        )
+        dt = 1.0 / self.gps_rate
+        
+        if self.use_enhanced_simulator:
+            # Use enhanced simulator
+            sensor_data = self.sensor_sim.generate_all_sensors(
+                self.vehicle_state.to_dict(),
+                dt,
+                self.get_clock().now()
+            )
+            gps_msg = sensor_data['gps']
+            # Also publish UTM pose if available
+            if 'utm_pose' in sensor_data:
+                utm_pose_msg = sensor_data['utm_pose']
+                # Create a publisher if needed (add to __init__)
+                if hasattr(self, 'utm_pose_pub'):
+                    self.utm_pose_pub.publish(utm_pose_msg)
+        else:
+            # Use basic simulator
+            gps_msg = self.sensor_sim.gps_sim.generate_gps_data(
+                self.vehicle_state.position[0],
+                self.vehicle_state.position[1],
+                self.vehicle_state.position[2],
+                self.get_clock().now()
+            )
         
         self.gps_pub.publish(gps_msg)
         
@@ -901,19 +992,36 @@ class DummyPublisher(Node):
         gps_odom_msg.child_frame_id = "gps_link"
         
         # Get noise based on GPS mode
-        noise_config = self.sensor_sim.gps_sim.config
-        if noise_config.gps_mode == "rtk" or noise_config.gps_mode == "rtk_fix":
-            h_noise = noise_config.gps_rtk_fix_noise_h
-            v_noise = noise_config.gps_rtk_fix_noise_v
-        elif noise_config.gps_mode == "rtk_float":
-            h_noise = noise_config.gps_rtk_float_noise_h
-            v_noise = noise_config.gps_rtk_float_noise_v
-        elif noise_config.gps_mode == "dgps":
-            h_noise = (noise_config.gps_single_noise_h + noise_config.gps_rtk_float_noise_h) / 2
-            v_noise = (noise_config.gps_single_noise_v + noise_config.gps_rtk_float_noise_v) / 2
-        else:  # single
-            h_noise = noise_config.gps_single_noise_h
-            v_noise = noise_config.gps_single_noise_v
+        if self.use_enhanced_simulator:
+            # For enhanced simulator, use the proper attribute name
+            noise_config = self.sensor_sim.gps_sim.config
+            if noise_config.rtk_mode == "rtk" or noise_config.rtk_mode == "rtk_fix":
+                h_noise = noise_config.rtk_fix_noise_h
+                v_noise = noise_config.rtk_fix_noise_v
+            elif noise_config.rtk_mode == "rtk_float":
+                h_noise = noise_config.rtk_float_noise_h
+                v_noise = noise_config.rtk_float_noise_v
+            elif noise_config.rtk_mode == "dgps":
+                h_noise = (noise_config.single_noise_h + noise_config.rtk_float_noise_h) / 2
+                v_noise = (noise_config.single_noise_v + noise_config.rtk_float_noise_v) / 2
+            else:  # single
+                h_noise = noise_config.single_noise_h
+                v_noise = noise_config.single_noise_v
+        else:
+            # For basic simulator
+            noise_config = self.sensor_sim.gps_sim.config
+            if noise_config.gps_mode == "rtk" or noise_config.gps_mode == "rtk_fix":
+                h_noise = noise_config.gps_rtk_fix_noise_h
+                v_noise = noise_config.gps_rtk_fix_noise_v
+            elif noise_config.gps_mode == "rtk_float":
+                h_noise = noise_config.gps_rtk_float_noise_h
+                v_noise = noise_config.gps_rtk_float_noise_v
+            elif noise_config.gps_mode == "dgps":
+                h_noise = (noise_config.gps_single_noise_h + noise_config.gps_rtk_float_noise_h) / 2
+                v_noise = (noise_config.gps_single_noise_v + noise_config.gps_rtk_float_noise_v) / 2
+            else:  # single
+                h_noise = noise_config.gps_single_noise_h
+                v_noise = noise_config.gps_single_noise_v
         
         # Apply noise to position
         gps_odom_msg.pose.pose.position.x = self.vehicle_state.position[0] + np.random.normal(0, h_noise)

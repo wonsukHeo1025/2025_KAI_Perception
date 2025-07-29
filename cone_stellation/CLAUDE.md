@@ -30,10 +30,11 @@ ConeSTELLATION (Cone-based STructural ELement Layout for Autonomous NavigaTION) 
 ## Current Status
 
 - **Created**: 2025-07-18
-- **Updated**: 2025-07-23 (System stabilized, future plan updated!)
+- **Updated**: 2025-07-28 (IMU-GPS EKF fusion implemented)
 - **Status**: SLAM Working Well with Inter-landmark Factors AND Loop Closure! Full SLAM pipeline operational.
 - **Architecture**: Based on GLIM's proven modular design with novel inter-landmark factors
 - **Key Decision**: Use external IMU+GPS odometry, SLAM for mapping only (like GLIM)
+- **Active Development**: IMU-GPS EKF fusion ready for testing
 - **Latest Updates**: 
   - ✅ Data association working excellently with minimal overlapping landmarks
   - ✅ Noise filtering successfully blocks false positives/negatives
@@ -55,7 +56,6 @@ ConeSTELLATION (Cone-based STructural ELement Layout for Autonomous NavigaTION) 
     - Geometric feature detection (turns, transitions, chicanes)
     - Combined scoring: 30% cones, 30% path, 40% features
     - Purple visualization for loop closure factors
-    - See `loop_closure_improvements_2025-07-22.md` for details
   - ✅ Loop closure segfault FIXED! (2025-07-23)
     - Missing LoopClosureDetector function implementations added
     - Full RANSAC-based geometric verification implemented
@@ -84,9 +84,24 @@ ConeSTELLATION (Cone-based STructural ELement Layout for Autonomous NavigaTION) 
     - Tentative landmark parameters tightened
     - Complex clustering removed for stability
     - Loop closure temporarily disabled
+  - ✅ IMU-GPS EKF Fusion Implemented! (2025-07-28)
+    - Created realistic IMU/GPS publishers matching exact topic formats
+    - GPS to local Cartesian converter with UTM transformation
+    - robot_localization EKF configuration for 100Hz fusion
+    - Launch file for complete system integration
+    - Ready for testing with multiple motion profiles
+    - EKF-only launch ready for real bag file data with proper coordinate system
+    - Added GPS converter node with Konkuk University coordinates (37.540091°N, 127.076555°E)
+    - Complete TF tree structure: map → odom → base_link → sensors
+  - ✅ Documentation Consolidated (2025-07-28)
+    - Created comprehensive PRD.md (Product Requirements Document)
+    - Consolidated DEVELOPMENT_PLAN.md with all technical details
+    - Removed redundant documentation files
+    - Maintained debug_log.md for incremental issue tracking
   - ⏳ 다음 목표: 
+    - Test IMU-GPS EKF fusion with SLAM integration
+    - GTSAM IMU preintegration factors (future enhancement)
     - Sparse rigid body inter-landmark constraints
-    - IMU preintegration & RTK GPS factors (GLIM style)
     - Stable loop closure reimplementation
 
 ## Project Structure (Current)
@@ -103,12 +118,20 @@ cone_stellation/
 │   └── cone_slam_node.cpp    # Main ROS2 node
 ├── config/                    # YAML configuration files
 │   ├── slam_config.yaml      # SLAM parameters
-│   └── dummy_publisher_config.yaml # Simulation parameters
+│   ├── dummy_publisher_config.yaml # Simulation parameters
+│   ├── ekf_config.yaml       # EKF configuration for simulated data
+│   └── ekf_config_real.yaml  # EKF configuration for real bag data
 ├── scripts/                   # Python simulation scripts
-│   └── dummy_publisher_node.py # Dummy cone publisher for testing
+│   ├── dummy_publisher_node.py # Dummy cone publisher for testing
+│   ├── gps_to_cartesian.py    # GPS to ENU coordinate converter
+│   ├── imu_publisher.py       # Realistic IMU data publisher
+│   └── gps_publisher.py       # Realistic GPS data publisher
 └── launch/                    # ROS2 launch files
-    ├── cone_slam_launch.py
-    └── dummy_publisher_launch.py
+    ├── cone_slam_launch.py    # Main SLAM launch
+    ├── dummy_publisher_launch.py # Simulation launch
+    ├── test_slam_launch.py    # Combined test launch
+    ├── ekf_only_launch.py     # EKF localization with real data
+    └── imu_gps_ekf_launch.py  # Full IMU-GPS-EKF system
 ```
 
 ## Key Design Decisions

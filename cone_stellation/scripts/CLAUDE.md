@@ -6,42 +6,50 @@ This directory contains simulation scripts adapted from cc_slam_sym for testing 
 
 ## Components
 
-### dummy_publisher_node.py
-- Publishes simulated cone detections and odometry
-- Generates realistic Formula Student track layouts
-- Adds configurable noise to simulate real sensors
+### Core Simulation
+- **dummy_publisher_node.py** - Main simulation node with cone detections, IMU, GPS
+- **sensor_simulator.py** - Basic sensor noise models (Allan variance for IMU, RTK modes for GPS)
+- **sensor_simulator_enhanced.py** - Enhanced simulators with temperature drift, axis misalignment, WGS84/UTM conversion
+- **motion_controller.py** - Vehicle motion with smooth spline trajectories
+- **cone_definitions.py** - Formula Student cone types and colors
 
-### sensor_simulator.py
-- Simulates various sensor behaviors with realistic noise models
-- Includes occlusion, false positives, and measurement uncertainty
-- Configurable through YAML parameters
+### Test Scripts
+- **test_dummy_publisher.py** - Basic ROS2 diagnostic checks
+- **test_imu_gps_fusion.py** - IMU-GPS fusion testing with motion profiles
+- **test_loop_closure.py** - Loop closure scenario testing
+- **test_slam_only.py** - Automated SLAM testing with monitoring
 
-### cone_definitions.py
-- Defines cone types and colors for Formula Student
-- Maps between color strings and numeric representations
+## Enhanced Sensor Features (2025-07-24)
 
-### motion_controller.py
-- Simulates vehicle motion along predefined paths with mathematically smooth dynamics
-- Uses continuous spline-based trajectories for smooth motion without jitter
-- Implements ContinuousTrajectory class with arc-length parameterization
-- Supports both straight track and Formula Student elliptical scenarios
+### IMU Simulator
+- Allan variance noise modeling (gyro/accel)
+- Temperature-dependent bias drift
+- Scale factor errors (ppm)
+- Axis misalignment simulation
+- G-sensitivity effects
 
-## Status
-✅ Fully functional simulation environment
-✅ Realistic noise and error models
-✅ Configurable through YAML files
-✅ Works independently of SLAM backend choice
-
-## Current Issues
-✅ Topic names aligned: both dummy_publisher and SLAM use `/fused_sorted_cones_ukf_sim`
+### GPS Simulator  
+- Full WGS84 ↔ UTM coordinate transformation
+- RTK status transitions (Fix/Float/Single)
+- Realistic covariance (2cm for RTK Fix)
+- DOP effects and multipath simulation
+- Seoul origin: 37.5665°N, 126.9780°E (UTM 52S)
 
 ## Usage
-The simulator provides ground truth data alongside noisy measurements, making it ideal for:
-- Testing SLAM algorithm performance
-- Debugging data association issues  
-- Evaluating different backend implementations
 
-Run with:
 ```bash
+# Basic simulation
 ros2 run cone_stellation dummy_publisher_node.py
+
+# With enhanced sensors (enable in config)
+# Set simulation.use_gps: true in dummy_publisher_config.yaml
+
+# Test specific motion profiles
+ros2 run cone_stellation test_imu_gps_fusion.py --ros-args -p motion_profile:=circular
 ```
+
+## Status
+✅ Enhanced IMU-GPS simulators integrated
+✅ Backward compatible with basic simulators
+✅ Test scripts cleaned up (removed redundant shell script)
+✅ Ready for robot_localization integration

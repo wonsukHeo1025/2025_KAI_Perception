@@ -7,7 +7,7 @@ ekf_fusion_node:
     imu_frame_id: "imu_link"
     
     # 일반 설정
-    update_rate: 50.0       # EKF 업데이트 주기 (Hz)
+    update_rate: 100.0       # EKF 업데이트 주기 (Hz)
     # update_rate:
     #   높일수록 더 빠른 응답을 얻을 수 있지만 CPU 사용량이 증가함
     #   10-50Hz 범위가 적당함
@@ -110,3 +110,10 @@ ekf_fusion_node:
     #   가속도계: 일반적으로 0.5-1.0 m/s² 
     #   자이로: 일반적으로 0.01-0.05 rad/s 
     #   센서 품질에 따라 조정
+    
+    # IMU Calibration 파일 경로 (절대 경로 또는 패키지 경로)
+    imu_calibration_file: ""
+    # imu_calibration_file:
+    #   IMU bias 및 Allan variance 분석 결과가 포함된 JSON 파일 경로
+    #   예: "/home/user/ws/src/gps_imu_fusion/config/improved_imu_calibration.json"
+    #   빈 문자열("")로 설정하면 calibration 파일을 사용하지 않음

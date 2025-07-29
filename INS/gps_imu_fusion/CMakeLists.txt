@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(gps_imu_fusion)
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 14)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -54,7 +54,9 @@ if(GeographicLib_FOUND)
   target_link_libraries(ekf_fusion_node ${GeographicLib_LIBRARIES})
 endif()
 
-target_link_libraries(ekf_fusion_node ${EIGEN3_LIBRARIES})
+target_link_libraries(ekf_fusion_node 
+  ${EIGEN3_LIBRARIES}
+)
 
 install(TARGETS
   ekf_fusion_node
@@ -70,6 +72,13 @@ install(DIRECTORY
   launch
   config
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  scripts/gps_vis/gps_to_cartesian.py
+  scripts/gps_vis/gps_vis_node.py
+  scripts/gps_vis/fixed_gps_publisher.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_include_directories(include)
