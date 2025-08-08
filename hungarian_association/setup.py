@@ -20,7 +20,6 @@ setup(
     maintainer_email='kikiws70@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'hungarian_association_node = hungarian_association.yolo_lidar_fusion:main',

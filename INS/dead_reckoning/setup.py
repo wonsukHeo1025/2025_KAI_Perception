@@ -21,7 +21,6 @@ setup(
     maintainer_email='kikiws70@gmail.com',
     description='Dead reckoning using IMU data with tf and path visualization',
     license='Apache-2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'dead_reckoning_node = dead_reckoning.dead_reckoning_node:main',
