@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.18)
 project(filc)
 
 # C++17 표준 사용
@@ -6,9 +6,28 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
+# 기본 빌드 타입을 Release로 설정 (지정하지 않은 경우)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
 # 컴파일러 경고 추가
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# 빌드 타입별 최적화
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  add_compile_options(-O3 -march=native -ffast-math)
+  message(STATUS "Release mode: Optimizations enabled (-O3 -march=native -ffast-math)")
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  add_compile_options(-O2 -g -march=native)
+  message(STATUS "RelWithDebInfo mode: Moderate optimizations with debug info")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-O0 -g)
+  message(STATUS "Debug mode: No optimizations, debug symbols enabled")
 endif()
 
 # 의존성 찾기
@@ -25,9 +44,6 @@ find_package(OpenCV REQUIRED)
 # PCL
 find_package(PCL REQUIRED)
 
-# Eigen3
-find_package(Eigen3 REQUIRED)
-
 # OpenMP (선택적)
 find_package(OpenMP)
 
@@ -36,7 +52,6 @@ include_directories(
   include
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
 )
 
 # Improved interpolation node (메인 노드)
@@ -105,7 +120,6 @@ ament_export_dependencies(
   pcl_conversions
   OpenCV
   PCL
-  Eigen3
 )
 
 ament_package()

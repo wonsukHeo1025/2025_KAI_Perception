@@ -5,6 +5,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <deque>
+#include <chrono>
+#include <vector>
+#include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>
 
 #include "cone_stellation/odometry/cone_odometry_base.hpp"

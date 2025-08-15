@@ -2,6 +2,8 @@
 
 #include <deque>
 #include <unordered_map>
+#include <set>
+#include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "cone_stellation/common/cone.hpp"

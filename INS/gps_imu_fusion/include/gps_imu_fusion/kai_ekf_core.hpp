@@ -138,8 +138,22 @@ public:
   void imuUpdateEkf(uint64_t time, const ImuData& imu);
   void gpsCoordinateUpdateEkf(const GpsCoordinate& coor);
   void gpsVelocityUpdateEkf(const GpsVelocity& vel);
+  void setGpsHeading(float heading, bool valid);
   void updateProcessNoiseMatrix();
   void resetCovarianceMatrix();
+  
+  // 동적 공분산 설정
+  void setGpsCovariance(const std::array<double, 9>& pos_cov, const std::array<double, 9>& vel_cov);
+  void setImuCovariance(const std::array<double, 9>& gyro_cov, const std::array<double, 9>& accel_cov);
+  
+  // 정지(ZUPT) 운용 제약 제어
+  void setStationary(bool stationary);
+  void setZuptNoiseScale(float scale);
+  
+  // EKF 공분산 추출
+  std::array<double, 9> getPositionCovariance() const;
+  std::array<double, 9> getVelocityCovariance() const;
+  std::array<double, 9> getOrientationCovariance() const;
   
 
 
@@ -154,6 +168,11 @@ private:
   
   bool initialized_ = false;
   uint64_t _tprev;
+  
+  // GPS heading 관련
+  float gps_heading_ = 0.0f;
+  bool use_gps_heading_ = false;
+  float gps_heading_noise_ = 0.05f;  // 약 3도 - 적절한 GPS heading 노이즈
   float phi, theta, psi;  
   double vn_ins, ve_ins, vd_ins;
   double lat_ins, lon_ins, alt_ins;
@@ -183,12 +202,16 @@ private:
   Eigen::Matrix<double,3,1> pos_ned_gps = Eigen::Matrix<double,3,1>::Zero();
   Eigen::Matrix<float,4,1> quat = Eigen::Matrix<float,4,1>::Zero();
   Eigen::Matrix<float,4,1> dq = Eigen::Matrix<float,4,1>::Zero();
-  Eigen::Matrix<float,6,1> y = Eigen::Matrix<float,6,1>::Zero();
-  Eigen::Matrix<float,6,6> R = Eigen::Matrix<float,6,6>::Zero();
+  Eigen::Matrix<float,7,1> y = Eigen::Matrix<float,7,1>::Zero();
+  Eigen::Matrix<float,7,7> R = Eigen::Matrix<float,7,7>::Zero();
   Eigen::Matrix<float,15,1> x = Eigen::Matrix<float,15,1>::Zero();
-  Eigen::Matrix<float,15,6> K = Eigen::Matrix<float,15,6>::Zero();
-  Eigen::Matrix<float,6,15> H = Eigen::Matrix<float,6,15>::Zero();
+  Eigen::Matrix<float,15,7> K = Eigen::Matrix<float,15,7>::Zero();
+  Eigen::Matrix<float,7,15> H = Eigen::Matrix<float,7,15>::Zero();
   Eigen::Matrix<float,3,3> skewSymmetric(Eigen::Matrix<float,3,1> v);
+  
+  // ZUPT 상태
+  bool stationary_mode_ = false;
+  float zupt_noise_scale_ = 0.01f; // 정지 시 yaw/gyro-bias-Z 프로세스 노이즈 축소 비율
   
   void ekfInit(uint64_t time, 
                double vn, double ve, double vd, 

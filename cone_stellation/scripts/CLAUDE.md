@@ -1,4 +1,4 @@
-# Path: /home/user1/ROS2_Workspace/Symforce_ws/src/cone_stellation/scripts/CLAUDE.md
+# Path: /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/scripts/CLAUDE.md
 
 # Scripts Directory
 
@@ -13,10 +13,11 @@ This directory contains simulation scripts adapted from cc_slam_sym for testing 
 - **motion_controller.py** - Vehicle motion with smooth spline trajectories
 - **cone_definitions.py** - Formula Student cone types and colors
 
-### Test Scripts
+### Test Scripts (tests/ subdirectory)
+- **check_topics.py** - ROS2 topic monitoring and diagnostics
 - **test_dummy_publisher.py** - Basic ROS2 diagnostic checks
 - **test_imu_gps_fusion.py** - IMU-GPS fusion testing with motion profiles
-- **test_loop_closure.py** - Loop closure scenario testing
+- **test_loop_closure.py** - Loop closure scenario testing  
 - **test_slam_only.py** - Automated SLAM testing with monitoring
 
 ## Enhanced Sensor Features (2025-07-24)

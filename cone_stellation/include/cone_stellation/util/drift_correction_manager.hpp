@@ -3,6 +3,7 @@
 #include <deque>
 #include <mutex>
 #include <optional>
+#include <algorithm>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>

@@ -4,7 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
-#include <custom_interface/msg/modified_float32_multi_array.hpp>
+#include <custom_interface/msg/tracked_cone_array.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
@@ -21,12 +21,12 @@ public:
 
 private:
     void loadCameraConfig();
-    void lidarCallback(const custom_interface::msg::ModifiedFloat32MultiArray::SharedPtr msg);
+    void lidarCallback(const custom_interface::msg::TrackedConeArray::SharedPtr msg);
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
     void processAndPublish();
     
     // Publishers and subscribers
-    rclcpp::Subscription<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr lidar_sub_;
+    rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr lidar_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_pub_;
     

@@ -4,14 +4,14 @@ imu_preprocess_node:
     use_precalibrated_bias: true
     
     # Accelerometer bias [m/s²]
-    bias_acc_x: 0.0680
-    bias_acc_y: -0.0456
-    bias_acc_z: -0.3034
+    bias_acc_x: 0.06136
+    bias_acc_y: 0.10335
+    bias_acc_z: 0.16165
     
     # Gyroscope bias [rad/s]
-    bias_gyro_x: 0.0075
-    bias_gyro_y: -0.0148
-    bias_gyro_z: -0.0217
+    bias_gyro_x: 0.00981
+    bias_gyro_y: -1.4381
+    bias_gyro_z: 0.01883
     
     # Low-pass filter settings
     lpf_cutoff: 20.0  # 0 to disable LPF

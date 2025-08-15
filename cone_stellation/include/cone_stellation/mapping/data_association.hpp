@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <limits>
 #include <Eigen/Core>
 #include <rclcpp/rclcpp.hpp>
 

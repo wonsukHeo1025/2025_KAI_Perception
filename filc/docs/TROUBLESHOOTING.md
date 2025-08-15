@@ -55,7 +55,7 @@ ros2 param set /improved_interpolation_node use_image_features true
 ros2 topic list -v | grep interpolated
 
 # 데이터 확인
-ros2 topic echo /ouster/improved_interpolated_points --no-arr --once
+ros2 topic echo /ouster/points/interpolated --no-arr --once
 
 # 성능 모니터링
 ros2 run filc benchmark_interpolation.py

@@ -28,16 +28,8 @@ find_package(yaml-cpp REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
-# Find kalman_filters library
-find_library(KALMAN_FILTERS_LIB 
-  NAMES kalman_filters_lib
-  PATHS /usr/local/lib
-  PATH_SUFFIXES lib
-  REQUIRED
-  NO_DEFAULT_PATH
-)
+find_package(kalman_filters REQUIRED)
 # OR-Tools is used directly without find_package due to protobuf issues
-# dlib no longer needed - kalman_filters has its own Hungarian implementation
 
 # Custom messages
 find_package(custom_interface REQUIRED)
@@ -49,7 +41,6 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
-  /usr/local/include  # for kalman_filters
 )
 
 # Link directories
@@ -71,6 +62,7 @@ set(dependencies
   image_transport
   custom_interface
   yolo_msgs
+  kalman_filters
 )
 
 # Add library for utils
@@ -94,7 +86,6 @@ add_library(calico_fusion SHARED
 target_link_libraries(calico_fusion
   calico_utils
   ${OpenCV_LIBS}
-  ${KALMAN_FILTERS_LIB}
 )
 ament_target_dependencies(calico_fusion ${dependencies})
 
@@ -126,7 +117,6 @@ add_executable(ukf_tracking_node
 )
 target_link_libraries(ukf_tracking_node
   calico_utils
-  ${KALMAN_FILTERS_LIB}
 )
 ament_target_dependencies(ukf_tracking_node ${dependencies})
 

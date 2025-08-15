@@ -1,5 +1,6 @@
 #include "calico/utils/config_loader.hpp"
 #include <fstream>
+#include <filesystem>
 #include <stdexcept>
 #include <rclcpp/rclcpp.hpp>
 
@@ -17,8 +18,11 @@ CalicoConfig ConfigLoader::loadConfig(const std::string& config_file_path) {
         config.cones_topic = hungarian_node["cones_topic"].as<std::string>();
         config.output_topic = hungarian_node["output_topic"].as<std::string>();
         
-        // Load matching parameters
+        // Load matching parameters with validation
         config.max_matching_distance = hungarian_node["max_matching_distance"].as<double>();
+        if (config.max_matching_distance <= 0.0 || config.max_matching_distance > 100.0) {
+            throw std::runtime_error("Invalid max_matching_distance: must be between 0 and 100");
+        }
         
         // Load camera configurations
         YAML::Node cameras_node = hungarian_node["cameras"];
@@ -35,18 +39,31 @@ CalicoConfig ConfigLoader::loadConfig(const std::string& config_file_path) {
         config.camera_extrinsic_calibration_file = calib_node["camera_extrinsic_calibration"].as<std::string>();
         config.camera_intrinsic_calibration_file = calib_node["camera_intrinsic_calibration"].as<std::string>();
         
-        // Load QoS settings
+        // Load QoS settings with validation
         YAML::Node qos_node = hungarian_node["qos"];
         config.history_depth = qos_node["history_depth"].as<int>();
+        if (config.history_depth <= 0 || config.history_depth > 1000) {
+            throw std::runtime_error("Invalid history_depth: must be between 1 and 1000");
+        }
+        
         config.sync_slop = qos_node["sync_slop"].as<double>();
+        if (config.sync_slop < 0.0 || config.sync_slop > 10.0) {
+            throw std::runtime_error("Invalid sync_slop: must be between 0 and 10 seconds");
+        }
+        
         config.sync_queue_size = qos_node["sync_queue_size"].as<int>();
+        if (config.sync_queue_size <= 0 || config.sync_queue_size > 1000) {
+            throw std::runtime_error("Invalid sync_queue_size: must be between 1 and 1000");
+        }
         
         // Load intrinsic and extrinsic parameters for each camera
-        std::string intrinsic_path = config.config_folder + config.camera_intrinsic_calibration_file;
-        std::string extrinsic_path = config.config_folder + config.camera_extrinsic_calibration_file;
+        // Use filesystem::path for safe path concatenation to prevent path traversal attacks
+        std::filesystem::path base_path(config.config_folder);
+        std::filesystem::path intrinsic_path = base_path / config.camera_intrinsic_calibration_file;
+        std::filesystem::path extrinsic_path = base_path / config.camera_extrinsic_calibration_file;
         
-        auto intrinsics = loadIntrinsics(intrinsic_path);
-        auto extrinsics = loadExtrinsics(extrinsic_path);
+        auto intrinsics = loadIntrinsics(intrinsic_path.string());
+        auto extrinsics = loadExtrinsics(extrinsic_path.string());
         
         // Assign calibration data to cameras
         for (auto& cam : config.cameras) {

@@ -1,4 +1,4 @@
-# Path: /home/user1/ROS2_Workspace/Symforce_ws/src/cone_stellation/CLAUDE.md
+# Path: /home/user1/ROS2_Workspace/ros2_ws/src/cone_stellation/CLAUDE.md
 
 # CLAUDE.md
 
@@ -109,29 +109,47 @@ ConeSTELLATION (Cone-based STructural ELement Layout for Autonomous NavigaTION) 
 ```
 cone_stellation/
 ├── include/cone_stellation/    # Public headers (header-only design)
-│   ├── common/                 # Core data structures (cone.hpp, estimation_frame.hpp)
+│   ├── common/                 # Core data structures (cone.hpp, estimation_frame.hpp, tentative_landmark.hpp)
+│   ├── factors/                # Custom GTSAM factors (cone_observation_factor.hpp, inter_landmark_factors.hpp)
+│   ├── mapping/                # SLAM mapping modules (cone_mapping.hpp, cone_mapping_safe.hpp, data_association.hpp, loop_closure_detector.hpp, simple_cone_mapping.hpp)
+│   ├── odometry/               # Odometry estimation modules (cone_odometry_base.hpp, cone_odometry_2d.hpp, async_cone_odometry.hpp)
 │   ├── preprocessing/          # Cone data preprocessing (cone_preprocessor.hpp)
-│   ├── mapping/               # SLAM mapping with inter-landmark factors (cone_mapping.hpp)
-│   ├── factors/               # Custom GTSAM factors (inter_landmark_factors.hpp)
-│   └── util/                  # ROS2 utilities (ros_utils.hpp)
-├── src/                       # Implementation files
-│   └── cone_slam_node.cpp    # Main ROS2 node
-├── config/                    # YAML configuration files
-│   ├── slam_config.yaml      # SLAM parameters
+│   ├── util/                   # ROS2 utilities (ros_utils.hpp, drift_correction_manager.hpp)
+│   └── viewer/                 # Visualization components (multiple viewer modules)
+├── src/                        # Implementation files
+│   ├── cone_stellation/        # Main source directory
+│   │   ├── ros/                # ROS2 node implementation (cone_slam_node.cpp)
+│   │   ├── factors/            # Factor implementations (inter_landmark_factors.cpp)
+│   │   └── preprocessing/      # Preprocessing implementations (cone_preprocessor.cpp)
+│   └── loop_closure_detector.cpp # Loop closure implementation
+├── config/                     # YAML configuration files
+│   ├── slam_config.yaml       # SLAM parameters
 │   ├── dummy_publisher_config.yaml # Simulation parameters
-│   ├── ekf_config.yaml       # EKF configuration for simulated data
-│   └── ekf_config_real.yaml  # EKF configuration for real bag data
-├── scripts/                   # Python simulation scripts
+│   └── cone_slam.rviz         # RViz visualization config
+├── scripts/                    # Python simulation scripts
+│   ├── tests/                  # Test scripts directory
+│   │   ├── check_topics.py     # Topic monitoring
+│   │   ├── test_dummy_publisher.py # Basic testing
+│   │   ├── test_imu_gps_fusion.py # IMU-GPS fusion testing
+│   │   ├── test_loop_closure.py # Loop closure testing
+│   │   └── test_slam_only.py   # SLAM-only testing
 │   ├── dummy_publisher_node.py # Dummy cone publisher for testing
-│   ├── gps_to_cartesian.py    # GPS to ENU coordinate converter
-│   ├── imu_publisher.py       # Realistic IMU data publisher
-│   └── gps_publisher.py       # Realistic GPS data publisher
-└── launch/                    # ROS2 launch files
-    ├── cone_slam_launch.py    # Main SLAM launch
-    ├── dummy_publisher_launch.py # Simulation launch
-    ├── test_slam_launch.py    # Combined test launch
-    ├── ekf_only_launch.py     # EKF localization with real data
-    └── imu_gps_ekf_launch.py  # Full IMU-GPS-EKF system
+│   ├── sensor_simulator.py     # Basic sensor simulation
+│   ├── sensor_simulator_enhanced.py # Enhanced sensor models
+│   ├── motion_controller.py    # Vehicle motion control
+│   ├── cone_definitions.py     # Cone type definitions
+│   └── imu_gps_publishers.py   # IMU/GPS data publishers
+├── launch/                     # ROS2 launch files
+│   ├── slam_only_launch.py    # SLAM-only launch
+│   ├── dummy_publisher_launch.py # Simulation launch
+│   └── test_slam_launch.py    # Combined test launch
+├── docs/                       # Documentation
+│   ├── DEVELOPMENT_PLAN.md    # Development roadmap
+│   ├── PRD.md                 # Product requirements
+│   ├── debug_log.md           # Debug history
+│   └── (other docs)           # Various technical documents
+└── rqt_log/                   # RQT logging data
+    └── logging.csv            # Log data file
 ```
 
 ## Key Design Decisions
@@ -203,3 +221,8 @@ See `implementation_status.md` for:
 
 - GLIM architecture: `/home/user1/ROS2_Workspace/GLIM_ws/src/glim/`
 - Development plan: `DEVELOPMENT_PLAN.md`
+
+---
+
+## 2025-08-08 — Status Note
+- Performed cone mapping robustness analysis under sensor shake; created `docs/cone_mapping_robustness_analysis.md` with prioritized fixes (gating by motion, remove early direct landmark creation, adaptive per-observation noise with robust loss, stronger association, inter-landmark factors from same-frame geometry, simple smoothing in preprocessing).

@@ -9,6 +9,7 @@ KaiEkfCore::KaiEkfCore() {
   grav(2,0) = GRAVITY;
   
   H.block(0,0,5,5) = Eigen::Matrix<float,5,5>::Identity();
+  H(6,8) = 1.0f;  // heading 측정은 상태 x(8) (yaw)와 연결
   
   updateProcessNoiseMatrix();
   
@@ -26,6 +27,16 @@ void KaiEkfCore::setParameters(const EkfParams& params) {
   RCLCPP_INFO(rclcpp::get_logger("KaiEkfCore"), "파라미터 업데이트 완료");
 }
 
+void KaiEkfCore::setStationary(bool stationary) {
+  std::unique_lock<std::shared_mutex> lock(shMutex);
+  stationary_mode_ = stationary;
+}
+
+void KaiEkfCore::setZuptNoiseScale(float scale) {
+  std::unique_lock<std::shared_mutex> lock(shMutex);
+  zupt_noise_scale_ = std::max(0.0f, scale);
+}
+
 void KaiEkfCore::updateProcessNoiseMatrix() {
   Rw.setZero();
   Rw.block(0,0,3,3) = powf(params_.accel_noise, 2.0f) * Eigen::Matrix<float,3,3>::Identity();
@@ -38,6 +49,14 @@ void KaiEkfCore::updateProcessNoiseMatrix() {
   R(2,2) = powf(params_.gps_pos_noise_d, 2.0f);
   R.block(3,3,2,2) = powf(params_.gps_vel_noise_ne, 2.0f) * Eigen::Matrix<float,2,2>::Identity();
   R(5,5) = powf(params_.gps_vel_noise_d, 2.0f);
+  R(6,6) = powf(gps_heading_noise_, 2.0f);  // heading 노이즈
+
+  // 정지 모드에서는 yaw/gyro-bias-z에 해당하는 프로세스 노이즈를 추가로 축소
+  if (stationary_mode_) {
+    // Gs에서 yaw에 해당하는 컬럼은 (6~8) 회전 상태, 여기서는 Rw의 자이로 Z 노이즈와 bias Z 노이즈를 줄여 Q를 작게 만듦
+    Rw(5,5) *= zupt_noise_scale_;   // gyro Z
+    Rw(11,11) *= zupt_noise_scale_; // gyro bias Z
+  }
 
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "프로세스 노이즈 행렬 업데이트 완료");
 }
@@ -67,6 +86,10 @@ void KaiEkfCore::ekfInit(uint64_t time,
   gbz = 0.0f;
   
   std::tie(theta, phi, psi) = getPitchRollYaw(ax, ay, az, hx, hy, hz);
+  
+  // 자동차 평지 주행 가정: roll과 pitch를 0으로 고정
+  phi = 0.0f;    // roll = 0
+  theta = 0.0f;  // pitch = 0
   
   quat = eulerToQuaternion(psi, theta, phi);
   
@@ -110,9 +133,9 @@ void KaiEkfCore::ekfUpdate(uint64_t time,
     updateIns();
     
     dq(0) = 1.0f;
-    dq(1) = 0.5f * om_ib(0,0) * dt;
-    dq(2) = 0.5f * om_ib(1,0) * dt;
-    dq(3) = 0.5f * om_ib(2,0) * dt;
+    dq(1) = 0.0f;  // roll 변화율 = 0 (자동차 평지 주행)
+    dq(2) = 0.0f;  // pitch 변화율 = 0 (자동차 평지 주행)
+    dq(3) = 0.5f * om_ib(2,0) * dt;  // yaw 변화율만 사용
     quat = quatMultiply(quat, dq);
     quat.normalize();
     
@@ -195,6 +218,18 @@ void KaiEkfCore::gpsVelocityUpdateEkf(const GpsVelocity& vel) {
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "GPS 속도 업데이트: vN=%.3f, vE=%.3f, vD=%.3f", vel.vN, vel.vE, vel.vD);
 }
 
+void KaiEkfCore::setGpsHeading(float heading, bool valid) {
+  std::unique_lock<std::shared_mutex> lock(shMutex);
+  gps_heading_ = heading;
+  use_gps_heading_ = valid;
+  
+  if (valid) {
+    RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "GPS heading 설정: %.2f deg", heading * 180.0 / M_PI);
+  } else {
+    RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "GPS heading 비활성화 (저속)");
+  }
+}
+
 std::tuple<float,float,float> KaiEkfCore::getPitchRollYaw(float ax, float ay, float az, float hx, float hy, float hz) {
   // --- Pitch 계산 수정 ---
   float pitch_input = ax / GRAVITY;
@@ -248,6 +283,23 @@ void KaiEkfCore::updateMeasurementResidual() {
   y(3,0) = (float)(V_gps(0,0) - V_ins(0,0));
   y(4,0) = (float)(V_gps(1,0) - V_ins(1,0));
   y(5,0) = (float)(V_gps(2,0) - V_ins(2,0));
+  
+  // GPS heading 잔차 (유효한 경우에만)
+  if (use_gps_heading_) {
+    float heading_error = gps_heading_ - psi;
+    // 각도 차이를 -π ~ π 범위로 정규화
+    while (heading_error > M_PI) heading_error -= 2.0f * M_PI;
+    while (heading_error < -M_PI) heading_error += 2.0f * M_PI;
+    y(6,0) = heading_error;
+    H(6,8) = 1.0f;  // heading 측정 활성화
+  } else {
+    y(6,0) = 0.0f;
+    H(6,8) = 0.0f;  // heading 측정 비활성화
+    R(6,6) = 1e10f;  // 매우 큰 노이즈로 무시
+  }
+
+  // 정지(ZUPT) 모드에서는 속도 0 제약(NE 방향) 유사 측정 추가 고려 가능 (단, 현재 구조는 y(0..6)에 맞춰 설계됨)
+  // 간단히는 프로세스 측에서 억제하므로 측정은 추가하지 않음.
 }
 
 void KaiEkfCore::update15StatesAfterKf() {
@@ -261,13 +313,45 @@ void KaiEkfCore::update15StatesAfterKf() {
   vd_ins += x(5,0);
   
   dq(0,0) = 1.0f;
-  dq(1,0) = x(6,0);
-  dq(2,0) = x(7,0);
-  dq(3,0) = x(8,0);
+  dq(1,0) = 0.0f;  // roll 보정 = 0 (자동차 평지 주행)
+  dq(2,0) = 0.0f;  // pitch 보정 = 0 (자동차 평지 주행)
+  dq(3,0) = x(8,0);  // yaw 보정만 사용
+  
+  // 디버그: 업데이트 전 쿼터니언과 델타 확인
+  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "쿼터니언 업데이트 전: quat=[%.3f, %.3f, %.3f, %.3f], dq=[%.3f, %.3f, %.3f, %.3f]",
+               quat(0), quat(1), quat(2), quat(3), dq(0), dq(1), dq(2), dq(3));
+  
   quat = quatMultiply(quat, dq);
-  quat.normalize();
+  
+  // 정규화 전 확인
+  float quat_norm_before = quat.norm();
+  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "정규화 전 쿼터니언 norm: %.6f", quat_norm_before);
+  
+  if (quat_norm_before > 0.001f) {  // 너무 작으면 정규화 불가
+    quat.normalize();
+  } else {
+    RCLCPP_WARN(rclcpp::get_logger("KaiEkfCore"), "쿼터니언 norm이 너무 작음: %.6f, 리셋", quat_norm_before);
+    quat << 1.0f, 0.0f, 0.0f, 0.0f;  // 단위 쿼터니언으로 리셋
+  }
+  
+  // 정규화 후 확인
+  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "정규화 후 쿼터니언: [%.3f, %.3f, %.3f, %.3f]", 
+               quat(0), quat(1), quat(2), quat(3));
+  
+  // NaN 체크
+  if (std::isnan(quat(0)) || std::isnan(quat(1)) || std::isnan(quat(2)) || std::isnan(quat(3))) {
+    RCLCPP_ERROR(rclcpp::get_logger("KaiEkfCore"), "쿼터니언에 NaN 검출! 리셋");
+    quat << 1.0f, 0.0f, 0.0f, 0.0f;
+  }
   
   std::tie(phi, theta, psi) = quaternionToEuler(quat);
+  
+  // 자동차 평지 주행 가정: roll과 pitch를 0으로 고정
+  phi = 0.0f;    // roll = 0  
+  theta = 0.0f;  // pitch = 0
+  
+  // 수정된 자세로 쿼터니언 재계산
+  quat = eulerToQuaternion(psi, theta, phi);
   
   // 가속도계 바이어스는 EKF에서 추정하지 않음 (imu_preprocess에서 처리)
   // x(9,0), x(10,0), x(11,0)는 사용하지 않음
@@ -286,9 +370,15 @@ void KaiEkfCore::updateImuData(float ax, float ay, float az, float p, float q, f
   f_b(2,0) = az;
 
   // 자이로 데이터에서 EKF가 추정한 바이어스 제거
-  om_ib(0,0) = p - gbx;
-  om_ib(1,0) = q - gby;
-  om_ib(2,0) = r - gbz;
+  // 자동차 평지 주행: roll, pitch 각속도 = 0
+  om_ib(0,0) = 0.0f;  // roll rate = 0
+  om_ib(1,0) = 0.0f;  // pitch rate = 0
+  // ZUPT: 정지 모드일 때 yaw rate를 0으로 강제하여 발산 억제
+  if (stationary_mode_) {
+    om_ib(2,0) = 0.0f;
+  } else {
+    om_ib(2,0) = r - gbz;  // yaw rate만 사용
+  }
 
   RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), "IMU 데이터 업데이트: ax=%.3f, ay=%.3f, az=%.3f, p=%.3f, q=%.3f, r=%.3f", ax, ay, az, p, q, r);
 }
@@ -301,7 +391,14 @@ void KaiEkfCore::updateProcessNoiseAndCovariance(float dt) {
   Gs.block(6,3,3,3) = -0.5f * Eigen::Matrix<float,3,3>::Identity();  
   Gs.block(9,6,6,6) = Eigen::Matrix<float,6,6>::Identity();  
 
-  Q = PHI * dt * Gs * Rw * Gs.transpose();
+  // 정지 모드에서는 yaw/gyro-bias-z 관련 프로세스 노이즈 축소를 반영
+  Eigen::Matrix<float,12,12> Rw_effective = Rw;
+  if (stationary_mode_) {
+    Rw_effective(5,5) *= zupt_noise_scale_;   // gyro Z
+    Rw_effective(11,11) *= zupt_noise_scale_; // gyro bias Z
+  }
+
+  Q = PHI * dt * Gs * Rw_effective * Gs.transpose();
   Q = 0.5f * (Q + Q.transpose());  
 
   P = PHI * P * PHI.transpose() + Q;
@@ -493,6 +590,135 @@ std::tuple<float,float,float> KaiEkfCore::quaternionToEuler(const Eigen::Matrix<
   yaw = atan2f(siny_cosp, cosy_cosp);
   
   return std::make_tuple(roll, pitch, yaw);
+}
+
+void KaiEkfCore::setGpsCovariance(const std::array<double, 9>& pos_cov, const std::array<double, 9>& vel_cov) {
+  std::unique_lock<std::shared_mutex> lock(shMutex);
+  
+  // 기존 R 행렬 값을 유지하고, 유효한 공분산만 업데이트
+  // GPS 위치 공분산을 R 행렬에 반영 (NED 좌표계로 변환 필요)
+  // ROS는 ENU, EKF는 NED 사용
+  // E->N, N->E, U->-D 변환
+  if (pos_cov[4] > 0 && pos_cov[0] > 0 && pos_cov[8] > 0) {
+    R(0,0) = pos_cov[4];  // North (ROS의 North)
+    R(1,1) = pos_cov[0];  // East (ROS의 East)  
+    R(2,2) = pos_cov[8];  // Down (ROS의 Up을 반전)
+  }
+  
+  // GPS 속도 공분산을 R 행렬에 반영
+  if (vel_cov[4] > 0 && vel_cov[0] > 0 && vel_cov[8] > 0) {
+    R(3,3) = vel_cov[4];  // vN
+    R(4,4) = vel_cov[0];  // vE
+    R(5,5) = vel_cov[8];  // vD
+  }
+  
+  RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), 
+    "GPS 공분산 업데이트: pos_ne=%.4f/%.4f, pos_d=%.4f, vel_ne=%.4f/%.4f, vel_d=%.4f",
+    R(0,0), R(1,1), R(2,2), R(3,3), R(4,4), R(5,5));
+}
+
+void KaiEkfCore::setImuCovariance(const std::array<double, 9>& gyro_cov, const std::array<double, 9>& accel_cov) {
+  std::unique_lock<std::shared_mutex> lock(shMutex);
+  
+  // IMU 공분산을 Rw(프로세스 노이즈)에 반영
+  bool updated = false;
+  
+  // 가속도계 공분산
+  if (accel_cov[0] > 0) {
+    Rw(0,0) = accel_cov[0];  // accel X
+    Rw(1,1) = accel_cov[4];  // accel Y
+    Rw(2,2) = accel_cov[8];  // accel Z
+    updated = true;
+  }
+  
+  // 자이로 공분산
+  if (gyro_cov[0] > 0) {
+    Rw(3,3) = gyro_cov[0];  // gyro X
+    Rw(4,4) = gyro_cov[4];  // gyro Y
+    Rw(5,5) = gyro_cov[8];  // gyro Z
+    updated = true;
+  }
+  
+  if (updated) {
+    RCLCPP_DEBUG(rclcpp::get_logger("KaiEkfCore"), 
+      "IMU 공분산 업데이트: accel=%.6f/%.6f/%.6f, gyro=%.6f/%.6f/%.6f",
+      Rw(0,0), Rw(1,1), Rw(2,2), Rw(3,3), Rw(4,4), Rw(5,5));
+  }
+}
+
+std::array<double, 9> KaiEkfCore::getPositionCovariance() const {
+  std::shared_lock<std::shared_mutex> lock(shMutex);
+  std::array<double, 9> cov = {0};
+  
+  // EKF가 초기화되지 않았으면 기본값 반환
+  if (!initialized_) {
+    // 초기 불확실성 사용
+    double init_var = params_.init_pos_unc * params_.init_pos_unc;
+    cov[0] = init_var;
+    cov[4] = init_var;
+    cov[8] = init_var;
+    return cov;
+  }
+  
+  // P 행렬의 위치 부분 (0:2, 0:2) 추출
+  // NED에서 ENU로 변환
+  cov[0] = P(1,1);  // East variance (NED의 E)
+  cov[4] = P(0,0);  // North variance (NED의 N)
+  cov[8] = P(2,2);  // Up variance (NED의 -D)
+  
+  // 공분산 (off-diagonal)
+  cov[1] = P(1,0);  // E-N covariance
+  cov[3] = P(0,1);  // N-E covariance
+  
+  return cov;
+}
+
+std::array<double, 9> KaiEkfCore::getVelocityCovariance() const {
+  std::shared_lock<std::shared_mutex> lock(shMutex);
+  std::array<double, 9> cov = {0};
+  
+  // EKF가 초기화되지 않았으면 기본값 반환
+  if (!initialized_) {
+    double init_var = params_.init_vel_unc * params_.init_vel_unc;
+    cov[0] = init_var;
+    cov[4] = init_var;
+    cov[8] = init_var;
+    return cov;
+  }
+  
+  // P 행렬의 속도 부분 (3:5, 3:5) 추출
+  // NED에서 ENU로 변환
+  cov[0] = P(4,4);  // vE variance
+  cov[4] = P(3,3);  // vN variance
+  cov[8] = P(5,5);  // vU variance (-vD)
+  
+  // 공분산
+  cov[1] = P(4,3);  // vE-vN covariance
+  cov[3] = P(3,4);  // vN-vE covariance
+  
+  return cov;
+}
+
+std::array<double, 9> KaiEkfCore::getOrientationCovariance() const {
+  std::shared_lock<std::shared_mutex> lock(shMutex);
+  std::array<double, 9> cov = {0};
+  
+  // EKF가 초기화되지 않았으면 기본값 반환
+  if (!initialized_) {
+    cov[0] = params_.init_att_unc * params_.init_att_unc;
+    cov[4] = params_.init_att_unc * params_.init_att_unc;
+    cov[8] = params_.init_hdg_unc * params_.init_hdg_unc;
+    return cov;
+  }
+  
+  // P 행렬의 자세 부분 (6:8, 6:8) 추출
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {
+      cov[i*3 + j] = P(6+i, 6+j);
+    }
+  }
+  
+  return cov;
 }
 
 }

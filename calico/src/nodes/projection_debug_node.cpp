@@ -35,8 +35,8 @@ ProjectionDebugNode::ProjectionDebugNode()
     loadCameraConfig();
     
     // Create subscribers
-    lidar_sub_ = this->create_subscription<custom_interface::msg::ModifiedFloat32MultiArray>(
-        "/sorted_cones_time", 10,
+    lidar_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
+        "/cones/lidar", 10,
         std::bind(&ProjectionDebugNode::lidarCallback, this, std::placeholders::_1));
     
     image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
@@ -92,12 +92,12 @@ void ProjectionDebugNode::loadCameraConfig() {
 }
 
 void ProjectionDebugNode::lidarCallback(
-    const custom_interface::msg::ModifiedFloat32MultiArray::SharedPtr msg) {
+    const custom_interface::msg::TrackedConeArray::SharedPtr msg) {
     
     std::lock_guard<std::mutex> lock(data_mutex_);
     
     // Convert message to cones
-    latest_cones_ = utils::MessageConverter::fromModifiedFloat32MultiArray(*msg);
+    latest_cones_ = utils::MessageConverter::fromTrackedConeArray(*msg);
     latest_lidar_time_ = this->get_clock()->now();
     
     RCLCPP_DEBUG(this->get_logger(), "Received %zu LiDAR cones", latest_cones_.size());

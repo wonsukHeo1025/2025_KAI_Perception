@@ -416,3 +416,109 @@ ros2 launch cone_stellation imu_gps_ekf_launch.py motion_type:=figure8 radius:=3
 ```
 
 ### 상태: ✅ 구현 완료, 테스트 준비 완료
+
+## 2025-07-28: GLIM-Inspired Loop Closure 재설계
+
+### 분석 완료:
+1. **GLIM 루프클로저 철학 분석**
+   - Implicit loop closure: 명시적 descriptor 없음
+   - 거리 + 오버랩 기반 검출
+   - 서브맵 간 registration factors
+   - 검증된 실전 성능
+
+2. **기존 접근법의 문제점 확인**
+   - Constellation descriptor가 sparse 환경에서 실패
+   - 메모리 누수 (keyframe_database 무한 증가)
+   - Race condition (멀티스레드 동기화 문제)
+   - 과도한 복잡성으로 인한 유지보수 어려움
+
+3. **새로운 설계 완료**
+   - ConeSubmap 개념 도입 (10 keyframes = 1 submap)
+   - 공간 인덱싱 (KD-tree) 기반 효율적 검색
+   - 기하학적 일관성 검증으로 false positive 방지
+   - Circular buffer로 메모리 제한 (최대 100 submaps)
+
+### 구현 계획:
+- **Phase 1 (2주)**: 기본 구현 - 서브맵 생성, 오버랩 검출
+- **Phase 2 (2주)**: 강건성 개선 - 기하학적 검증, adaptive parameters
+- **Phase 3 (1주)**: 최적화 - KD-tree, 병렬화, 메모리 관리
+
+### 문서화:
+- glim_inspired_loop_closure.md 작성 완료
+- DEVELOPMENT_PLAN.md 업데이트 완료
+- 상세 알고리즘 및 구현 가이드 포함
+
+### 기대 효과:
+- 단순성: 복잡한 descriptor 제거
+- 강건성: 기하학적 검증으로 신뢰도 향상
+- 효율성: O(1) 검색, 제한된 메모리 사용
+- 확장성: sparse/dense 환경 모두 대응
+
+### 상태: ✅ 설계 완료, 구현 대기 중
+
+## 2025-01-04: TF Circular Dependency Fixed
+
+### Problem
+- `base_link` was moving in sync with `base_link_slam` instead of moving smoothly at 50Hz from EKF
+- When SLAM optimized, `base_link` would jump/freeze instead of continuous motion
+- `ros2 run tf2_tools view_frames` showed base_link following base_link_slam exactly
+
+### Root Cause (discovered using zen thinkdeep)
+- Circular dependency in drift correction calculation
+- `drift_correction_manager` was calculating: `T_map_odom = T_map_base * T_odom_base^-1`
+- But `T_map_base` already contains the previous `map->odom` transform implicitly
+- This created a feedback loop where SLAM was using its own output as input
+- Violation of REP-105 TF architecture principles
+
+### Solution Applied
+- **Immediate fix**: Disabled drift correction, set `map->odom` to identity transform
+- Modified `cone_slam_node.cpp`:
+  - Set `T_map_odom = Identity()` in `visualization_callback()` (line 387)
+  - Commented out `drift_manager_->add_odometry_pose()` calls (line 298-302)
+  - Commented out `drift_manager_->update_slam_pose()` calls (line 598-604, 510-516)
+
+### Result
+- ✅ EKF and SLAM now operate independently
+- ✅ `base_link` should move smoothly at 50Hz from EKF
+- ✅ `base_link_slam` shows SLAM's optimized position
+- ✅ No more circular dependency
+- ✅ Build successful
+
+### Long-term Solution Needed
+- Implement reference-based drift correction
+- Store odometry snapshot at optimization time
+- Calculate drift from reference, not current state
+- Follow proper REP-105 architecture
+
+### 상태: ✅ 즉시 수정 완료, 장기 해결책 필요
+
+## 2025-08-08: Mapping robustness analysis under shake
+**Problem**: Cone mapping unstable when vehicle/LiDAR shakes; EKF odom is good after motion, yaw drifts when stationary (no wheel encoder).
+**Findings**:
+- Early direct landmark creation (first 30) bypasses tentative buffering
+- Constant observation noise; no robust loss; inter-landmark distance uses map positions
+- Association lacks covariance/track-id gating; preprocessor lacks smoothing
+- Pattern detection has no effect (pattern factors disabled)
+**Proposed actions**:
+1) Gate mapping by motion/yaw covariance; 2) Remove direct creation, rely on tentative promotion; 3) Per-observation adaptive noise + Huber; 4) Stronger association with track-id + Mahalanobis; 5) Inter-landmark distances from same-frame median; 6) Simple smoothing of tracked observations in preprocessor; 7) Ensure ISAM2 params loaded from YAML.
+**Status**: Documented in `docs/cone_mapping_robustness_analysis.md`; ready to implement incrementally.
+
+## 2025-08-13 - Phase 1 Emergency Stabilization Completed
+
+### Issues Fixed
+1. **Package dependencies** - Added tf2_eigen and tf2_geometry_msgs to package.xml
+2. **Hardcoded override** - Removed use_simple_mapping = false hardcoding in cone_slam_node.cpp
+3. **Inter-landmark duplicates** - Implemented registry using std::set<std::pair<int,int>> to prevent duplicate factor creation
+4. **Drift correction** - Reconnected DriftCorrectionManager in odom_callback and visualization_callback
+5. **CMake TBB** - Fixed TBB linking to use modern CMake target (TBB::tbb)
+6. **SLAMVisualizer virtual** - Made visualizeFactorGraph virtual in base class
+7. **Missing headers** - Added multiple missing headers (chrono, vector, Eigen, limits, etc.)
+8. **map→odom identity** - Removed identity loop, now using DriftCorrectionManager properly
+9. **AsyncConeOdometry** - Implemented frame injection path in cone_callback
+10. **SLAMVisualizer bug** - Fixed factor classification pointer dangling issue (storing shared_ptr directly instead of pointer to loop variable)
+11. **ConeDistanceFactor** - Added singularity guard for near-zero distances
+
+### Result
+- Build successful with only warnings
+- All components initialize properly  
+- System ready for sensor data input

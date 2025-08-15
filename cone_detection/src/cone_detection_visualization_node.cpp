@@ -34,7 +34,7 @@ public:
         
         // Create subscribers
         tracked_cones_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
-            "/sorted_cones_time_ukf", 10,
+            "/cones/lidar/ukf", 10,
             std::bind(&ConeVisualizationNode::trackedConesCallback, this, std::placeholders::_1));
         
         // Create publishers
@@ -46,7 +46,7 @@ public:
             "/vis/cone/lidar/text", 10);
         
         RCLCPP_INFO(this->get_logger(), "Cone Visualization Node initialized");
-        RCLCPP_INFO(this->get_logger(), "Subscribing to: /sorted_cones_time_ukf");
+        RCLCPP_INFO(this->get_logger(), "Subscribing to: /cones/lidar/ukf");
         RCLCPP_INFO(this->get_logger(), "Publishing LiDAR UKF cones to: /vis/cone/lidar/ukf");
         RCLCPP_INFO(this->get_logger(), "Publishing velocity arrows to: /vis/cone/lidar/velocity");
         RCLCPP_INFO(this->get_logger(), "Publishing track ID text to: /vis/cone/lidar/text");

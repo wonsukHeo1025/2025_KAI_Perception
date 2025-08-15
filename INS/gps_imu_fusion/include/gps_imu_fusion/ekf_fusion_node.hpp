@@ -80,12 +80,26 @@ private:
   bool publish_tf_;
   bool use_gnss_heading_;
   double min_speed_for_gnss_heading_;
+  double zupt_speed_threshold_;
+  double zupt_noise_scale_;
+  double zupt_gyro_threshold_;
+  double zupt_accel_threshold_;
+  double reference_altitude_;
   
   bool origin_set_ = false;
   double origin_utm_x_ = 0.0;
   double origin_utm_y_ = 0.0;
   
   std::mutex data_mutex_;
+  bool imu_stationary_flag_ = false;
+  bool stationary_latched_ = true;  // 시작 시 정지 가정
+  rclcpp::Time stationary_candidate_start_;
+  rclcpp::Time moving_candidate_start_;
+  double zupt_hold_time_ = 0.3;     // s
+  double zupt_release_time_ = 0.3;  // s
+  double last_speed_ = 0.0;
+  float last_gps_heading_ = 0.0;  // GPS heading 저장용
+  bool has_gnss_speed_ = false;
   
   rclcpp::Time last_update_time_;
   

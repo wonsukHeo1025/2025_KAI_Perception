@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <map>
 
 namespace cone_stellation {
 

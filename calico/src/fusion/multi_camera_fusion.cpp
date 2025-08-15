@@ -8,7 +8,10 @@ namespace fusion {
 
 MultiCameraFusion::MultiCameraFusion() 
     : matcher_(std::make_unique<HungarianMatcher>()),
-      max_matching_distance_(50.0) {
+      max_matching_distance_(50.0),
+      int_pool_(20, 100),  // Pre-allocate 20 vectors with capacity 100
+      string_pool_(10, 100),  // Pre-allocate 10 vectors with capacity 100
+      pair_pool_(10, 500) {  // Pre-allocate 10 vectors with capacity 500 for point pairs
     
     // Initialize T_sensor_to_lidar from Ouster OS1 documentation
     // This transforms from os_sensor frame to os_lidar frame
@@ -53,6 +56,7 @@ CameraFusionResult MultiCameraFusion::fuseForCamera(
     
     if (lidar_cones.empty() || yolo_detections.empty()) {
         // No matching possible
+        result.unmatched_cone_indices.reserve(lidar_cones.size());
         for (size_t i = 0; i < lidar_cones.size(); ++i) {
             result.unmatched_cone_indices.push_back(i);
         }
@@ -61,6 +65,7 @@ CameraFusionResult MultiCameraFusion::fuseForCamera(
     
     // Convert LiDAR cones to 3D points
     std::vector<utils::Point3D> lidar_points;
+    lidar_points.reserve(lidar_cones.size());
     for (const auto& cone : lidar_cones) {
         lidar_points.emplace_back(cone.x, cone.y, cone.z);
     }
@@ -97,21 +102,28 @@ CameraFusionResult MultiCameraFusion::fuseForCamera(
                 camera_config.id.c_str(), projected_points.size(), lidar_points.size(), yolo_detections.size());
     
     // Convert projected points and YOLO detections to pairs for matching
-    std::vector<std::pair<double, double>> proj_pairs;
+    // Use memory pool to reduce allocations
+    auto proj_pairs_ptr = pair_pool_.acquire();
+    proj_pairs_ptr->reserve(projected_points.size());
     for (const auto& pt : projected_points) {
-        proj_pairs.emplace_back(pt.x, pt.y);
+        proj_pairs_ptr->emplace_back(pt.x, pt.y);
     }
     
-    std::vector<std::pair<double, double>> yolo_pairs;
+    auto yolo_pairs_ptr = pair_pool_.acquire();
+    yolo_pairs_ptr->reserve(yolo_detections.size());
     for (const auto& det : yolo_detections) {
-        yolo_pairs.push_back(utils::MessageConverter::getDetectionCenter(det));
+        yolo_pairs_ptr->push_back(utils::MessageConverter::getDetectionCenter(det));
     }
     
     // Compute cost matrix (YOLO detections as rows, projected points as columns)
-    auto cost_matrix = HungarianMatcher::computeCostMatrix(yolo_pairs, proj_pairs);
+    auto cost_matrix = HungarianMatcher::computeCostMatrix(*yolo_pairs_ptr, *proj_pairs_ptr);
     
     // Perform Hungarian matching
     auto match_result = matcher_->match(cost_matrix, max_matching_distance_);
+    
+    // Return pools
+    pair_pool_.release(proj_pairs_ptr);
+    pair_pool_.release(yolo_pairs_ptr);
     
     // Process matches
     result.matched_cone_indices.resize(lidar_cones.size(), -1);
@@ -141,6 +153,7 @@ CameraFusionResult MultiCameraFusion::fuseForCamera(
     }
     
     // Mark unmatched cones
+    result.unmatched_cone_indices.reserve(lidar_cones.size());  // Pre-allocate worst case
     for (size_t i = 0; i < lidar_cones.size(); ++i) {
         if (result.matched_cone_indices[i] == -1) {
             result.unmatched_cone_indices.push_back(i);

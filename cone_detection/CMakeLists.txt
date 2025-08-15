@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.18)
 project(cone_detection)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -15,24 +15,13 @@ find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(custom_interface REQUIRED)
+find_package(kalman_filters REQUIRED)
 
-# Find kalman_filters library (installed separately)
-find_library(KALMAN_FILTERS_LIB 
-  NAMES kalman_filters_lib
-  PATHS /usr/local/lib
-  PATH_SUFFIXES lib
-  REQUIRED
-  NO_DEFAULT_PATH
-)
-
-# dlib no longer needed - kalman_filters has its own Hungarian implementation
-message(STATUS "Using kalman_filters Hungarian matching implementation")
 
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
   ${Eigen3_INCLUDE_DIRS}
-  /usr/local/include  # for kalman_filters
   /usr/include/pcl-1.12
 )
 
@@ -47,6 +36,7 @@ ${PCL_DEFINITIONS}
 # 소스 파일 목록 설정
 set(SOURCES
   src/cone_detection_node.cpp
+  src/dbscan_clusterer.cpp
 )
 
 set(VIZ_SOURCES
@@ -58,10 +48,9 @@ add_executable(cone_detection_node ${SOURCES})
 add_executable(cone_detection_visualization_node ${VIZ_SOURCES})
 
 # Link libraries (custom_interface 제거, ament_target_dependencies로 처리)
-target_link_libraries(cone_detection_node 
-  ${PCL_LIBRARIES} 
+target_link_libraries(cone_detection_node
+  ${PCL_LIBRARIES}
   Eigen3::Eigen
-  ${KALMAN_FILTERS_LIB}
 )
 
 target_link_libraries(cone_detection_visualization_node
@@ -79,6 +68,7 @@ ament_target_dependencies(cone_detection_node
   visualization_msgs
   pcl_conversions
   custom_interface
+  kalman_filters
 )
 
 ament_target_dependencies(cone_detection_visualization_node
@@ -88,6 +78,7 @@ ament_target_dependencies(cone_detection_visualization_node
   visualization_msgs
   pcl_conversions
   custom_interface
+  kalman_filters
   geometry_msgs
 )
 

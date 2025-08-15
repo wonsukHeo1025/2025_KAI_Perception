@@ -1,6 +1,6 @@
 hungarian_association:
-  cones_topic: "/sorted_cones_time" 
-  output_topic: "/fused_sorted_cones"
+  cones_topic: "/cones/lidar" 
+  output_topic: "/cones/fused"
 
   max_matching_distance: 25.0 # 픽셀 단위 매칭 거리 임계값
 

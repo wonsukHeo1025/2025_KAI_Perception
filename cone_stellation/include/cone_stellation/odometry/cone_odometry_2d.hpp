@@ -1,6 +1,8 @@
 #pragma once
 
 #include <unordered_map>
+#include <cmath>
+#include <rclcpp/rclcpp.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

@@ -57,6 +57,12 @@ void EkfFusionNode::loadParameters() {
     this->declare_parameter("publish_tf", true);
     this->declare_parameter("use_gnss_heading", true);
     this->declare_parameter("min_speed_for_gnss_heading", 0.5);  
+  this->declare_parameter("zupt_speed_threshold", 0.15);
+  this->declare_parameter("zupt_noise_scale", 0.01);
+    this->declare_parameter("reference_altitude", 39.5);
+    // ZUPT IMU 기준 임계치
+    this->declare_parameter("zupt_gyro_threshold", 0.02);
+    this->declare_parameter("zupt_accel_threshold", 0.2);
     this->declare_parameter("accel_noise", 0.05);
     this->declare_parameter("gyro_noise", 0.00175);
     this->declare_parameter("accel_bias_noise", 0.01);
@@ -87,6 +93,11 @@ void EkfFusionNode::loadParameters() {
   publish_tf_ = this->get_parameter("publish_tf").as_bool();
   use_gnss_heading_ = this->get_parameter("use_gnss_heading").as_bool();
   min_speed_for_gnss_heading_ = this->get_parameter("min_speed_for_gnss_heading").as_double();
+  zupt_speed_threshold_ = this->get_parameter("zupt_speed_threshold").as_double();
+  zupt_noise_scale_ = this->get_parameter("zupt_noise_scale").as_double();
+  reference_altitude_ = this->get_parameter("reference_altitude").as_double();
+  zupt_gyro_threshold_ = this->get_parameter("zupt_gyro_threshold").as_double();
+  zupt_accel_threshold_ = this->get_parameter("zupt_accel_threshold").as_double();
   
   RCLCPP_INFO(this->get_logger(), "Update rate: %.1f Hz", update_rate_);
   RCLCPP_INFO(this->get_logger(), "Magnetic declination: %.2f deg (%s)", 
@@ -95,6 +106,9 @@ void EkfFusionNode::loadParameters() {
   RCLCPP_INFO(this->get_logger(), "GNSS heading: %s (min speed: %.1f m/s)", 
               use_gnss_heading_ ? "enabled" : "disabled",
               min_speed_for_gnss_heading_);
+  RCLCPP_INFO(this->get_logger(), "ZUPT: threshold=%.2f m/s, noise_scale=%.3f, gyro_thr=%.3f rad/s, accel_thr=%.3f m/s^2", 
+              zupt_speed_threshold_, zupt_noise_scale_, zupt_gyro_threshold_, zupt_accel_threshold_);
+  RCLCPP_INFO(this->get_logger(), "Reference altitude: %.1f m", reference_altitude_);
 }
 
 void EkfFusionNode::configureEkfParameters() {
@@ -179,6 +193,27 @@ void EkfFusionNode::gnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr ms
                coor.lat, coor.lon, coor.alt);
   ekf_->gpsCoordinateUpdateEkf(coor);
   
+  // GPS 공분산을 EKF에 전달
+  if (msg->position_covariance_type == sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN ||
+      msg->position_covariance_type == sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_KNOWN) {
+    std::array<double, 9> pos_cov;
+    for(int i = 0; i < 9; i++) {
+      pos_cov[i] = msg->position_covariance[i];
+    }
+    
+    // 속도 공분산 (최신 속도 메시지에서)
+    std::array<double, 9> vel_cov = {0};
+    if (received_gnss_vel_) {
+      for(int i = 0; i < 9; i++) {
+        vel_cov[i] = latest_gnss_vel_.twist.covariance[i];
+      }
+    }
+    
+    ekf_->setGpsCovariance(pos_cov, vel_cov);
+    RCLCPP_DEBUG(this->get_logger(), "GPS covariance updated: pos_var=[%.4f, %.4f, %.4f]", 
+                 pos_cov[0], pos_cov[4], pos_cov[8]);
+  }
+  
   if (!received_gnss_) {
     RCLCPP_INFO(this->get_logger(), "First GNSS data received");
   }
@@ -202,6 +237,36 @@ void EkfFusionNode::gnssVelCallback(const geometry_msgs::msg::TwistWithCovarianc
   RCLCPP_DEBUG(this->get_logger(), "Updating EKF with GPS velocity: vN=%.3f, vE=%.3f, vD=%.3f m/s", 
                vel.vN, vel.vE, vel.vD);
   ekf_->gpsVelocityUpdateEkf(vel);
+  
+  // GPS 속도로부터 heading 계산 및 설정
+  double speed = std::sqrt(vel.vN * vel.vN + vel.vE * vel.vE);
+  has_gnss_speed_ = true;
+  last_speed_ = speed;
+  
+  // 0.08m/s 기준으로 ZUPT 및 GPS heading 제어
+  const double SPEED_THRESHOLD = 0.08;  // 0.08m/s 기준
+  
+  if (speed < SPEED_THRESHOLD) {
+    // 정지 상태: ZUPT 활성화하여 yaw drift 방지
+    ekf_->setStationary(true);
+    ekf_->setZuptNoiseScale(0.3f);  // 프로세스 노이즈 적당히 줄임 (너무 작으면 안됨)
+    ekf_->setGpsHeading(0.0f, false);  // GPS heading 사용 안 함
+    RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                         "ZUPT ACTIVE: speed %.3f m/s < %.3f m/s, yaw update stopped", 
+                         speed, SPEED_THRESHOLD);
+  } else {
+    // 이동 상태: ZUPT 비활성화, GPS heading 사용
+    ekf_->setStationary(false);
+    ekf_->setZuptNoiseScale(1.0f);  // 프로세스 노이즈 원상복구
+    
+    if (use_gnss_heading_) {
+      float gps_heading = std::atan2(vel.vE, vel.vN);  // 북쪽 기준 heading
+      ekf_->setGpsHeading(gps_heading, true);
+      last_gps_heading_ = gps_heading;  // GPS heading 저장
+      RCLCPP_DEBUG(this->get_logger(), "GPS heading set: %.2f rad (%.1f deg) from velocity [vN=%.2f, vE=%.2f], speed=%.2f m/s", 
+                   gps_heading, gps_heading * 180.0 / M_PI, vel.vN, vel.vE, speed);
+    }
+  }
   
   if (!received_gnss_vel_) {
     RCLCPP_INFO(this->get_logger(), "First GNSS velocity data received");
@@ -268,7 +333,38 @@ void EkfFusionNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
   }
   
   RCLCPP_DEBUG(this->get_logger(), "Updating EKF with IMU data, timestamp: %ld us", time_us);
+  
+  // IMU 기반 정지 감지는 비활성화 - GPS 속도로만 판단
+  // (향후 필요시 OR 조건으로 추가 가능)
+  
   ekf_->imuUpdateEkf(time_us, imu_data);
+  
+  // IMU 공분산을 EKF에 전달
+  std::array<double, 9> gyro_cov = {0};
+  std::array<double, 9> accel_cov = {0};
+  
+  // angular_velocity_covariance가 유효한 경우
+  if (msg->angular_velocity_covariance[0] > 0) {
+    for(int i = 0; i < 9; i++) {
+      gyro_cov[i] = msg->angular_velocity_covariance[i];
+    }
+  }
+  
+  // linear_acceleration_covariance가 유효한 경우
+  if (msg->linear_acceleration_covariance[0] > 0) {
+    for(int i = 0; i < 9; i++) {
+      accel_cov[i] = msg->linear_acceleration_covariance[i];
+    }
+  }
+  
+  // 공분산이 하나라도 유효하면 EKF에 전달
+  if (gyro_cov[0] > 0 || accel_cov[0] > 0) {
+    ekf_->setImuCovariance(gyro_cov, accel_cov);
+    RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                          "IMU covariance updated: gyro_var=[%.6f, %.6f, %.6f], accel_var=[%.6f, %.6f, %.6f]", 
+                          gyro_cov[0], gyro_cov[4], gyro_cov[8],
+                          accel_cov[0], accel_cov[4], accel_cov[8]);
+  }
 }
 
 void EkfFusionNode::updateAndPublish() {
@@ -317,9 +413,22 @@ void EkfFusionNode::publishOdometry() {
   odom.child_frame_id = base_frame_id_;
   
   if (origin_set_) {
-    odom.pose.pose.position.x = latest_utm_.easting - origin_utm_x_;
-    odom.pose.pose.position.y = latest_utm_.northing - origin_utm_y_;
-    odom.pose.pose.position.z = latest_gnss_.altitude; 
+    // EKF에서 추정한 위치를 가져옴 (라디안 단위)
+    double ekf_lat_rad = ekf_->getLatitude_rad();
+    double ekf_lon_rad = ekf_->getLongitude_rad();
+    double ekf_alt_m = ekf_->getAltitude_m();
+    
+    // 라디안을 도(degree)로 변환
+    double ekf_lat_deg = ekf_lat_rad * 180.0 / M_PI;
+    double ekf_lon_deg = ekf_lon_rad * 180.0 / M_PI;
+    
+    // EKF 추정 위치를 UTM으로 변환
+    UTMCoordinate ekf_utm = llToUtm(ekf_lat_deg, ekf_lon_deg);
+    
+    // 로컬 좌표계로 변환 (원점 기준)
+    odom.pose.pose.position.x = ekf_utm.easting - origin_utm_x_;
+    odom.pose.pose.position.y = ekf_utm.northing - origin_utm_y_;
+    odom.pose.pose.position.z = ekf_alt_m - reference_altitude_; 
     
     RCLCPP_DEBUG(this->get_logger(), "Position relative to origin: x=%.2f, y=%.2f, z=%.2f m", 
                  odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z);
@@ -334,15 +443,17 @@ void EkfFusionNode::publishOdometry() {
   float pitch = ekf_->getPitch_rad();
   float heading;
   
+  // 현재 GPS 속도 계산 (최신 데이터 사용)
   double gps_speed = std::sqrt(
     latest_gnss_vel_.twist.twist.linear.x * latest_gnss_vel_.twist.twist.linear.x +
     latest_gnss_vel_.twist.twist.linear.y * latest_gnss_vel_.twist.twist.linear.y);
   
-  if (use_gnss_heading_ && gps_speed > min_speed_for_gnss_heading_) {
+  if (use_gnss_heading_ && gps_speed > 0.08) {
+    // 매번 최신 GPS 속도로부터 heading 계산 - main처럼 동작
     heading = calculateCourse(latest_gnss_vel_.twist.twist.linear.x, latest_gnss_vel_.twist.twist.linear.y);
     RCLCPP_DEBUG(this->get_logger(), "Using GNSS heading: %.2f rad from velocity data", heading);
   } else {
-    heading = ekf_->getHeading_rad();  
+    heading = ekf_->getHeading_rad();
     RCLCPP_DEBUG(this->get_logger(), "Using EKF estimated heading: %.2f rad", heading);
   }
   
@@ -376,27 +487,52 @@ void EkfFusionNode::publishOdometry() {
   odom.twist.twist.angular.y = latest_imu_.angular_velocity.y;
   odom.twist.twist.angular.z = latest_imu_.angular_velocity.z;
   
-  if (latest_gnss_.position_covariance_type != 0) {
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 3; j++) {
-        odom.pose.covariance[i * 6 + j] = latest_gnss_.position_covariance[i * 3 + j];
-      }
+  // EKF 공분산 사용
+  auto pos_cov = ekf_->getPositionCovariance();
+  auto vel_cov = ekf_->getVelocityCovariance();
+  auto orient_cov = ekf_->getOrientationCovariance();
+  
+  // 위치 공분산 설정 (3x3)
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {
+      odom.pose.covariance[i * 6 + j] = pos_cov[i * 3 + j];
     }
   }
   
-  if (latest_gnss_vel_.twist.covariance[0] != 0) {
-    for (int i = 0; i < 6; i++) {
-      for (int j = 0; j < 6; j++) {
-        odom.twist.covariance[i * 6 + j] = latest_gnss_vel_.twist.covariance[i * 6 + j];
+  // 자세 공분산 설정 (3x3, 오른쪽 아래)
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {
+      odom.pose.covariance[(i+3) * 6 + (j+3)] = orient_cov[i * 3 + j];
+    }
+  }
+  
+  // 속도 공분산 설정 (3x3)
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {
+      odom.twist.covariance[i * 6 + j] = vel_cov[i * 3 + j];
+    }
+  }
+  
+  // 각속도 공분산은 IMU 원본 사용 (EKF에서 추정하지 않음)
+  if (latest_imu_.angular_velocity_covariance[0] > 0) {
+    for(int i = 0; i < 3; i++) {
+      for(int j = 0; j < 3; j++) {
+        odom.twist.covariance[(i+3) * 6 + (j+3)] = latest_imu_.angular_velocity_covariance[i * 3 + j];
       }
     }
   }
 
   odom_pub_->publish(odom);
+  
+  // 현재 속도 계산
+  double current_speed = std::sqrt(
+    odom.twist.twist.linear.x * odom.twist.twist.linear.x + 
+    odom.twist.twist.linear.y * odom.twist.twist.linear.y);
+  
   RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 3000, 
                       "Published odometry: pos=[%.2f, %.2f, %.2f], heading=%.2f deg, speed=%.2f m/s", 
                       odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z,
-                      heading * 180.0 / M_PI, gps_speed);
+                      heading * 180.0 / M_PI, current_speed);
 
   geometry_msgs::msg::PoseStamped pose;
   pose.header = odom.header;
@@ -427,15 +563,17 @@ void EkfFusionNode::publishTransform() {
   float roll = ekf_->getRoll_rad();
   float pitch = ekf_->getPitch_rad();
   float heading;
-
+  
+  // 현재 GPS 속도 계산 (최신 데이터 사용)
   double gps_speed = std::sqrt(
     latest_gnss_vel_.twist.twist.linear.x * latest_gnss_vel_.twist.twist.linear.x +
     latest_gnss_vel_.twist.twist.linear.y * latest_gnss_vel_.twist.twist.linear.y);
   
-  if (use_gnss_heading_ && gps_speed > min_speed_for_gnss_heading_) {
+  if (use_gnss_heading_ && gps_speed > 0.08) {
+    // 매번 최신 GPS 속도로부터 heading 계산 - main처럼 동작
     heading = calculateCourse(latest_gnss_vel_.twist.twist.linear.x, latest_gnss_vel_.twist.twist.linear.y);
   } else {
-    heading = ekf_->getHeading_rad();  
+    heading = ekf_->getHeading_rad();
   }
 
   // NaN 방지를 위해 roll, pitch, heading 값 확인 (안전장치로 유지)
@@ -452,9 +590,22 @@ void EkfFusionNode::publishTransform() {
   transform.header.frame_id = "odom";
   transform.child_frame_id = base_frame_id_;
   
-  transform.transform.translation.x = latest_utm_.easting - origin_utm_x_;
-  transform.transform.translation.y = latest_utm_.northing - origin_utm_y_;
-  transform.transform.translation.z = latest_gnss_.altitude; 
+  // EKF에서 추정한 위치를 가져옴 (라디안 단위)
+  double ekf_lat_rad = ekf_->getLatitude_rad();
+  double ekf_lon_rad = ekf_->getLongitude_rad();
+  double ekf_alt_m = ekf_->getAltitude_m();
+  
+  // 라디안을 도(degree)로 변환
+  double ekf_lat_deg = ekf_lat_rad * 180.0 / M_PI;
+  double ekf_lon_deg = ekf_lon_rad * 180.0 / M_PI;
+  
+  // EKF 추정 위치를 UTM으로 변환
+  UTMCoordinate ekf_utm = llToUtm(ekf_lat_deg, ekf_lon_deg);
+  
+  // 로컬 좌표계로 변환 (원점 기준)
+  transform.transform.translation.x = ekf_utm.easting - origin_utm_x_;
+  transform.transform.translation.y = ekf_utm.northing - origin_utm_y_;
+  transform.transform.translation.z = ekf_alt_m - reference_altitude_; 
   
   transform.transform.rotation.w = q.w();
   transform.transform.rotation.x = q.x();

@@ -26,7 +26,6 @@
   <build_depend>yaml-cpp</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>libopencv-dev</build_depend>
-  <build_depend>libdlib-dev</build_depend>
   
   <!-- Custom message dependencies -->
   <build_depend>custom_interface</build_depend>
@@ -48,9 +47,11 @@
   <exec_depend>yaml-cpp</exec_depend>
   <exec_depend>eigen</exec_depend>
   <exec_depend>libopencv-dev</exec_depend>
-  <exec_depend>libdlib-dev</exec_depend>
   <exec_depend>custom_interface</exec_depend>
   <exec_depend>yolo_msgs</exec_depend>
+  
+  <!-- System library dependencies -->
+  <depend>kalman_filters</depend>
 
   <!-- Test dependencies -->
   <test_depend>ament_lint_auto</test_depend>

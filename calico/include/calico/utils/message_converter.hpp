@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <custom_interface/msg/modified_float32_multi_array.hpp>
+// Legacy message type - commented out for migration to TrackedConeArray
+// #include <custom_interface/msg/modified_float32_multi_array.hpp>
 #include <custom_interface/msg/tracked_cone.hpp>
 #include <custom_interface/msg/tracked_cone_array.hpp>
 #include <yolo_msgs/msg/detection.hpp>
@@ -57,21 +58,22 @@ struct IMUData {
  */
 class MessageConverter {
 public:
-    /**
-     * @brief Convert ModifiedFloat32MultiArray to internal cone representation
-     * @param msg Input ROS message
-     * @return Vector of cones
-     */
-    static std::vector<Cone> fromModifiedFloat32MultiArray(
-        const custom_interface::msg::ModifiedFloat32MultiArray& msg);
-    
-    /**
-     * @brief Convert internal cones to ModifiedFloat32MultiArray
-     * @param cones Vector of cones
-     * @return ROS message
-     */
-    static custom_interface::msg::ModifiedFloat32MultiArray 
-    toModifiedFloat32MultiArray(const std::vector<Cone>& cones);
+    // Legacy conversion functions - commented out for migration to TrackedConeArray
+    // /**
+    //  * @brief Convert ModifiedFloat32MultiArray to internal cone representation
+    //  * @param msg Input ROS message
+    //  * @return Vector of cones
+    //  */
+    // static std::vector<Cone> fromModifiedFloat32MultiArray(
+    //     const custom_interface::msg::ModifiedFloat32MultiArray& msg);
+    // 
+    // /**
+    //  * @brief Convert internal cones to ModifiedFloat32MultiArray
+    //  * @param cones Vector of cones
+    //  * @return ROS message
+    //  */
+    // static custom_interface::msg::ModifiedFloat32MultiArray 
+    // toModifiedFloat32MultiArray(const std::vector<Cone>& cones);
     
     /**
      * @brief Convert DetectionArray to internal detection representation

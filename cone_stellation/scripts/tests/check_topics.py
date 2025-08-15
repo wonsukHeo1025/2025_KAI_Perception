@@ -25,7 +25,7 @@ class TopicChecker(Node):
         
         # Check publishers and subscribers
         print("\n=== Topic Info ===")
-        for topic in ['/fused_sorted_cones_ukf_sim', '/lidar/cone_detection_cones']:
+        for topic in ['/cones/for_sim', '/lidar/cone_detection_cones']:
             pubs = self.get_publishers_info_by_topic(topic)
             subs = self.get_subscriptions_info_by_topic(topic)
             print(f"\n{topic}:")

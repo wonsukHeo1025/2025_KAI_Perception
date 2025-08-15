@@ -4,7 +4,7 @@ cone_slam:
     # Preprocessing parameters
     preprocessing:
       # Outlier rejection
-      max_cone_distance: 20.0          # Maximum distance to consider cone (meters)
+      max_cone_distance: 30.0          # Maximum distance from sensor to cone (sensor-relative)
       min_cone_confidence: 0.5         # Minimum detection confidence [0,1]
       
       # Pattern detection
@@ -35,7 +35,7 @@ cone_slam:
       max_landmark_distance: 10.0            # Max distance for inter-landmark factor
       
       # Optimization triggers
-      optimize_every_n_frames: 1            # Optimize after every keyframe for stability
+      optimize_every_n_frames: 1           # Optimize every 1 keyframes to prevent blocking
       optimize_on_loop_closure: true         # Force optimization on loop closure
 
     # Keyframe selection

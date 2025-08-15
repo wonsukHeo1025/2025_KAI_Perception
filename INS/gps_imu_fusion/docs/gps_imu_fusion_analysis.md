@@ -60,16 +60,6 @@
 - JSON 파싱 취약성
 - 오류 복구 메커니즘 부재
 
-## 3. robot_localization 대비 평가
-
-| 항목 | 직접 구현 EKF | robot_localization |
-|------|--------------|-------------------|
-| 안정성 | ❌ 검증되지 않음 | ✅ 광범위하게 검증됨 |
-| 유지보수 | ❌ 자체 유지보수 필요 | ✅ 커뮤니티 지원 |
-| 문서화 | ❌ 부족 | ✅ 충분한 문서 |
-| 성능 | ⭕ 특정 케이스 최적화 가능 | ✅ 일반적으로 우수 |
-| 확장성 | ⭕ 직접 구현 필요 | ✅ 다양한 센서 지원 |
-
 ## 4. 파이프라인 통합 적합성
 
 ### 4.1 현재 상태: ❌ **부적합**
@@ -110,9 +100,6 @@
 3. 로그를 통한 문제점 파악
 
 ### 6.2 장기 (프로덕션)
-1. **robot_localization으로 마이그레이션**
-   - 안정성과 유지보수성 확보
-   - 검증된 좌표계 변환 사용
    
 2. **현재 코드 유지 시**
    - Critical 이슈 4개 즉시 수정
@@ -123,4 +110,79 @@
 
 현재 직접 구현한 EKF는 학습 목적으로는 가치가 있으나, 실제 로봇 시스템에 적용하기에는 여러 치명적 결함이 있습니다. 특히 좌표계 변환 문제와 스레드 안전성 문제는 즉각적인 시스템 오류를 유발할 수 있습니다.
 
-테스트를 위해 scripts 디렉토리의 도구를 활용하되, 최종적으로는 robot_localization 패키지로의 전환을 강력히 권장합니다.
+
+
+## 8. ZUPT 개발 방향과 저속 헤딩 안정화 전략
+
+### 8.1 증상 요약
+- 문제: 속도가 0에 가까울 때 GNSS 기반 heading을 사용할 수 없어 yaw가 발산. 이동을 시작하면 참값으로 급히 snap, 다시 멈추면 heading이 크게 튐.
+- 목표: 정지/저속 구간에서 heading 흔들림 억제, 이동 시 빠른 참값 수렴은 유지.
+
+### 8.2 원인 분석 (현행 로직 기준)
+- `ekf_fusion_node.cpp`의 `gnssVelCallback()`에서 `speed < 0.08 m/s`이면 `setGpsHeading(..., false)`로 GNSS heading 비활성화. 정지 시 yaw 제약이 약해 드리프트 발생.
+- 정지 시 `setZuptNoiseScale(0.3)`만 적용되어 yaw/bias 억제가 충분히 강하지 않음.
+- `publishOdometry()`는 `gps_speed > 0.08`에서 GNSS heading을 곧바로 사용해 자세를 구성해 전환시 튐이 큼.
+
+### 8.3 상태 기계 기반 ZUPT 설계
+- 상태: STATIONARY / MOVING (필요 시 ARMING 중간상태)
+- 판정 신호:
+  - 속도 EMA `v_lpf` (fc≈1.0 Hz)
+  - IMU 자이로 노름 `|ω|`, 가속도 잔차 `|a - g|`
+- 히스테리시스/시간 지연 적용: 진입/이탈 임계 및 유지시간 분리
+
+권장 초기 파라미터:
+- min_speed_for_gnss_heading: 0.4 m/s
+- zupt_speed_threshold: 0.3 m/s (진입)
+- zupt_release_speed: 0.45 m/s (이탈)
+- zupt_time_threshold: 0.6 s (진입 유지)
+- zupt_release_time: 0.3 s (이탈 유지)
+- zupt_gyro_threshold: 0.012 rad/s
+- zupt_accel_threshold: 0.08 m/s^2
+- zupt_noise_scale: 0.08 (정지 시 yaw/gyro-bias-z Q 강하게 축소)
+
+전이 조건 스케치:
+```cpp
+bool zupt_enter = (v_lpf < zupt_speed_threshold) && (gyro_norm < zupt_gyro_thr) && (accel_resid < zupt_accel_thr) for >= zupt_time;
+bool zupt_exit  = (v_lpf > zupt_release_speed) for >= zupt_release_time;
+```
+
+### 8.4 정지 시 적용 제약
+- Zero-Velocity Update: vN=vE=vD=0 관측을 강하게 주입(R 작게)해 속도를 0으로 수렴.
+- 프로세스 억제: `KaiEkfCore::updateProcessNoiseMatrix()`에서 정지 모드 시 `gyroZ`/`gyro_biasZ` 노이즈를 `zupt_noise_scale`로 강하게 축소(≈0.05~0.10).
+- 헤딩 출력 고정: 퍼블리시 단계에서 ZUPT 중에는 `last_valid_heading`을 유지(unwrap 포함).
+- GNSS heading 비활성화 유지: 정지 중 `setGpsHeading(..., false)` 및 heading R 크게 유지.
+
+### 8.5 이동 시작 전환 부드럽게
+- 램프 블렌딩: ZUPT→MOVING 후 `τ_blend=0.5~1.0s` 동안 EKF yaw와 GNSS heading을 unwrap 후 가중합.
+- 저역통과: 초기 GNSS heading에 0.5~1.0 Hz 1차 IIR 적용.
+
+### 8.6 GNSS heading 게이팅 강화
+- 속도: `speed > max(min_speed_for_gnss_heading, 3·σ_speed)` 충족 시만 유효.
+- 변화량: 직전 대비 Δψ > 45°면 일시 게이트 후 추가 샘플 확인.
+- 공분산: vN/vE 공분산으로 근사한 heading 분산이 크면 무시.
+
+### 8.7 코드 반영 포인트
+- `ekf_fusion_node.cpp`
+  - `gnssVelCallback()`: 속도 EMA, 히스테리시스 기반 ZUPT 상태기계, 정지 시 `setStationary(true)`, `setZuptNoiseScale(≤0.1)`, GNSS heading 비활성화.
+  - `publishOdometry()`: ZUPT 중에는 `last_valid_heading` 고정, 전환 구간엔 EKF yaw vs GNSS heading 블렌딩(unwrap, α 램프).
+- `kai_ekf_core.cpp`
+  - 정지 모드 Q 감쇠를 현행보다 강하게 적용. 필요시 yaw-rate≈0 약한 관측 추가 검토.
+
+### 8.8 `config/fusion_params.yaml` 제안 항목
+- min_speed_for_gnss_heading: 0.4
+- zupt_speed_threshold: 0.3
+- zupt_release_speed: 0.45
+- zupt_time_threshold: 0.6
+- zupt_release_time: 0.3
+- zupt_noise_scale: 0.08
+- zupt_gyro_threshold: 0.012
+- zupt_accel_threshold: 0.08
+- 신규(추가 구현 필요):
+  - heading_filter_cutoff_hz: 0.8
+  - heading_blend_time_constant: 0.7
+
+### 8.9 테스트 지표(간단)
+- 정지 10초→직진 10m→정지 10초 시나리오 반복
+- 정지 중 yaw σ < 0.5°
+- 전환 1초 내 yaw 오차 < 5°
+- 상태 전이 불필요한 플리커 최소화

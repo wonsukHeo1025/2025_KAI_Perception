@@ -379,3 +379,57 @@ The system is designed with future multi-threading in mind:
 - **Max Landmarks**: Tested up to 1000 landmarks without performance degradation
 - **Inter-landmark Factors**: Limited to 15 per frame to avoid over-constraining
 - **Loop Closure**: Runs every 10 frames to balance accuracy and performance
+
+## Preprocessing Module (cone_preprocessor.hpp) — KOR 상세 분석
+
+### 역할과 책임
+- 관측 전처리 파이프라인으로, 센서 프레임(또는 `base_link`) 기준 원시 콘 관측을 입력받아 아래를 수행합니다.
+  - 거리/신뢰도 기반 아웃라이어 제거
+  - 단순 기하 패턴(직선) 탐지
+  - 관측 ID 할당/유지(현재 구현은 미할당 ID에 대해 증가 ID 부여 수준)
+
+### 공개 API
+- `std::shared_ptr<ConeObservationSet> process(const std::vector<ConeObservation>& raw_observations, const Eigen::Isometry3d& sensor_pose, double timestamp)`
+  - 입력 관측을 필터링하고, 선택적으로 패턴을 검출한 뒤, 간단 추적을 적용한 `ConeObservationSet`을 반환합니다.
+- `std::vector<ConePattern> get_recent_patterns() const`
+  - 최근 검출된 패턴을 반환합니다(스레드 안전 복사).
+
+### 구성 파라미터
+```cpp
+struct Config {
+  // Outlier rejection
+  double max_cone_distance = 20.0;    // 최대 유효 거리 (m)
+  double min_cone_confidence = 0.5;   // 최소 신뢰도
+
+  // Pattern detection
+  bool enable_pattern_detection = true;
+  double line_fitting_threshold = 0.2; // 직선 적합 허용 거리 (m)
+  int min_cones_for_line = 3;          // 직선 판단 최소 콘 수
+
+  // Tracking (현재 단순 ID 할당만 사용)
+  double association_threshold = 1.0;
+  int max_tracking_frames = 10;
+};
+```
+
+### 입출력 계약
+- 입력: `std::vector<ConeObservation>` (좌표는 `base_link` 기준을 기대), `sensor_pose`, `timestamp`.
+- 출력: `ConeObservationSet`
+  - `cones`: 거리/신뢰도 필터를 통과한 관측들(필요 시 ID 부여)
+  - `detected_patterns`: `enable_pattern_detection`이 참이면 직선 패턴 후보
+  - `sensor_pose`, `timestamp` 유지
+
+### 내부 동작 요약
+- 유효성 검사: `position.norm() <= max_cone_distance` 그리고 `confidence >= min_cone_confidence`.
+- 패턴 탐지: 삼중 조합 O(N^3) 공선성 판정 후 임계거리 내 점들을 추가해 `ConePattern::LINE`을 생성.
+- 추적/ID: `id < 0`인 관측에 증가 ID 부여. `association_threshold`/`max_tracking_frames`/`tracked_positions_`는 현재 로직에 적극 반영되지 않음.
+
+### 다른 모듈과의 관계
+- 매핑(`ConeMapping`)의 연관 로직은 색상/거리/ID 안정성에 민감합니다. 프리프로세싱 단계에서 ID 안정화(프레임 간 일관성)가 높을수록 매핑의 오연관·플리커가 줄어듭니다.
+- 패턴 탐지 결과는 현재 매핑에서 팩터 생성이 비활성화되어 정보 제공/디버깅 용도로만 사용됩니다.
+
+### 예상 문제점과 개선 제안
+- ID 안정화 부족: 최근접 NN + 속도 제한/EMA(지수이동평균) 또는 슬라이딩 median으로 `tracked_positions_`를 실제로 활용해 스무딩/재식별이 필요합니다.
+- O(N^3) 패턴 탐지는 N이 커지면 비효율적: RANSAC/Hough 변환 기반으로 개선 권장.
+- 관측 공분산/신뢰도 활용 부족: 현재 `ros_utils`에서 거리 기반 공분산을 생성하지만, 전처리 단계에서 적응형 가중(예: 거리↑/신뢰도↓ → 가중↓)을 명시적으로 표준화하면 다운스트림 노이즈 모델 일관성이 좋아집니다.
+- 좌표 일관성: 입력이 반드시 `base_link` 기준이라는 전제와 TF 적용 경로(`cone_slam_node.cpp`)가 일치하는지 보장해야 합니다.

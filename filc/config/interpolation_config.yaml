@@ -38,7 +38,7 @@ improved_interpolation_node:
       input_signal_image: "/ouster/signal_image"    # 옵션
       
       # 출력
-      output_pointcloud: "/ouster/improved_interpolated_points"
+      output_pointcloud: "/ouster/points/interpolated"
 
     # OS1-32 센서 파라미터
     sensor:

@@ -62,9 +62,9 @@ public:
     processed->sensor_pose = sensor_pose;
     processed->timestamp = timestamp;
     
-    // Filter outliers
+    // Filter outliers (now passing sensor_pose for relative distance calculation)
     for (const auto& obs : raw_observations) {
-      if (is_valid_observation(obs)) {
+      if (is_valid_observation(obs, sensor_pose)) {
         processed->cones.push_back(obs);
       }
     }
@@ -91,11 +91,17 @@ public:
 private:
   /**
    * @brief Check if cone observation is valid
+   * @param obs Cone observation (in base_link/vehicle frame)
+   * @param sensor_pose Current sensor pose (unused after coordinate fix)
    */
-  bool is_valid_observation(const ConeObservation& obs) const {
-    // Check distance
-    double distance = obs.position.norm();
-    if (distance > config_.max_cone_distance) {
+  bool is_valid_observation(const ConeObservation& obs, 
+                           const Eigen::Isometry3d& sensor_pose) const {
+    // Calculate relative distance from vehicle to cone
+    // Cones are now in base_link frame, so distance is direct
+    (void)sensor_pose;  // Unused after coordinate fix
+    double relative_distance = obs.position.norm();
+    
+    if (relative_distance > config_.max_cone_distance) {
       return false;
     }
     

@@ -1,7 +1,7 @@
 ekf_fusion_node:
   ros__parameters:
     # 프레임 ID 설정
-    world_frame_id: "map"
+    world_frame_id: "odom"
     base_frame_id: "base_link"
     gnss_frame_id: "gps"
     imu_frame_id: "imu_link"
@@ -27,7 +27,11 @@ ekf_fusion_node:
     #   false: 항상 EKF 추정 헤딩 사용
     #   직선 주행이 많은 경우 true 권장
     #   제자리 회전이 많은 경우 false 권장
-    min_speed_for_gnss_heading: 0.5  # GNSS 헤딩 사용을 위한 최소 속도 (m/s)
+    min_speed_for_gnss_heading: 0.08  # GNSS 헤딩 사용 임계값 - 0.08m/s (코드에서 하드코딩됨)
+    zupt_speed_threshold: 0.1   # ZUPT 비활성화 상태 - 사용 안 함
+    zupt_noise_scale: 1.0       # ZUPT 비활성화 - 노이즈 스케일 원상복구
+    zupt_gyro_threshold: 0.01   # 정지 감지 자이로 임계값 (rad/s) - 더 엄격
+    zupt_accel_threshold: 0.1   # 정지 감지 가속도 임계값 (m/s^2) - 더 엄격
     # min_speed_for_gnss_heading:
     #   너무 낮게 설정하면 정지 상태에서 노이즈로 인한 방향 변동 발생
     #   너무 높게 설정하면 저속에서 방향 추정 품질 저하

@@ -4,67 +4,68 @@
 namespace calico {
 namespace utils {
 
-std::vector<Cone> MessageConverter::fromModifiedFloat32MultiArray(
-    const custom_interface::msg::ModifiedFloat32MultiArray& msg) {
-    std::vector<Cone> cones;
-    
-    // Check if data is valid
-    if (msg.data.empty() || msg.data.size() % 3 != 0) {
-        RCLCPP_WARN(rclcpp::get_logger("message_converter"), 
-                   "Invalid cone data size: %zu", msg.data.size());
-        return cones;
-    }
-    
-    // Extract cones from flat array (x, y, z triplets)
-    size_t num_cones = msg.data.size() / 3;
-    size_t num_classes = msg.class_names.size();
-    
-    for (size_t i = 0; i < num_cones; ++i) {
-        Cone cone;
-        cone.x = msg.data[i * 3];
-        cone.y = msg.data[i * 3 + 1];
-        cone.z = msg.data[i * 3 + 2];
-        
-        // Assign class name if available
-        if (i < num_classes) {
-            cone.color = msg.class_names[i];
-        } else {
-            cone.color = "Unknown";
-        }
-        
-        cones.push_back(cone);
-    }
-    
-    return cones;
-}
-
-custom_interface::msg::ModifiedFloat32MultiArray 
-MessageConverter::toModifiedFloat32MultiArray(const std::vector<Cone>& cones) {
-    custom_interface::msg::ModifiedFloat32MultiArray msg;
-    
-    // Reserve space
-    msg.data.reserve(cones.size() * 3);
-    msg.class_names.reserve(cones.size());
-    
-    // Populate data
-    for (const auto& cone : cones) {
-        msg.data.push_back(cone.x);
-        msg.data.push_back(cone.y);
-        msg.data.push_back(cone.z);
-        msg.class_names.push_back(cone.color);
-    }
-    
-    // Set layout information
-    msg.layout.dim.resize(2);
-    msg.layout.dim[0].label = "cones";
-    msg.layout.dim[0].size = cones.size();
-    msg.layout.dim[0].stride = cones.size() * 3;
-    msg.layout.dim[1].label = "xyz";
-    msg.layout.dim[1].size = 3;
-    msg.layout.dim[1].stride = 3;
-    
-    return msg;
-}
+// Legacy conversion functions - commented out for migration to TrackedConeArray
+// std::vector<Cone> MessageConverter::fromModifiedFloat32MultiArray(
+//     const custom_interface::msg::ModifiedFloat32MultiArray& msg) {
+//     std::vector<Cone> cones;
+//     
+//     // Check if data is valid
+//     if (msg.data.empty() || msg.data.size() % 3 != 0) {
+//         RCLCPP_WARN(rclcpp::get_logger("message_converter"), 
+//                    "Invalid cone data size: %zu", msg.data.size());
+//         return cones;
+//     }
+//     
+//     // Extract cones from flat array (x, y, z triplets)
+//     size_t num_cones = msg.data.size() / 3;
+//     size_t num_classes = msg.class_names.size();
+//     
+//     for (size_t i = 0; i < num_cones; ++i) {
+//         Cone cone;
+//         cone.x = msg.data[i * 3];
+//         cone.y = msg.data[i * 3 + 1];
+//         cone.z = msg.data[i * 3 + 2];
+//         
+//         // Assign class name if available
+//         if (i < num_classes) {
+//             cone.color = msg.class_names[i];
+//         } else {
+//             cone.color = "Unknown";
+//         }
+//         
+//         cones.push_back(cone);
+//     }
+//     
+//     return cones;
+// }
+// 
+// custom_interface::msg::ModifiedFloat32MultiArray 
+// MessageConverter::toModifiedFloat32MultiArray(const std::vector<Cone>& cones) {
+//     custom_interface::msg::ModifiedFloat32MultiArray msg;
+//     
+//     // Reserve space
+//     msg.data.reserve(cones.size() * 3);
+//     msg.class_names.reserve(cones.size());
+//     
+//     // Populate data
+//     for (const auto& cone : cones) {
+//         msg.data.push_back(cone.x);
+//         msg.data.push_back(cone.y);
+//         msg.data.push_back(cone.z);
+//         msg.class_names.push_back(cone.color);
+//     }
+//     
+//     // Set layout information
+//     msg.layout.dim.resize(2);
+//     msg.layout.dim[0].label = "cones";
+//     msg.layout.dim[0].size = cones.size();
+//     msg.layout.dim[0].stride = cones.size() * 3;
+//     msg.layout.dim[1].label = "xyz";
+//     msg.layout.dim[1].size = 3;
+//     msg.layout.dim[1].stride = 3;
+//     
+//     return msg;
+// }
 
 std::vector<Detection> MessageConverter::fromDetectionArray(
     const yolo_msgs::msg::DetectionArray& msg) {

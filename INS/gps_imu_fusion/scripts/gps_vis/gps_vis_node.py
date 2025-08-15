@@ -13,7 +13,7 @@ import csv
 import utm
 from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from std_msgs.msg import Header, ColorRGBA
 import numpy as np
 
@@ -63,9 +63,23 @@ class GPSVisualizationNode(Node):
     
     def load_csv_files(self):
         """Load all course*.csv files from the data directory"""
-        # Get the directory of this script
+        # Try to find data directory in source location first
+        source_data_dir = '/home/user1/ROS2_Workspace/ros2_ws/src/INS/gps_imu_fusion/scripts/gps_vis/data'
+        
+        # Fallback to script location
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(script_dir, 'data')
+        local_data_dir = os.path.join(script_dir, 'data')
+        
+        # Use source directory if it exists, otherwise use local
+        if os.path.exists(source_data_dir):
+            data_dir = source_data_dir
+            self.get_logger().info(f'Using source data directory: {data_dir}')
+        elif os.path.exists(local_data_dir):
+            data_dir = local_data_dir
+            self.get_logger().info(f'Using local data directory: {data_dir}')
+        else:
+            self.get_logger().error(f'No data directory found! Tried:\n  {source_data_dir}\n  {local_data_dir}')
+            return
         
         # Find all course*.csv files
         csv_files = sorted(glob.glob(os.path.join(data_dir, 'course*.csv')))
@@ -164,14 +178,14 @@ class GPSVisualizationNode(Node):
         # Create line segments between consecutive points
         for i in range(len(points) - 1):
             # Start point of line segment
-            p1 = PoseStamped().pose.position
+            p1 = Point()
             p1.x = points[i][0]
             p1.y = points[i][1]
             p1.z = 0.0
             line_marker.points.append(p1)
             
             # End point of line segment
-            p2 = PoseStamped().pose.position
+            p2 = Point()
             p2.x = points[i+1][0]
             p2.y = points[i+1][1]
             p2.z = 0.0

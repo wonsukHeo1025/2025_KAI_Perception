@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.18)
 project(gps_imu_fusion)
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -78,6 +78,7 @@ install(PROGRAMS
   scripts/gps_vis/gps_to_cartesian.py
   scripts/gps_vis/gps_vis_node.py
   scripts/gps_vis/fixed_gps_publisher.py
+  scripts/cone_frame_transformer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -27,6 +27,7 @@ find_package(custom_interface REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM 4.2 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem thread system)
+# find_package(TBB REQUIRED) - commented out, use system tbb
 
 # Include directories
 include_directories(
@@ -101,7 +102,6 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}
 )
-
 
 # Install Python scripts
 install(PROGRAMS

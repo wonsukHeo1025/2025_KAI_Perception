@@ -16,7 +16,9 @@
 #include <pcl/filters/passthrough.h>
 
 #include "common_defs.h"
-#include "custom_interface/msg/modified_float32_multi_array.hpp"
+#include "cone_detection/dbscan_clusterer.h"
+// Legacy message type - commented out for migration to TrackedConeArray
+// #include "custom_interface/msg/modified_float32_multi_array.hpp"
 #include "custom_interface/msg/tracked_cone_array.hpp"
 #include <kalman_filters/tracking/multi_tracker.hpp>
 
@@ -46,27 +48,10 @@ public:
         float ec_cluster_tolerance = 0.02f;   // 클러스터링 거리 허용치
         int ec_min_cluster_size = 10;      // 클러스터 최소 크기
         int ec_max_cluster_size = 100;      // 클러스터 최대 크기
+        bool use_dbscan = true;            // Use DBSCAN clustering (more robust to noise) instead of Euclidean clustering
         float min_cone_height = 0.0f;        // 최소 콘 높이
         float max_cone_height = 1.0f;        // 최대 콘 높이
 
-        // 2단계 검증 파라미터
-        bool enable_stage2_validation = false;
-        float s1_ec_cluster_tolerance = 0.45f;
-        int s1_ec_min_cluster_size = 3;
-        int s1_ec_max_cluster_size = 250;
-        float s2_roi_cylinder_radius = 0.25f;
-        float s2_roi_cylinder_bottom_offset = -0.1f;
-        float s2_roi_cylinder_top_offset = 0.7f;
-        int s2_min_points_in_reconstructed_roi = 10;
-        int s2_max_points_in_reconstructed_roi = 500;
-        
-        // 방법론 3: 높이별 포인트 밀도 변화율 분석 파라미터
-        int s2_height_histogram_bins = 5; // YAML에서 기본값과 일치시킴
-        int s2_max_uphill_transitions_allowed = 1;
-        float s2_bottom_heavy_ratio_threshold = 0.5f;
-        int s2_bottom_bins_count_for_heavy_check = 2;
-        float s2_top_sparse_max_point_ratio_per_bin = 0.25f;
-        int s2_num_top_bins_for_sparsity_check = 1;
         
         // Tracking parameters
         bool enable_tracking = true;
@@ -88,17 +73,20 @@ protected:
 
     // 지면 계수 멤버 변수
     pcl::ModelCoefficients::Ptr last_plane_coefs_;
-    Cloud::Ptr original_cloud_for_stage2_; // 원본 포인트 클라우드 저장용 (Stage2용)
+    
+    // KdTree optimization for clustering
+    pcl::search::KdTree<Point>::Ptr persistent_tree_;
+    size_t last_cloud_size_;
     
     // Tracking
     std::shared_ptr<kalman_filters::tracking::MultiTracker> tracker_;
     
     // ROS2 퍼블리셔
-    rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr cones_time_pub;
-    rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr cones_time_ukf_pub_;  // UKF tracked cones
+    // Legacy format - commented out for migration to TrackedConeArray
+    // rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr cones_time_pub;  // Original format for backward compatibility
+    rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr cones_time_v2_pub;       // New TrackedConeArray format
+    rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr cones_time_ukf_pub_;     // UKF tracked cones
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cones_cloud_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_points_fixed_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_reconstructed_cones_cloud_; // Stage2 재구성 콘 발행용
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr raw_cone_marker_pub_;  // Raw LiDAR cone markers
 
     // ROS2 서브스크라이버
@@ -111,21 +99,11 @@ protected:
     void filterPointCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out);
     void lidarToSensorTransform(Cloud::Ptr &cloud);
     void voxelizeCloud(Cloud::Ptr &cloud_in, Cloud::Ptr &cloud_out, float leaf_size);
-    void clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones, bool use_s1_params);
+    void clusterCones(Cloud::Ptr &cloud_in, std::vector<ConeDescriptor> &cones);
     void validateConesFinalChecks(
         const std::vector<ConeDescriptor> &initial_cones,
         std::vector<ConeDescriptor> &validated_cones,
         const pcl::ModelCoefficients::ConstPtr &plane_coefs);
-    void validateAndReconstructConesStage2(
-        const std::vector<ConeDescriptor>& stage1_cones,
-        const Cloud::Ptr& original_cloud,
-        std::vector<ConeDescriptor>& out_validated_cones,
-        const rclcpp::Time& timestamp);
-    void reconstructPointsAroundCones(
-        const std::vector<ConeDescriptor>& cones_to_reconstruct,
-        const Cloud::Ptr& source_cloud,
-        Cloud::Ptr& out_reconstructed_cloud,
-        const std::string& context_info);
     std::vector<std::vector<double>> sortCones(const std::vector<ConeDescriptor> &cones);
 
     // 퍼블리싱 함수들
@@ -135,9 +113,16 @@ protected:
         const rclcpp::Time &timestamp,
         const std::string& frame_id = "os_sensor");
 
-    void publishArrayWithTimestamp(
-        const rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr &publisher,
-        const std::vector<std::vector<double>> &array,
+    // Legacy publish function - commented out for migration to TrackedConeArray
+    // void publishArrayWithTimestamp(
+    //     const rclcpp::Publisher<custom_interface::msg::ModifiedFloat32MultiArray>::SharedPtr &publisher,
+    //     const std::vector<std::vector<double>> &array,
+    //     const rclcpp::Time &timestamp,
+    //     const std::string& frame_id = "os_sensor");
+    
+    void publishTrackedConeArray(
+        const rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr &publisher,
+        const std::vector<ConeDescriptor> &cones,
         const rclcpp::Time &timestamp,
         const std::string& frame_id = "os_sensor");
     

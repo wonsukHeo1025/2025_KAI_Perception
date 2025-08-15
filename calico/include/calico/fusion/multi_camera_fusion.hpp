@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include "calico/utils/config_loader.hpp"
 #include "calico/utils/message_converter.hpp"
+#include "calico/utils/memory_pool.hpp"
 #include "calico/fusion/hungarian_matcher.hpp"
 
 namespace calico {
@@ -100,6 +101,11 @@ private:
     double max_matching_distance_;
     std::unordered_map<std::string, CameraFusionResult> camera_results_;
     Eigen::Matrix4d T_sensor_to_lidar_;  // Transform from os_sensor to os_lidar frame
+    
+    // Memory pools for reducing allocations
+    utils::VectorPool<int> int_pool_;
+    utils::VectorPool<std::string> string_pool_;
+    utils::VectorPool<std::pair<double, double>> pair_pool_;
 };
 
 } // namespace fusion

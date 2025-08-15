@@ -27,16 +27,40 @@ public:
     gtsam::Vector2 diff = l2 - l1;
     double distance = diff.norm();
     
+    // Singularity guard: prevent division by zero when landmarks are too close
+    constexpr double kMinDistance = 1e-6;  // Minimum distance threshold
+    
     // Residual is difference from measured distance
     gtsam::Vector1 residual;
     residual << distance - measured_distance_;
     
     // Jacobians if requested
-    if (H1) {
-      *H1 = -diff.transpose() / distance;  // 1x2
-    }
-    if (H2) {
-      *H2 = diff.transpose() / distance;   // 1x2
+    if (H1 || H2) {
+      if (distance < kMinDistance) {
+        // Near singularity: use regularized Jacobians
+        // When distance is very small, gradient direction is undefined
+        // Use small regularization to maintain numerical stability
+        double regularized_distance = std::max(distance, kMinDistance);
+        gtsam::Vector2 regularized_diff = diff;
+        if (distance > 0) {
+          regularized_diff = diff * (regularized_distance / distance);
+        }
+        
+        if (H1) {
+          *H1 = -regularized_diff.transpose() / regularized_distance;  // 1x2
+        }
+        if (H2) {
+          *H2 = regularized_diff.transpose() / regularized_distance;   // 1x2
+        }
+      } else {
+        // Normal case: standard Jacobians
+        if (H1) {
+          *H1 = -diff.transpose() / distance;  // 1x2
+        }
+        if (H2) {
+          *H2 = diff.transpose() / distance;   // 1x2
+        }
+      }
     }
     
     return residual;

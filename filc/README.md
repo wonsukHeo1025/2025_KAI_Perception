@@ -10,7 +10,7 @@ Ouster OS1-32 LiDAR의 32채널 포인트클라우드를 128채널로 실시간 
 ## 개요
 - **목표**: 32채널 → 128채널 포인트클라우드 보간
 - **입력**: `/ouster/points` (32×1024)
-- **출력**: `/ouster/improved_interpolated_points` (128×1024)
+- **출력**: `/ouster/points/interpolated` (128×1024)
 - **성능**: 실시간 처리 (>10Hz)
 
 ## 빠른 시작
@@ -64,13 +64,13 @@ ros2 run filc benchmark_interpolation.py
 
 ## 토픽
 - **입력**: `/ouster/points` - 원본 32채널 포인트클라우드
-- **출력**: `/ouster/improved_interpolated_points` - 보간된 128채널 포인트클라우드
+- **출력**: `/ouster/points/interpolated` - 보간된 128채널 포인트클라우드
 
 ## 시각화
 ```bash
 # RViz2
 rviz2
-# PointCloud2 추가, Topic: /ouster/improved_interpolated_points
+# PointCloud2 추가, Topic: /ouster/points/interpolated
 # Fixed Frame: os_sensor
 ```
 

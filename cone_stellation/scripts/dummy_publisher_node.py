@@ -482,7 +482,7 @@ class DummyPublisher(Node):
         
         # Publishers (with PRD-compliant topic names)
         self.odom_pub = self.create_publisher(Odometry, '/odom_sim', 10)
-        self.cone_pub = self.create_publisher(TrackedConeArray, '/fused_sorted_cones_ukf_sim', 10)
+        self.cone_pub = self.create_publisher(TrackedConeArray, '/cones/for_sim', 10)
         self.imu_pub = self.create_publisher(Imu, '/ouster/imu_sim', 10)
         self.gps_pub = self.create_publisher(NavSatFix, '/ublox_gps_node/fix_sim', 10)
         self.gps_vel_pub = self.create_publisher(TwistWithCovarianceStamped, '/ublox_gps_node/fix_velocity_sim', 10)

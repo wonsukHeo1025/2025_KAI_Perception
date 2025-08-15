@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <custom_interface/msg/tracked_cone_array.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <atomic>
 #include "calico/visualization/rviz_marker_publisher.hpp"
 #include "calico/utils/message_converter.hpp"
 
@@ -40,7 +41,7 @@ public:
         
         // Create subscriber
         tracked_cones_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
-            "/fused_sorted_cones_ukf", qos,
+            "/cones/fused/ukf", qos,
             std::bind(&VisualizationNode::trackedConesCallback, this, std::placeholders::_1));
         
         // Create publishers with organized topic names
@@ -111,11 +112,11 @@ private:
         }
         
         // Log statistics
-        static int vis_count = 0;
-        if (++vis_count % 100 == 0) {
+        static std::atomic<int> vis_count{0};
+        if (vis_count.fetch_add(1) % 100 == 0) {
             RCLCPP_DEBUG(this->get_logger(), 
                         "Visualized %zu cones (%d cycles)",
-                        cones.size(), vis_count);
+                        cones.size(), vis_count.load());
         }
     }
     

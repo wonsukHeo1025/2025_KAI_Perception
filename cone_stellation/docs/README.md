@@ -4,6 +4,29 @@
 
 ConeSTELLATION is a cone-based Graph SLAM system for Formula Student autonomous racing. This directory contains the core documentation for understanding, developing, and maintaining the system.
 
+## Current System Status
+
+**Last Updated**: August 2025
+
+### ✅ Operational Components
+- **SLAM + EKF Fusion**: Full integration between ConeSTELLATION SLAM and robot_localization EKF working perfectly
+- **TF Transform Tree**: All coordinate frame relationships properly resolved and broadcasting
+- **Landmark Visualization**: Comprehensive RViz visualization with cone positions, trajectories, and factor graph
+- **IMU/GPS Fusion**: Multi-rate sensor fusion operating normally with 100Hz odometry output
+- **Rosbag Compatibility**: System works reliably with recorded data playback for testing and development
+
+### ⚠️ Known Limitations
+- **Yaw Drift**: Gradual orientation drift when vehicle is stationary due to lack of wheel encoder data
+- **LiDAR Robustness**: Cone detection and mapping can be affected by vehicle vibrations in real-world conditions
+
+### 📁 Resolved Issues Archive
+The `deprecated/` folder contains documentation for technical issues that have been successfully resolved:
+- TF transform blocking issues (fixed)
+- Drift correction implementation (completed)
+- Debug procedures for frozen transforms (no longer needed)
+
+All deprecated documents are maintained for historical reference and debugging context.
+
 ## Documentation Structure
 
 ### 📋 Core Documents
