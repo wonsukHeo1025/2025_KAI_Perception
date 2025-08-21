@@ -10,6 +10,7 @@ from sensor_msgs.msg import NavSatFix, Imu
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
 import yaml
 import time
 import argparse
@@ -40,7 +41,7 @@ class InitialCovarianceAnalyzer(Node):
         self.restart_cmd = restart_cmd
         self.num_trials = num_trials
         
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # 분석 모드 문자열 (로그용)
         self.mode_str = "정적(정지)" if static_mode else "동적(이동)"
@@ -430,7 +431,7 @@ class InitialCovarianceAnalyzer(Node):
         
         # YAML 파일로 저장
         mode_str = 'static' if self.static_mode else 'dynamic'
-        result_file = os.path.join(self.output_dir, f'initial_covariance_{mode_str}_analysis.yaml')
+        result_file = Path(self.output_dir) / f'initial_covariance_{mode_str}_analysis.yaml'
         with open(result_file, 'w') as f:
             yaml.dump(result, f, default_flow_style=False)
         
@@ -526,9 +527,9 @@ class InitialCovarianceAnalyzer(Node):
         
         # 저장
         mode_str = 'static' if self.static_mode else 'dynamic'
-        plot_file = os.path.join(self.output_dir, f'initial_covariance_{mode_str}_convergence.png')
+        plot_file = Path(self.output_dir) / f'initial_covariance_{mode_str}_convergence.png'
         plt.tight_layout()
-        plt.savefig(plot_file)
+        plt.savefig(str(plot_file))
         plt.close()
         
         self.get_logger().info(f"수렴 시간 그래프가 {plot_file}에 저장되었습니다.")

@@ -1,4 +1,4 @@
-#include "../include/cone_detection/cone_detection_node.h"
+#include "cone_detection/cone_detection_node.h"
 #include <memory>
 #include <limits>
 #include <cstring>
@@ -87,10 +87,10 @@ OutlierFilter::OutlierFilter()
     // 퍼블리셔 초기화
     // Legacy format - commented out for migration to TrackedConeArray
     // cones_time_pub = this->create_publisher<custom_interface::msg::ModifiedFloat32MultiArray>("/sorted_cones_time", 10);      // Original format for backward compatibility
-    cones_time_v2_pub = this->create_publisher<custom_interface::msg::TrackedConeArray>("/cones/lidar", 10);         // New TrackedConeArray format
-    cones_time_ukf_pub_ = this->create_publisher<custom_interface::msg::TrackedConeArray>("/cones/lidar/ukf", 10);
+    cones_time_v2_pub = this->create_publisher<custom_interface::msg::TrackedConeArray>("/cone/lidar", 10);         // New TrackedConeArray format
+    cones_time_ukf_pub_ = this->create_publisher<custom_interface::msg::TrackedConeArray>("/cone/lidar/ukf", 10);
     pub_cones_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/ouster/points/preprocessed", 10);
-    raw_cone_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis/cone/lidar", 10);
+    bbox_publisher_ = this->create_publisher<vision_msgs::msg::BoundingBox3DArray>("/cone/lidar/box", 10);
 
     // 서브스크라이버 초기화 (포인트 클라우드 데이터 수신)
     point_cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -232,8 +232,8 @@ void OutlierFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
             // publishArrayWithTimestamp(cones_time_pub, sorted_cones, msg->header.stamp, "os_sensor");        // Old format
             publishTrackedConeArray(cones_time_v2_pub, final_validated_cones, msg->header.stamp, "os_sensor"); // New format
             
-            // Publish raw cone markers for visualization
-            publishRawConeMarkers(final_validated_cones, msg->header.stamp, "os_sensor");
+            // Publish bounding boxes
+            publishBoundingBoxes(final_validated_cones, msg->header.stamp, "os_sensor");
 
             // Apply UKF tracking if enabled
             if (params_.enable_tracking && tracker_) {
@@ -782,65 +782,6 @@ void OutlierFilter::publishTrackedConeArray(
     }
 }
 
-// 원본 LiDAR 콘 마커 발행 함수
-void OutlierFilter::publishRawConeMarkers(
-    const std::vector<ConeDescriptor> &cones,
-    const rclcpp::Time &timestamp,
-    const std::string& frame_id) {
-    
-    try {
-        visualization_msgs::msg::MarkerArray marker_array;
-        
-        // Delete all previous markers
-        visualization_msgs::msg::Marker delete_marker;
-        delete_marker.header.frame_id = frame_id;
-        delete_marker.header.stamp = timestamp;
-        delete_marker.ns = "raw_lidar_cones";
-        delete_marker.action = visualization_msgs::msg::Marker::DELETEALL;
-        marker_array.markers.push_back(delete_marker);
-        
-        // Create markers for each cone
-        int marker_id = 0;
-        for (const auto& cone : cones) {
-            visualization_msgs::msg::Marker marker;
-            marker.header.frame_id = frame_id;
-            marker.header.stamp = timestamp;
-            marker.ns = "raw_lidar_cones";
-            marker.id = marker_id++;
-            marker.type = visualization_msgs::msg::Marker::CYLINDER;
-            marker.action = visualization_msgs::msg::Marker::ADD;
-            
-            // Position
-            marker.pose.position.x = cone.mean.x;
-            marker.pose.position.y = cone.mean.y;
-            marker.pose.position.z = cone.mean.z - 0.25;  // Offset to ground
-            marker.pose.orientation.w = 1.0;
-            
-            // Scale - smaller than tracked cones
-            marker.scale.x = 0.15;  // Diameter
-            marker.scale.y = 0.15;
-            marker.scale.z = 0.5;   // Height
-            
-            // Color - blue with transparency
-            marker.color.r = 0.0;
-            marker.color.g = 0.0;
-            marker.color.b = 0.8;
-            marker.color.a = 0.8;
-            
-            marker.lifetime = rclcpp::Duration::from_seconds(0.2);
-            marker_array.markers.push_back(marker);
-        }
-        
-        // Publish markers
-        if (raw_cone_marker_pub_->get_subscription_count() > 0) {
-            raw_cone_marker_pub_->publish(marker_array);
-        }
-        
-    } catch (const std::exception& e) {
-        RCLCPP_ERROR(this->get_logger(), "Exception in publishRawConeMarkers: %s", e.what());
-    }
-}
-
 
 // ROI 영역의 각도를 계산
 float OutlierFilter::ROI_theta(float x, float y) {
@@ -941,6 +882,58 @@ void OutlierFilter::validateConesFinalChecks(
     }
 }
 
+// 바운딩 박스 퍼블리싱 함수
+void OutlierFilter::publishBoundingBoxes(
+    const std::vector<ConeDescriptor> &cones,
+    const rclcpp::Time &timestamp,
+    const std::string& frame_id) {
+    
+    if (!bbox_publisher_ || bbox_publisher_->get_subscription_count() == 0) {
+        return;
+    }
+    
+    try {
+        auto bbox_array_msg = std::make_unique<vision_msgs::msg::BoundingBox3DArray>();
+        bbox_array_msg->header.stamp = timestamp;
+        bbox_array_msg->header.frame_id = frame_id;
+
+        // 각 콘에 대해 바운딩 박스 생성
+        for (const auto& cone : cones) {
+            if (!cone.valid || !cone.cloud || cone.cloud->empty()) {
+                continue;
+            }
+
+            // BoundingBox3D 메시지 생성
+            vision_msgs::msg::BoundingBox3D bbox_msg;
+
+            // 중심점을 콘의 중심으로 설정
+            bbox_msg.center.position.x = cone.mean.x;
+            bbox_msg.center.position.y = cone.mean.y;
+            bbox_msg.center.position.z = cone.mean.z;
+
+            // 방향 (회전 없음)
+            bbox_msg.center.orientation.x = 0.0;
+            bbox_msg.center.orientation.y = 0.0;
+            bbox_msg.center.orientation.z = 0.0;
+            bbox_msg.center.orientation.w = 1.0;
+
+            // 고정 크기 설정 (0.3m x 0.3m x 0.7m)
+            bbox_msg.size.x = 0.3;
+            bbox_msg.size.y = 0.3;
+            bbox_msg.size.z = 0.7;
+
+            bbox_array_msg->boxes.push_back(bbox_msg);
+        }
+
+        // 바운딩 박스가 하나라도 있을 때만 퍼블리시
+        if (!bbox_array_msg->boxes.empty()) {
+            bbox_publisher_->publish(std::move(bbox_array_msg));
+            RCLCPP_DEBUG(this->get_logger(), "Published %zu bounding boxes", bbox_array_msg->boxes.size());
+        }
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Exception in publishBoundingBoxes: %s", e.what());
+    }
+}
 
 
 }  // namespace LIDAR

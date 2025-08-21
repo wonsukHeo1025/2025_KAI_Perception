@@ -13,6 +13,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -24,6 +25,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(image_geometry REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -34,6 +36,7 @@ find_package(kalman_filters REQUIRED)
 # Custom messages
 find_package(custom_interface REQUIRED)
 find_package(yolo_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 
 # Include directories
 include_directories(
@@ -59,10 +62,13 @@ set(dependencies
   tf2_ros
   tf2_geometry_msgs
   cv_bridge
+  image_geometry
   image_transport
   custom_interface
   yolo_msgs
+  vision_msgs
   kalman_filters
+  ament_index_cpp
 )
 
 # Add library for utils
@@ -141,6 +147,18 @@ target_link_libraries(projection_debug_node
 )
 ament_target_dependencies(projection_debug_node ${dependencies})
 
+# Add multi-camera IoU fusion node
+add_executable(multi_iou_fusion_node
+  src/nodes/multi_iou_fusion_node.cpp
+)
+target_link_libraries(multi_iou_fusion_node
+  calico_utils
+  calico_fusion
+  ${YAML_CPP_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+ament_target_dependencies(multi_iou_fusion_node ${dependencies})
+
 # Install targets
 install(TARGETS
   calico_utils
@@ -150,6 +168,7 @@ install(TARGETS
   ukf_tracking_node
   visualization_node
   projection_debug_node
+  multi_iou_fusion_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -163,10 +182,9 @@ install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
 )
 
-# Install config files from hungarian_association package
-# Users can symlink or copy their config files
-install(DIRECTORY
-  DESTINATION share/${PROJECT_NAME}/config
+# Install config files
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 # Export dependencies

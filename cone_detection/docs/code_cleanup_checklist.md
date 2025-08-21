@@ -150,16 +150,16 @@ ros2 launch cone_detection cone_detection_launch.py
 
 # 토픽 확인
 ros2 topic list | grep cone
-ros2 topic echo /cones/lidar
+ros2 topic echo /cone/lidar
 ```
 
 ### 2. 성능 비교
 ```bash
 # 제거 전 성능 측정
-ros2 topic hz /cones/lidar
+ros2 topic hz /cone/lidar
 
 # 제거 후 성능 측정
-ros2 topic hz /cones/lidar
+ros2 topic hz /cone/lidar
 ```
 
 ### 3. 메모리 사용량

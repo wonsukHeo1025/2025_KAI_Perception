@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <custom_interface/msg/tracked_cone_array.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <vision_msgs/msg/bounding_box3_d_array.hpp>
 #include <memory>
 #include <unordered_map>
 #include <chrono>
@@ -33,26 +34,88 @@ public:
         min_velocity_threshold_ = this->get_parameter("min_velocity_threshold").as_double();
         
         // Create subscribers
+        raw_cones_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
+            "/cone/lidar", 10,
+            std::bind(&ConeVisualizationNode::rawConesCallback, this, std::placeholders::_1));
+            
         tracked_cones_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
-            "/cones/lidar/ukf", 10,
+            "/cone/lidar/ukf", 10,
             std::bind(&ConeVisualizationNode::trackedConesCallback, this, std::placeholders::_1));
         
+        bbox_sub_ = this->create_subscription<vision_msgs::msg::BoundingBox3DArray>(
+            "/cone/lidar/box", 10,
+            std::bind(&ConeVisualizationNode::bboxCallback, this, std::placeholders::_1));
+        
         // Create publishers
+        raw_cone_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/vis/cone/lidar", 10);  // Raw cone visualization
         marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "/vis/cone/lidar/ukf", 10);
         velocity_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "/vis/cone/lidar/velocity", 10);
         text_marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "/vis/cone/lidar/text", 10);
+        bbox_vis_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/vis/cone/lidar/box", 10);
         
         RCLCPP_INFO(this->get_logger(), "Cone Visualization Node initialized");
-        RCLCPP_INFO(this->get_logger(), "Subscribing to: /cones/lidar/ukf");
+        RCLCPP_INFO(this->get_logger(), "Subscribing to: /cone/lidar");
+        RCLCPP_INFO(this->get_logger(), "Subscribing to: /cone/lidar/ukf");
+        RCLCPP_INFO(this->get_logger(), "Subscribing to: /cone/lidar/box");
+        RCLCPP_INFO(this->get_logger(), "Publishing raw LiDAR cones to: /vis/cone/lidar");
         RCLCPP_INFO(this->get_logger(), "Publishing LiDAR UKF cones to: /vis/cone/lidar/ukf");
         RCLCPP_INFO(this->get_logger(), "Publishing velocity arrows to: /vis/cone/lidar/velocity");
         RCLCPP_INFO(this->get_logger(), "Publishing track ID text to: /vis/cone/lidar/text");
+        RCLCPP_INFO(this->get_logger(), "Publishing bounding box visualization to: /vis/cone/lidar/box");
     }
     
 private:
+    void rawConesCallback(const custom_interface::msg::TrackedConeArray::SharedPtr msg) {
+        visualization_msgs::msg::MarkerArray marker_array;
+        
+        // Delete all previous markers
+        visualization_msgs::msg::Marker delete_marker;
+        delete_marker.header = msg->header;
+        delete_marker.header.frame_id = frame_id_;
+        delete_marker.ns = "raw_lidar_cones";
+        delete_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+        marker_array.markers.push_back(delete_marker);
+        
+        // Create markers for each raw cone
+        int marker_id = 0;
+        for (const auto& cone : msg->cones) {
+            visualization_msgs::msg::Marker marker;
+            marker.header = msg->header;
+            marker.header.frame_id = frame_id_;
+            marker.ns = "raw_lidar_cones";
+            marker.id = marker_id++;
+            marker.type = visualization_msgs::msg::Marker::CYLINDER;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+            
+            marker.pose.position.x = cone.position.x;
+            marker.pose.position.y = cone.position.y;
+            marker.pose.position.z = cone.position.z - cone_height_offset_;
+            marker.pose.orientation.w = 1.0;
+            
+            marker.scale.x = marker.scale.y = cone_scale_;
+            marker.scale.z = 0.5;
+            
+            // Light blue color for raw cones
+            marker.color.r = 0.0;
+            marker.color.g = 0.5;
+            marker.color.b = 1.0;
+            marker.color.a = 0.7;
+            
+            marker.lifetime = rclcpp::Duration::from_seconds(0.2);
+            marker_array.markers.push_back(marker);
+        }
+        
+        // Publish markers
+        if (raw_cone_marker_pub_->get_subscription_count() > 0) {
+            raw_cone_marker_pub_->publish(marker_array);
+        }
+    }
+    
     void trackedConesCallback(const custom_interface::msg::TrackedConeArray::SharedPtr msg) {
         visualization_msgs::msg::MarkerArray cone_markers;
         visualization_msgs::msg::MarkerArray velocity_markers;
@@ -186,6 +249,63 @@ private:
         }
     }
     
+    void bboxCallback(const vision_msgs::msg::BoundingBox3DArray::SharedPtr msg) {
+        if (!bbox_vis_pub_ || bbox_vis_pub_->get_subscription_count() == 0) {
+            return;
+        }
+        
+        visualization_msgs::msg::MarkerArray marker_array;
+        
+        // Delete all previous markers
+        visualization_msgs::msg::Marker delete_marker;
+        delete_marker.header = msg->header;
+        delete_marker.header.frame_id = frame_id_;
+        delete_marker.ns = "bounding_box_visualization";
+        delete_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+        marker_array.markers.push_back(delete_marker);
+        
+        // Create CUBE markers for each bounding box
+        int marker_id = 0;
+        for (const auto& bbox : msg->boxes) {
+            visualization_msgs::msg::Marker marker;
+            marker.header = msg->header;
+            marker.header.frame_id = frame_id_;
+            marker.ns = "bounding_box_visualization";
+            marker.id = marker_id++;
+            marker.type = visualization_msgs::msg::Marker::CUBE;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+            
+            // Position from bounding box center
+            marker.pose.position = bbox.center.position;
+            
+            // Orientation from bounding box
+            marker.pose.orientation = bbox.center.orientation;
+            
+            // Size from bounding box (should be fixed 0.3x0.3x0.7m)
+            marker.scale.x = bbox.size.x;
+            marker.scale.y = bbox.size.y;
+            marker.scale.z = bbox.size.z;
+            
+            // Color: Red with 0.3 alpha (semi-transparent)
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.0;
+            marker.color.a = 0.3;
+            
+            // Lifetime: 0.5 seconds
+            marker.lifetime = rclcpp::Duration::from_seconds(0.5);
+            
+            marker_array.markers.push_back(marker);
+        }
+        
+        // Publish markers if any exist
+        if (marker_array.markers.size() > 1) {  // More than just the delete marker
+            bbox_vis_pub_->publish(marker_array);
+            RCLCPP_DEBUG(this->get_logger(), "Published %zu bounding box visualization markers", 
+                        marker_array.markers.size() - 1);
+        }
+    }
+    
     void deleteOldMarkers(visualization_msgs::msg::MarkerArray& markers,
                          const std::string& ns,
                          int count,
@@ -241,12 +361,16 @@ private:
     
 private:
     // Subscribers
+    rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr raw_cones_sub_;
     rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr tracked_cones_sub_;
+    rclcpp::Subscription<vision_msgs::msg::BoundingBox3DArray>::SharedPtr bbox_sub_;
     
     // Publishers
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr raw_cone_marker_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr velocity_marker_pub_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr text_marker_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr bbox_vis_pub_;
     
     // Parameters
     std::string frame_id_;

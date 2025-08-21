@@ -6,6 +6,7 @@ import rclpy
 from rclpy.node import Node
 import yaml
 import os
+from pathlib import Path
 from datetime import datetime
 import argparse
 import glob
@@ -22,7 +23,7 @@ class EKFParamGenerator:
         self.output_dir = output_dir
         
         # 결과 디렉토리 확인
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # 기본 파라미터 (사용자 정의 파라미터로 덮어쓰이지 않는 값들)
         self.default_params = {
@@ -203,7 +204,7 @@ def main(args=None):
     input_dir = parsed_args.input_dir
     if not os.path.exists(input_dir):
         print(f"경고: 입력 디렉토리 {input_dir}가 존재하지 않습니다. 디렉토리를 생성합니다.")
-        os.makedirs(input_dir, exist_ok=True)
+        Path(input_dir).mkdir(parents=True, exist_ok=True)
     
     # 출력 디렉토리가 지정되지 않았으면 입력 디렉토리와 동일하게 설정
     output_dir = parsed_args.output_dir if parsed_args.output_dir else input_dir

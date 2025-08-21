@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -66,6 +67,7 @@ ament_target_dependencies(cone_detection_node
   std_msgs
   sensor_msgs
   visualization_msgs
+  vision_msgs
   pcl_conversions
   custom_interface
   kalman_filters
@@ -76,6 +78,7 @@ ament_target_dependencies(cone_detection_visualization_node
   std_msgs
   sensor_msgs
   visualization_msgs
+  vision_msgs
   pcl_conversions
   custom_interface
   kalman_filters
@@ -92,8 +95,12 @@ install(TARGETS
 install(DIRECTORY
   launch
   config
-  include
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+  include/
+  DESTINATION include
 )
 
 if(BUILD_TESTING)

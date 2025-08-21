@@ -47,28 +47,28 @@ class ConeFrameTransformer(Node):
         # TrackedConeArray (UKF output)
         self.ukf_cone_sub = self.create_subscription(
             TrackedConeArray,
-            '/cones/fused/ukf',
+            '/cone/fused/ukf',
             self.ukf_cone_callback,
             qos
         )
         
         self.ukf_cone_pub = self.create_publisher(
             TrackedConeArray,
-            '/cones/fused/ukf/map',
+            '/cone/fused/ukf/map',
             qos
         )
         
         # TrackedConeArray v2 (non-UKF output from cone_detection)
         self.v2_cone_sub = self.create_subscription(
             TrackedConeArray,
-            '/cones/lidar',
+            '/cone/lidar',
             self.v2_cone_callback,
             qos
         )
         
         self.v2_cone_pub = self.create_publisher(
             TrackedConeArray,
-            '/cones/lidar/map',
+            '/cone/lidar/map',
             qos
         )
         
@@ -88,8 +88,8 @@ class ConeFrameTransformer(Node):
         
         self.get_logger().info(f'Cone Frame Transformer started')
         self.get_logger().info(f'Target frame: {self.target_frame}')
-        self.get_logger().info(f'Publishing TrackedConeArray to: /cones/fused/ukf/map')
-        self.get_logger().info(f'Publishing TrackedConeArray to: /cones/lidar/map')
+        self.get_logger().info(f'Publishing TrackedConeArray to: /cone/fused/ukf/map')
+        self.get_logger().info(f'Publishing TrackedConeArray to: /cone/lidar/map')
         # Legacy format - commented out
         # self.get_logger().info(f'Publishing ModifiedFloat32MultiArray to: /sorted_cones_time_map')
         

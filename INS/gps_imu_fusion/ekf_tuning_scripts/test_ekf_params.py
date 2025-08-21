@@ -12,6 +12,7 @@ import yaml
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import os
+from pathlib import Path
 from datetime import datetime
 import argparse
 import subprocess
@@ -20,6 +21,8 @@ import threading
 import signal
 import json
 import sys
+import glob
+import shutil
 
 class EKFParameterTester(Node):
     def __init__(self, param_files, test_duration=60.0, output_dir='ekf_param_tests', test_name='test'):
@@ -40,7 +43,7 @@ class EKFParameterTester(Node):
         self.test_name = test_name
         
         # 결과 디렉토리 생성
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # 데이터 저장용 구조
         self.current_param_set = None
@@ -307,14 +310,14 @@ class EKFParameterTester(Node):
             plt.legend()
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_{self.current_param_set}_trajectory.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_{self.current_param_set}_trajectory.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
             return {
                 'total_distance': total_distance,
                 'path_length': len(positions_x),
-                'plot_file': plot_file
+                'plot_file': str(plot_file)
             }
         else:
             return {
@@ -368,15 +371,15 @@ class EKFParameterTester(Node):
             plt.tight_layout()
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_{self.current_param_set}_orientation.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_{self.current_param_set}_orientation.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
             return {
                 'roll_std_deg': np.degrees(roll_std),
                 'pitch_std_deg': np.degrees(pitch_std),
                 'yaw_std_deg': np.degrees(yaw_std),
-                'plot_file': plot_file
+                'plot_file': str(plot_file)
             }
         else:
             return {
@@ -424,8 +427,8 @@ class EKFParameterTester(Node):
             plt.tight_layout()
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_{self.current_param_set}_velocity.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_{self.current_param_set}_velocity.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
             return {
@@ -434,7 +437,7 @@ class EKFParameterTester(Node):
                 'speed_std': std_speed,
                 'mean_angular_z': mean_angular_z,
                 'max_angular_z': max_angular_z,
-                'plot_file': plot_file
+                'plot_file': str(plot_file)
             }
         else:
             return {
@@ -472,8 +475,8 @@ class EKFParameterTester(Node):
             plt.yscale('log')
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_{self.current_param_set}_consistency.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_{self.current_param_set}_consistency.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
             # 공분산 수렴 여부 평가
@@ -487,7 +490,7 @@ class EKFParameterTester(Node):
                     'y': float(pos_covs[-1, 1]),
                     'z': float(pos_covs[-1, 2])
                 },
-                'plot_file': plot_file
+                'plot_file': str(plot_file)
             }
         else:
             return {
@@ -533,10 +536,10 @@ class EKFParameterTester(Node):
     def save_test_results(self):
         """테스트 결과를 파일로 저장"""
         # 결과 파일 경로
-        result_file = os.path.join(self.output_dir, f'{self.test_name}_test_results.json')
+        result_file = Path(self.output_dir) / f'{self.test_name}_test_results.json'
         
         # JSON으로 저장
-        with open(result_file, 'w') as f:
+        with open(str(result_file), 'w') as f:
             json.dump(self.test_results, f, indent=2)
         
         self.get_logger().info(f"테스트 결과가 {result_file}에 저장되었습니다.")
@@ -608,8 +611,8 @@ class EKFParameterTester(Node):
             plt.grid(True, axis='y')
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_orientation_comparison.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_orientation_comparison.png')
+            plt.savefig(str(plot_file))
             plt.close()
         
         # 위치 공분산 비교
@@ -631,8 +634,8 @@ class EKFParameterTester(Node):
             plt.yscale('log')
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_position_accuracy_comparison.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_position_accuracy_comparison.png')
+            plt.savefig(str(plot_file))
             plt.close()
         
         # 속도 비교
@@ -653,8 +656,8 @@ class EKFParameterTester(Node):
             plt.grid(True, axis='y')
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_velocity_comparison.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_velocity_comparison.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
         # 종합 점수 (낮을수록 좋음) - 예시: 자세 표준편차 + 위치 공분산 로그값
@@ -682,8 +685,8 @@ class EKFParameterTester(Node):
             plt.grid(True, axis='y')
             
             # 그래프 저장
-            plot_file = os.path.join(self.output_dir, f'{self.test_name}_overall_score_comparison.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / f'{self.test_name}_overall_score_comparison.png')
+            plt.savefig(str(plot_file))
             plt.close()
             
             # 최적 파라미터 세트 선정
@@ -694,11 +697,10 @@ class EKFParameterTester(Node):
                 
                 # 최적 파라미터 세트 복사
                 best_file = self.test_results[best_param]['param_file']
-                dest_file = os.path.join(self.output_dir, f'{self.test_name}_best_params.yaml')
+                dest_file = Path(self.output_dir) / f'{self.test_name}_best_params.yaml'
                 
                 # 파일 복사
-                import shutil
-                shutil.copy2(best_file, dest_file)
+                shutil.copy2(best_file, str(dest_file))
                 
                 self.get_logger().info(f"최적 파라미터 세트가 {dest_file}에 저장되었습니다.")
                 
@@ -709,11 +711,11 @@ class EKFParameterTester(Node):
                     'tested_param_sets': param_sets,
                     'best_param_set': best_param,
                     'scores': scores,
-                    'best_param_file': dest_file
+                    'best_param_file': str(dest_file)
                 }
                 
-                summary_file = os.path.join(self.output_dir, f'{self.test_name}_test_summary.yaml')
-                with open(summary_file, 'w') as f:
+                summary_file = Path(self.output_dir) / f'{self.test_name}_test_summary.yaml'
+                with open(str(summary_file), 'w') as f:
                     yaml.dump(summary, f, default_flow_style=False)
                 
                 self.get_logger().info(f"테스트 요약이 {summary_file}에 저장되었습니다.")
@@ -721,7 +723,7 @@ class EKFParameterTester(Node):
 
 def find_parameter_files(directory, pattern='ekf_fusion_params*.yaml'):
     """디렉토리에서 패턴과 일치하는 파라미터 파일 찾기"""
-    return glob.glob(os.path.join(directory, pattern))
+    return list(Path(directory).glob(pattern))
 
 
 def main(args=None):

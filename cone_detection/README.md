@@ -82,8 +82,8 @@ ros2 launch cone_detection cone_detection_launch.py \
 
 #### Cone Detection Output (Dual Publishing Strategy)
 - `/sorted_cones_time` (custom_interface/ModifiedFloat32MultiArray): **Legacy format** - for backward compatibility
-- `/cones/lidar` (custom_interface/TrackedConeArray): **New format** - recommended for new implementations
-- `/cones/lidar/ukf` (custom_interface/TrackedConeArray): Tracked cones with velocities (UKF tracking)
+- `/cone/lidar` (custom_interface/TrackedConeArray): **New format** - recommended for new implementations
+- `/cone/lidar/ukf` (custom_interface/TrackedConeArray): Tracked cones with velocities (UKF tracking)
 
 #### Visualization and Debug Topics
 - `/ouster/points/preprocessed` (sensor_msgs/PointCloud2): Clustered cone points for visualization
@@ -107,7 +107,7 @@ string[] class_names             # Cone classifications (always "Unknown" for Li
 - Sorted by x-coordinate (front to back)
 - Enhanced NaN/Inf validation (NaN/Inf values replaced with 0.0)
 
-### New Format: TrackedConeArray (`/cones/lidar`)
+### New Format: TrackedConeArray (`/cone/lidar`)
 The recommended new format provides better structure and extensibility:
 
 ```
@@ -126,7 +126,7 @@ TrackedCone:
 - **Type Safety**: Structured data vs. raw float arrays
 - **Frame Support**: Proper header with timestamp and frame_id
 - **Extensibility**: Ready for color classification and velocity estimation
-- **Consistency**: Same format as `/cones/lidar/ukf` topic
+- **Consistency**: Same format as `/cone/lidar/ukf` topic
 - **Clarity**: Self-documenting field names
 - **Robust Validation**: Enhanced NaN/Inf protection for all position fields
 
@@ -136,7 +136,7 @@ TrackedCone:
 The cone_detection package implements a dual publishing strategy to support smooth migration from the legacy `ModifiedFloat32MultiArray` format to the new `TrackedConeArray` format:
 
 - **Backward Compatibility**: Existing systems can continue using `/sorted_cones_time` without immediate changes
-- **Future-Proofing**: New implementations should use `/cones/lidar` for better structure and features
+- **Future-Proofing**: New implementations should use `/cone/lidar` for better structure and features
 - **Gradual Migration**: Teams can migrate at their own pace without breaking existing functionality
 
 ### Migration Steps
@@ -166,7 +166,7 @@ void cone_callback_old(const custom_interface::msg::ModifiedFloat32MultiArray::S
 ```cpp
 // New subscription - recommended
 auto subscription = create_subscription<custom_interface::msg::TrackedConeArray>(
-    "/cones/lidar", 10,
+    "/cone/lidar", 10,
     std::bind(&YourNode::cone_callback_new, this, std::placeholders::_1));
 
 void cone_callback_new(const custom_interface::msg::TrackedConeArray::SharedPtr msg) {
@@ -193,16 +193,16 @@ Both topics publish identical cone detection data:
 ```bash
 # Compare outputs during migration
 ros2 topic echo /sorted_cones_time
-ros2 topic echo /cones/lidar
+ros2 topic echo /cone/lidar
 ```
 
 ### Deprecation Timeline
 - **Current**: Both topics published simultaneously
-- **Phase 1** (Next Release): `/cones/lidar` becomes primary recommendation
+- **Phase 1** (Next Release): `/cone/lidar` becomes primary recommendation
 - **Phase 2** (Future Release): Legacy topic marked deprecated with warnings
 - **Phase 3** (Final Release): Legacy topic removed
 
-**Recommendation**: Migrate to `/cones/lidar` as soon as possible to take advantage of improved data validation and future features.
+**Recommendation**: Migrate to `/cone/lidar` as soon as possible to take advantage of improved data validation and future features.
 
 ## Data Validation and Reliability
 
@@ -227,7 +227,7 @@ if (std::isnan(val) || std::isinf(val)) {
 }
 ```
 
-**New Format (`/cones/lidar`)**:
+**New Format (`/cone/lidar`)**:
 ```cpp
 // Individual field validation for x, y, z coordinates
 if (std::isnan(cone.mean.x) || std::isinf(cone.mean.x)) {
@@ -296,7 +296,7 @@ This node converts the detected/tracked cones into visualization markers.
 
 ### 2025-07-31: Dual Publishing Strategy Implementation
 - **BACKWARD COMPATIBLE**: Implemented dual publishing strategy for smooth migration
-- **New Topic**: Added `/cones/lidar` with `TrackedConeArray` format (recommended)
+- **New Topic**: Added `/cone/lidar` with `TrackedConeArray` format (recommended)
 - **Legacy Topic**: Maintained `/sorted_cones_time` with `ModifiedFloat32MultiArray` format
 - **Enhanced Validation**: Implemented robust NaN/Inf validation for both publishing formats
 - **Dual Publishing Methods**: Added overloaded `publishTrackedConeArray()` methods:

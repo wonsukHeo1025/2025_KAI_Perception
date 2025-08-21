@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import cv2
 import numpy as np
+import os
+from pathlib import Path
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSHistoryPolicy, QoSDurabilityPolicy, QoSReliabilityPolicy
@@ -9,6 +11,7 @@ from std_msgs.msg import String
 from yolo_msgs.msg import BoundingBox2D, Detection, DetectionArray
 from cv_bridge import CvBridge
 from ultralytics import YOLO
+from ament_index_python.packages import get_package_share_directory
 
 class YoloDebugNode(Node):
     def __init__(self):
@@ -31,8 +34,25 @@ class YoloDebugNode(Node):
         self.imgsz_width = self.get_parameter("imgsz_width").get_parameter_value().integer_value
         self.image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
 
-        # YOLO 모델 로드 (모델 경로는 실제 환경에 맞게 수정)
-        model_path = "/home/user1/ROS2_Workspace/ros2_ws/src/yolo_ros/best.pt"
+        # YOLO 모델 로드 - 패키지 상대 경로 사용
+        self.declare_parameter("model_path", "")
+        model_path_param = self.get_parameter("model_path").get_parameter_value().string_value
+        
+        if model_path_param:
+            model_path = model_path_param
+        else:
+            # Try to find model in package share directory first
+            try:
+                package_share_dir = get_package_share_directory('yolo_ros')
+                model_path = os.path.join(package_share_dir, 'models', 'best.pt')
+                if not os.path.exists(model_path):
+                    # Fallback to package root
+                    model_path = Path(__file__).parent.parent.parent / 'best.pt'
+            except Exception:
+                # Fallback to relative path from current file
+                model_path = Path(__file__).parent.parent.parent / 'best.pt'
+        
+        model_path = str(model_path)
         self.get_logger().info(f"YOLO 모델 로드 중: {model_path}")
         self.model = YOLO(model_path)
 

@@ -8,7 +8,9 @@ import os
 import sys
 import yaml
 import time
+import shutil
 from datetime import datetime
+from pathlib import Path
 from colorama import init, Fore, Style
 
 
@@ -66,26 +68,26 @@ def setup_workspace(args):
     
     # 기본 결과 디렉토리 설정
     if args.output_dir:
-        base_dir = args.output_dir
+        base_dir = Path(args.output_dir)
     else:
-        base_dir = f"ekf_tuning_{timestamp}"
+        base_dir = Path(f"ekf_tuning_{timestamp}")
     
     # 디렉토리 생성
-    os.makedirs(base_dir, exist_ok=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
     
     # 하위 디렉토리 생성
-    static_results_dir = os.path.join(base_dir, "static_analysis")
-    dynamic_results_dir = os.path.join(base_dir, "dynamic_tests")
+    static_results_dir = base_dir / "static_analysis"
+    dynamic_results_dir = base_dir / "dynamic_tests"
     
-    os.makedirs(static_results_dir, exist_ok=True)
-    os.makedirs(dynamic_results_dir, exist_ok=True)
+    static_results_dir.mkdir(parents=True, exist_ok=True)
+    dynamic_results_dir.mkdir(parents=True, exist_ok=True)
     
     print_success(f"작업 디렉토리 생성: {base_dir}")
     
     return {
-        "base_dir": base_dir,
-        "static_dir": static_results_dir,
-        "dynamic_dir": dynamic_results_dir
+        "base_dir": str(base_dir),
+        "static_dir": str(static_results_dir),
+        "dynamic_dir": str(dynamic_results_dir)
     }
 
 
@@ -162,9 +164,9 @@ def generate_parameters(workspace, args):
         print_error("EKF 파라미터 생성 실패")
         return False
     
-    base_param_file = os.path.join(static_dir, "ekf_fusion_params_base.yaml")
+    base_param_file = Path(static_dir) / "ekf_fusion_params_base.yaml"
     
-    if not os.path.exists(base_param_file):
+    if not base_param_file.exists():
         print_error(f"생성된 파라미터 파일을 찾을 수 없습니다: {base_param_file}")
         return False
     
@@ -173,7 +175,7 @@ def generate_parameters(workspace, args):
     
     # 기본 파라미터 로드
     try:
-        with open(base_param_file, 'r') as f:
+        with open(str(base_param_file), 'r') as f:
             base_params = yaml.safe_load(f)
     except Exception as e:
         print_error(f"파라미터 파일 로드 실패: {e}")
@@ -225,9 +227,9 @@ def generate_parameters(workspace, args):
     
     # 변형 파라미터 파일 저장
     for filename, params_data, desc in variants:
-        filepath = os.path.join(static_dir, filename)
+        filepath = Path(static_dir) / filename
         try:
-            with open(filepath, 'w') as f:
+            with open(str(filepath), 'w') as f:
                 # 주석 추가
                 f.write(f"# EKF 퓨전 노드 파라미터 - {desc}\n")
                 f.write(f"# 생성 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -256,7 +258,7 @@ def test_parameters(workspace, args):
     dynamic_dir = workspace["dynamic_dir"]
     
     # 테스트할 파라미터 파일 찾기
-    param_files = [os.path.join(static_dir, f) for f in os.listdir(static_dir) 
+    param_files = [str(Path(static_dir) / f) for f in os.listdir(static_dir) 
                   if f.startswith("ekf_fusion_params") and f.endswith(".yaml")]
     
     if not param_files:
@@ -282,9 +284,9 @@ def test_parameters(workspace, args):
     # 결과 분석
     print_step(2, 2, "테스트 결과 분석")
     
-    result_file = os.path.join(dynamic_dir, "dynamic_test_test_results.json")
+    result_file = Path(dynamic_dir) / "dynamic_test_test_results.json"
     
-    if not os.path.exists(result_file):
+    if not result_file.exists():
         print_error(f"테스트 결과 파일을 찾을 수 없습니다: {result_file}")
         return False
     
@@ -315,47 +317,46 @@ def finalize_parameters(workspace, args):
     
     if args.test_params:
         # 동적 테스트 결과에서 최적 파라미터 찾기
-        best_file = os.path.join(dynamic_dir, "best_params_overall.yaml")
-        if os.path.exists(best_file):
-            optimal_param_file = best_file
-            print_success(f"동적 테스트 결과에서 최적 파라미터 찾음: {os.path.basename(optimal_param_file)}")
+        best_file = Path(dynamic_dir) / "best_params_overall.yaml"
+        if best_file.exists():
+            optimal_param_file = str(best_file)
+            print_success(f"동적 테스트 결과에서 최적 파라미터 찾음: {best_file.name}")
     
     if not optimal_param_file:
         # 동적 테스트를 수행하지 않았거나 결과가 없는 경우 기본 파라미터 사용
-        base_param_file = os.path.join(static_dir, "ekf_fusion_params_base.yaml")
-        if os.path.exists(base_param_file):
-            optimal_param_file = base_param_file
-            print_success(f"정적 분석 기본 파라미터 사용: {os.path.basename(optimal_param_file)}")
+        base_param_file = Path(static_dir) / "ekf_fusion_params_base.yaml"
+        if base_param_file.exists():
+            optimal_param_file = str(base_param_file)
+            print_success(f"정적 분석 기본 파라미터 사용: {base_param_file.name}")
     
     if not optimal_param_file:
         print_error("최적 파라미터 파일을 찾을 수 없습니다.")
         return False
     
     # 최종 파라미터 파일 생성
-    final_param_file = os.path.join(base_dir, "ekf_fusion_params_final.yaml")
+    final_param_file = Path(base_dir) / "ekf_fusion_params_final.yaml"
     
     try:
-        import shutil
-        shutil.copy2(optimal_param_file, final_param_file)
+        shutil.copy2(optimal_param_file, str(final_param_file))
         print_success(f"최종 파라미터 파일 생성: {final_param_file}")
     except Exception as e:
         print_error(f"최종 파라미터 파일 생성 실패: {e}")
         return False
     
     # 요약 정보 생성
-    summary_file = os.path.join(base_dir, "tuning_summary.yaml")
+    summary_file = Path(base_dir) / "tuning_summary.yaml"
     
     summary = {
         'tuning_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'workspace': base_dir,
         'static_analysis_dir': static_dir,
         'dynamic_test_dir': dynamic_dir if args.test_params else "테스트하지 않음",
-        'final_parameters': final_param_file,
-        'optimal_source': os.path.basename(optimal_param_file) if optimal_param_file else None
+        'final_parameters': str(final_param_file),
+        'optimal_source': Path(optimal_param_file).name if optimal_param_file else None
     }
     
     try:
-        with open(summary_file, 'w') as f:
+        with open(str(summary_file), 'w') as f:
             yaml.dump(summary, f, default_flow_style=False)
         print_success(f"튜닝 요약 정보 저장: {summary_file}")
     except Exception as e:
@@ -396,7 +397,7 @@ def run_tuning_process(args):
     # 최종 결과 출력
     if static_success and params_success and test_success and final_success:
         print_header("EKF 파라미터 튜닝 프로세스 완료")
-        print_success(f"최종 파라미터 파일: {os.path.join(workspace['base_dir'], 'ekf_fusion_params_final.yaml')}")
+        print_success(f"최종 파라미터 파일: {Path(workspace['base_dir']) / 'ekf_fusion_params_final.yaml'}")
         print_success(f"모든 결과는 '{workspace['base_dir']}' 디렉토리에 저장되었습니다.")
         return True
     else:

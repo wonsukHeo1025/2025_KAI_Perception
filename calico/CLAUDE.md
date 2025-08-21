@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Overview
 
-CALICO (Cone Attribute Linking by Image and Cluster Output) is a high-performance C++ reimplementation of the Python-based hungarian_association package. It provides sensor fusion for autonomous racing applications by combining YOLO object detection with LiDAR point cloud data.
+CALICO (Cone Attribute Linking by Image and Cluster Output) is a high-performance C++ package for sensor fusion in autonomous racing applications, combining YOLO object detection with LiDAR point cloud data.
 
 ## Development Status (2025-07-01)
 
-CALICO is currently in active development, being ported from Python to C++ for performance optimization. The package maintains compatibility with the existing hungarian_association configuration files and ROS2 interfaces.
+CALICO is currently in active development as a high-performance C++ implementation for sensor fusion optimization.
 
 ### ✅ Completed Components
 - Basic package structure (CMakeLists.txt, package.xml)
@@ -56,7 +56,7 @@ source install/setup.bash
 
 # Run multi-camera fusion node
 ros2 run calico multi_camera_fusion_node --ros-args \
-  -p config_file:=/home/user1/ROS2_Workspace/ros2_ws/src/hungarian_association/config/multi_hungarian_config.yaml
+  -p config_file:=/home/user1/ROS2_Workspace/ros2_ws/src/calico/config/multi_hungarian_config.yaml
 
 # Using launch file
 ros2 launch calico multi_camera_fusion.launch.py
@@ -68,7 +68,7 @@ ros2 launch calico multi_camera_fusion.launch.py \
 
 ## Configuration Compatibility
 
-CALICO uses the same YAML configuration files as the Python hungarian_association package:
+CALICO uses its own YAML configuration files:
 - `multi_hungarian_config.yaml` - Main configuration
 - `multi_camera_intrinsic_calibration.yaml` - Camera intrinsic parameters
 - `multi_camera_extrinsic_calibration.yaml` - Camera extrinsic parameters

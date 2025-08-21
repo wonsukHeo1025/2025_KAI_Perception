@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <rclcpp/rclcpp.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp> // REVERT: remove unintended include
 
 namespace calico {
 namespace utils {
@@ -12,20 +13,20 @@ CalicoConfig ConfigLoader::loadConfig(const std::string& config_file_path) {
     
     try {
         YAML::Node yaml = YAML::LoadFile(config_file_path);
-        YAML::Node hungarian_node = yaml["hungarian_association"];
+        YAML::Node calico_node = yaml["calico"];
         
         // Load topic names
-        config.cones_topic = hungarian_node["cones_topic"].as<std::string>();
-        config.output_topic = hungarian_node["output_topic"].as<std::string>();
+        config.cones_topic = calico_node["cones_topic"].as<std::string>();
+        config.output_topic = calico_node["output_topic"].as<std::string>();
         
         // Load matching parameters with validation
-        config.max_matching_distance = hungarian_node["max_matching_distance"].as<double>();
+        config.max_matching_distance = calico_node["max_matching_distance"].as<double>();
         if (config.max_matching_distance <= 0.0 || config.max_matching_distance > 100.0) {
             throw std::runtime_error("Invalid max_matching_distance: must be between 0 and 100");
         }
         
         // Load camera configurations
-        YAML::Node cameras_node = hungarian_node["cameras"];
+        YAML::Node cameras_node = calico_node["cameras"];
         for (const auto& cam_node : cameras_node) {
             CameraConfig cam_config;
             cam_config.id = cam_node["id"].as<std::string>();
@@ -34,13 +35,22 @@ CalicoConfig ConfigLoader::loadConfig(const std::string& config_file_path) {
         }
         
         // Load calibration file paths
-        YAML::Node calib_node = hungarian_node["calibration"];
+        YAML::Node calib_node = calico_node["calibration"];
         config.config_folder = calib_node["config_folder"].as<std::string>();
+
+        // If config_folder is empty, use package share directory
+        if (config.config_folder.empty()) {
+            const std::string share_dir = ament_index_cpp::get_package_share_directory("calico");
+            config.config_folder = (std::filesystem::path(share_dir) / "config").string();
+            RCLCPP_INFO(rclcpp::get_logger("config_loader"),
+                       "Using package share calibration directory: %s",
+                       config.config_folder.c_str());
+        }
         config.camera_extrinsic_calibration_file = calib_node["camera_extrinsic_calibration"].as<std::string>();
         config.camera_intrinsic_calibration_file = calib_node["camera_intrinsic_calibration"].as<std::string>();
         
         // Load QoS settings with validation
-        YAML::Node qos_node = hungarian_node["qos"];
+        YAML::Node qos_node = calico_node["qos"];
         config.history_depth = qos_node["history_depth"].as<int>();
         if (config.history_depth <= 0 || config.history_depth > 1000) {
             throw std::runtime_error("Invalid history_depth: must be between 1 and 1000");
@@ -94,6 +104,15 @@ std::unordered_map<std::string, std::pair<cv::Mat, cv::Mat>>
 ConfigLoader::loadIntrinsics(const std::string& intrinsic_file_path) {
     std::unordered_map<std::string, std::pair<cv::Mat, cv::Mat>> intrinsics;
     
+    // Debug log for path checking
+    RCLCPP_INFO(rclcpp::get_logger("config_loader"), 
+                "Loading intrinsic calibration from: %s", intrinsic_file_path.c_str());
+    
+    // Check if file exists
+    if (!std::filesystem::exists(intrinsic_file_path)) {
+        throw std::runtime_error("Intrinsic calibration file not found: " + intrinsic_file_path);
+    }
+    
     try {
         YAML::Node yaml = YAML::LoadFile(intrinsic_file_path);
         
@@ -116,6 +135,15 @@ ConfigLoader::loadIntrinsics(const std::string& intrinsic_file_path) {
 std::unordered_map<std::string, Eigen::Matrix4d> 
 ConfigLoader::loadExtrinsics(const std::string& extrinsic_file_path) {
     std::unordered_map<std::string, Eigen::Matrix4d> extrinsics;
+    
+    // Debug log for path checking
+    RCLCPP_INFO(rclcpp::get_logger("config_loader"), 
+                "Loading extrinsic calibration from: %s", extrinsic_file_path.c_str());
+    
+    // Check if file exists
+    if (!std::filesystem::exists(extrinsic_file_path)) {
+        throw std::runtime_error("Extrinsic calibration file not found: " + extrinsic_file_path);
+    }
     
     try {
         YAML::Node yaml = YAML::LoadFile(extrinsic_file_path);

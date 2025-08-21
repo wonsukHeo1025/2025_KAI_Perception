@@ -51,7 +51,7 @@ struct CalicoConfig {
 /**
  * @brief Configuration loader for CALICO package
  * 
- * Loads YAML configuration files compatible with the Python hungarian_association package
+ * Loads YAML configuration files for the CALICO sensor fusion package
  */
 class ConfigLoader {
 public:

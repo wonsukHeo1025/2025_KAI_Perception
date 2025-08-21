@@ -115,9 +115,9 @@ ekf_fusion_node:
     #   자이로: 일반적으로 0.01-0.05 rad/s 
     #   센서 품질에 따라 조정
     
-    # IMU Calibration 파일 경로 (절대 경로 또는 패키지 경로)
+    # IMU Calibration 파일 경로 (패키지 상대 경로)
     imu_calibration_file: ""
     # imu_calibration_file:
     #   IMU bias 및 Allan variance 분석 결과가 포함된 JSON 파일 경로
-    #   예: "/home/user/ws/src/gps_imu_fusion/config/improved_imu_calibration.json"
+    #   예: "config/improved_imu_calibration.json" (패키지 상대 경로)
     #   빈 문자열("")로 설정하면 calibration 파일을 사용하지 않음

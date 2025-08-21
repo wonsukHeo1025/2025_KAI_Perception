@@ -144,16 +144,16 @@ ros2 launch calico calico_full.launch.py \
 | 토픽 | 타입 | 주파수 | 설명 |
 |------|------|--------|------|
 | `/fused_sorted_cones` | `custom_interface/ModifiedFloat32MultiArray` | ~19Hz | 색상 라벨된 콘 |
-| `/cones/fused/ukf` | `custom_interface/TrackedConeArray` | ~19Hz | 추적된 콘 (ID 포함) |
+| `/cone/fused/ukf` | `custom_interface/TrackedConeArray` | ~19Hz | 추적된 콘 (ID 포함) |
 | `/visualization_marker_array` | `visualization_msgs/MarkerArray` | ~19Hz | RViz 마커 |
 
 ## ⚙️ 설정 파일
 
-CALICO는 기존 Python `hungarian_association` 패키지의 설정을 그대로 사용:
+CALICO는 자체 설정 파일을 사용:
 
 ```yaml
 # multi_hungarian_config.yaml
-hungarian_association:
+calico:
   # 매칭 파라미터
   max_matching_distance: 50.0  # 픽셀 단위
   
@@ -163,7 +163,7 @@ hungarian_association:
   
   # 캘리브레이션 파일
   calibration:
-    config_folder: "/home/user1/ROS2_Workspace/ros2_ws/src/hungarian_association/config"
+    config_folder: "${ROS2_WS}/src/calico/config"  # ROS2_WS 환경변수 또는 상대경로 사용
     camera_extrinsic_calibration: "multi_camera_extrinsic_calibration.yaml"
     camera_intrinsic_calibration: "multi_camera_intrinsic_calibration.yaml"
   
@@ -203,7 +203,7 @@ ros2 run rqt_image_view rqt_image_view
 # 입력/출력 주파수 확인
 ros2 topic hz /sorted_cones_time
 ros2 topic hz /fused_sorted_cones
-ros2 topic hz /cones/fused/ukf
+ros2 topic hz /cone/fused/ukf
 
 # 메시지 동기화 확인
 ros2 topic echo /fused_sorted_cones --once
@@ -264,7 +264,7 @@ ros2 run calico multi_camera_fusion_node --ros-args --log-level debug
 
 ```bash
 # 기존 Python 실행
-ros2 run hungarian_association yolo_lidar_multicam_fusion_node
+ros2 run calico multi_iou_fusion_node  # 또는 이전 Python 버전 사용 가능
 
 # CALICO로 전환 (동일한 설정 파일 사용)
 ros2 launch calico multi_camera_fusion.launch.py \

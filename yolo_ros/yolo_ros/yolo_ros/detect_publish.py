@@ -6,6 +6,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from ultralytics import YOLO
+import os
+from pathlib import Path
 
 class ConeDetector(Node):
     def __init__(self):
@@ -30,9 +32,30 @@ class ConeDetector(Node):
         # OpenCV와 ROS2 이미지 변환을 위한 브릿지
         self.cv_bridge = CvBridge()
         
-        # YOLOv8 모델 로드
-        # 대회장 콘 사진 학습, 블루, 옐로, 레드콘 클래스. 
-        self.model = YOLO('/home/user1/yolov12/pretrained_models/yolov8_cone.pt')
+        # YOLOv8 모델 로드 - 우선순위: 1. 패키지 설치 경로, 2. 환경변수, 3. 소스 경로
+        # 대회장 콘 사진 학습, 블루, 옐로, 레드콘 클래스.
+        try:
+            from ament_index_python.packages import get_package_share_directory
+            package_share_dir = get_package_share_directory('yolo_ros')
+            model_path = os.path.join(package_share_dir, 'models', 'best.pt')
+            if not os.path.exists(model_path):
+                raise FileNotFoundError()
+        except:
+            # 환경변수 fallback
+            model_path = os.environ.get('YOLO_MODEL_PATH')
+            if not model_path or not os.path.exists(model_path):
+                # 소스 디렉토리 fallback
+                source_path = Path(__file__).parent / 'models' / 'best.pt'
+                if source_path.exists():
+                    model_path = str(source_path)
+                else:
+                    # 최종 fallback - 이전 위치 호환성
+                    package_dir = Path(__file__).parent.parent.parent
+                    model_path = package_dir / 'yolo_ros' / 'models' / 'best.pt'
+                    model_path = str(model_path)
+        
+        self.get_logger().info(f"Loading YOLO model from: {model_path}")
+        self.model = YOLO(model_path)
         
         # 입력 모드에 따른 초기화
         if self.input_mode == 'webcam':

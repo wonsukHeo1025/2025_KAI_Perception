@@ -101,7 +101,7 @@ public:
         
         // Create subscribers for time synchronization
         if (use_imu_) {
-            cones_sub_.subscribe(this, "/cones/fused", qos.get_rmw_qos_profile());
+            cones_sub_.subscribe(this, "/cone/fused", qos.get_rmw_qos_profile());
             imu_sub_.subscribe(this, "/ouster/imu", qos.get_rmw_qos_profile());
             
             // Create synchronizer
@@ -116,13 +116,13 @@ public:
         } else {
             // Without IMU, use simple subscription
             cones_only_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
-                "/cones/fused", qos,
+                "/cone/fused", qos,
                 std::bind(&UKFTrackingNode::conesOnlyCallback, this, std::placeholders::_1));
         }
         
         // Create publisher
         tracked_cones_pub_ = this->create_publisher<custom_interface::msg::TrackedConeArray>(
-            "/cones/fused/ukf", qos);
+            "/cone/fused/ukf", qos);
         
         // Add parameter callback for dynamic reconfiguration
         parameter_callback_handle_ = this->add_on_set_parameters_callback(

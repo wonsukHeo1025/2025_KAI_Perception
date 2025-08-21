@@ -14,7 +14,7 @@ This document outlines the plan to migrate `/sorted_cones_time` topic from `Modi
 - **Message Type**: `custom_interface/msg/TrackedConeArray`
 - **Publisher**: New function `OutlierFilter::publishTrackedConeArray()`
 - **Benefits**:
-  - Consistent with `/cones/lidar/ukf` 
+  - Consistent with `/cone/lidar/ukf` 
   - Easier frame transformations
   - Better type safety
   - Supports color and track_id from the start

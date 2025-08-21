@@ -7,6 +7,7 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
 from datetime import datetime
 import argparse
 import pandas as pd
@@ -31,7 +32,7 @@ class TestResultAnalyzer:
         else:
             self.output_dir = os.path.dirname(result_file)
         
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         
         # 결과 데이터 로드
         self.results = self.load_results()
@@ -237,8 +238,8 @@ class TestResultAnalyzer:
             plt.tight_layout()
             
             # 저장
-            plot_file = os.path.join(self.output_dir, 'overall_ranking.png')
-            plt.savefig(plot_file)
+            plot_file = Path(self.output_dir) / 'overall_ranking.png'
+            plt.savefig(str(plot_file))
             plt.close()
             
             plots['overall_ranking'] = plot_file
@@ -277,7 +278,7 @@ class TestResultAnalyzer:
                     
                     # 저장
                     plot_file = os.path.join(self.output_dir, f'{title.replace(" ", "_")}_comparison.png')
-                    plt.savefig(plot_file)
+                    plt.savefig(str(plot_file))
                     plt.close()
                     
                     plots[f'{title.replace(" ", "_")}_comparison'] = plot_file
@@ -310,8 +311,8 @@ class TestResultAnalyzer:
         
         # 최적 파라미터 파일 복사
         for category, src_file in param_files.items():
-            if os.path.exists(src_file):
-                dest_file = os.path.join(self.output_dir, f'best_params_{category}.yaml')
+            if src_file.exists():
+                dest_file = Path(self.output_dir) / f'best_params_{category}.yaml'
                 
                 # 파일 복사
                 import shutil
@@ -330,7 +331,7 @@ class TestResultAnalyzer:
             metrics_df = pd.DataFrame.from_dict(self.report_data['metrics'], orient='index')
             
             # 보고서 파일 생성
-            report_file = os.path.join(self.output_dir, 'analysis_report.html')
+            report_file = Path(self.output_dir) / 'analysis_report.html'
             
             with open(report_file, 'w') as f:
                 f.write("<html>\n<head>\n")
@@ -452,7 +453,7 @@ def main(args=None):
             # 가장 최근 파일 선택
             result_file = max(result_files, key=os.path.getmtime)
     
-    if not result_file or not os.path.exists(result_file):
+    if not result_file or not result_file.exists():
         print("오류: 분석할 테스트 결과 파일이 없습니다.")
         return 1
     

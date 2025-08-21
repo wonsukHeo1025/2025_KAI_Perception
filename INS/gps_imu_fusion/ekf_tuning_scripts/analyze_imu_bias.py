@@ -10,6 +10,7 @@ import yaml
 import matplotlib.pyplot as plt
 from scipy import stats
 import os
+from pathlib import Path
 from datetime import datetime
 import argparse
 import time
@@ -27,7 +28,7 @@ class IMUBiasAnalyzer(Node):
         # 파라미터 설정
         self.duration = duration
         self.output_dir = output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # 데이터 저장용 배열
         self.accel_data = []
@@ -115,8 +116,8 @@ class IMUBiasAnalyzer(Node):
         }
         
         # YAML 파일로 저장
-        yaml_file = os.path.join(self.output_dir, 'imu_bias_analysis.yaml')
-        with open(yaml_file, 'w') as f:
+        yaml_file = Path(self.output_dir) / 'imu_bias_analysis.yaml'
+        with open(str(yaml_file), 'w') as f:
             yaml.dump(result, f, default_flow_style=False)
         
         self.get_logger().info(f"분석 결과가 {yaml_file}에 저장되었습니다.")
@@ -320,8 +321,8 @@ class IMUBiasAnalyzer(Node):
         plt.legend()
         
         # 그래프 저장
-        plt_file = os.path.join(self.output_dir, f'{sensor_name.lower()}_allan_variance.png')
-        plt.savefig(plt_file)
+        plt_file = Path(self.output_dir) / f'{sensor_name.lower()}_allan_variance.png'
+        plt.savefig(str(plt_file))
         plt.close()
         
         self.get_logger().info(f"{sensor_name} 앨런 분산 그래프가 {plt_file}에 저장되었습니다.")
@@ -341,8 +342,8 @@ class IMUBiasAnalyzer(Node):
         plt.legend()
         
         # 그래프 저장
-        plt_file = os.path.join(self.output_dir, f'{sensor_name.lower()}_bias_timeseries.png')
-        plt.savefig(plt_file)
+        plt_file = Path(self.output_dir) / f'{sensor_name.lower()}_bias_timeseries.png'
+        plt.savefig(str(plt_file))
         plt.close()
         
         self.get_logger().info(f"{sensor_name} 바이어스 시계열 그래프가 {plt_file}에 저장되었습니다.")

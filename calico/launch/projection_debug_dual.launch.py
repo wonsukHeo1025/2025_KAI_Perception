@@ -9,8 +9,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     package_dir = get_package_share_directory('calico')
-    config_dir = os.path.join(package_dir, '..', '..', '..', '..', 'src', 'calico', 'config')
-    default_config = os.path.join(config_dir, 'multi_hungarian_config.yaml')
+    default_config = os.path.join(package_dir, 'config', 'multi_hungarian_config.yaml')
     
     # Declare launch arguments
     declare_config_file_cmd = DeclareLaunchArgument(

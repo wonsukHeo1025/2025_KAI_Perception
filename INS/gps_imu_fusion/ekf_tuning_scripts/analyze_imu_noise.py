@@ -9,6 +9,7 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
 from datetime import datetime
 import argparse
 
@@ -25,7 +26,7 @@ class IMUNoiseAnalyzer(Node):
         # 파라미터 설정
         self.duration = duration
         self.output_dir = output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
         
         # 데이터 저장용 배열
         self.accel_data = []
@@ -140,7 +141,7 @@ class IMUNoiseAnalyzer(Node):
         }
         
         # YAML 파일로 저장
-        yaml_file = os.path.join(self.output_dir, 'imu_noise_analysis.yaml')
+        yaml_file = Path(self.output_dir) / 'imu_noise_analysis.yaml'
         with open(yaml_file, 'w') as f:
             yaml.dump(result, f, default_flow_style=False)
         
@@ -187,8 +188,8 @@ class IMUNoiseAnalyzer(Node):
         plt.tight_layout()
         
         # 그래프 저장
-        plt_file = os.path.join(self.output_dir, 'imu_noise_analysis.png')
-        plt.savefig(plt_file)
+        plt_file = Path(self.output_dir) / 'imu_noise_analysis.png'
+        plt.savefig(str(plt_file))
         plt.close()
         
         self.get_logger().info(f"IMU 데이터 그래프가 {plt_file}에 저장되었습니다.")

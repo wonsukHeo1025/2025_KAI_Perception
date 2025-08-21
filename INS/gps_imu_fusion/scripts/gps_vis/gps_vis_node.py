@@ -11,11 +11,13 @@ import os
 import glob
 import csv
 import utm
+from pathlib import Path
 from visualization_msgs.msg import Marker, MarkerArray
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path as NavPath
 from geometry_msgs.msg import PoseStamped, Point
 from std_msgs.msg import Header, ColorRGBA
 import numpy as np
+from ament_index_python.packages import get_package_share_directory
 
 
 class GPSVisualizationNode(Node):
@@ -63,22 +65,33 @@ class GPSVisualizationNode(Node):
     
     def load_csv_files(self):
         """Load all course*.csv files from the data directory"""
-        # Try to find data directory in source location first
-        source_data_dir = '/home/user1/ROS2_Workspace/ros2_ws/src/INS/gps_imu_fusion/scripts/gps_vis/data'
+        # Try package share directory first
+        data_dir = None
+        try:
+            package_share_dir = get_package_share_directory('gps_imu_fusion')
+            data_dir = os.path.join(package_share_dir, 'scripts', 'gps_vis', 'data')
+            if not os.path.exists(data_dir):
+                data_dir = None
+        except Exception:
+            pass
         
         # Fallback to script location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        local_data_dir = os.path.join(script_dir, 'data')
+        if data_dir is None:
+            script_dir = Path(__file__).parent
+            local_data_dir = script_dir / 'data'
+            
+            if local_data_dir.exists():
+                data_dir = str(local_data_dir)
+                self.get_logger().info(f'Using local data directory: {data_dir}')
+            else:
+                # Try relative path from workspace
+                workspace_data_dir = script_dir.parent.parent.parent / 'scripts' / 'gps_vis' / 'data'
+                if workspace_data_dir.exists():
+                    data_dir = str(workspace_data_dir)
+                    self.get_logger().info(f'Using workspace data directory: {data_dir}')
         
-        # Use source directory if it exists, otherwise use local
-        if os.path.exists(source_data_dir):
-            data_dir = source_data_dir
-            self.get_logger().info(f'Using source data directory: {data_dir}')
-        elif os.path.exists(local_data_dir):
-            data_dir = local_data_dir
-            self.get_logger().info(f'Using local data directory: {data_dir}')
-        else:
-            self.get_logger().error(f'No data directory found! Tried:\n  {source_data_dir}\n  {local_data_dir}')
+        if data_dir is None or not os.path.exists(data_dir):
+            self.get_logger().error('No data directory found!')
             return
         
         # Find all course*.csv files
@@ -138,7 +151,7 @@ class GPSVisualizationNode(Node):
     
     def create_path_message(self, course_name, points, color):
         """Create a Path message from GPS points"""
-        path = Path()
+        path = NavPath()
         path.header.frame_id = 'map'
         path.header.stamp = self.get_clock().now().to_msg()
         

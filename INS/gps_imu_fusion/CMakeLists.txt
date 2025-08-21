@@ -20,8 +20,13 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-# Cmake 에러 방지?
-list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
+# GeographicLib 모듈 경로 설정
+# 시스템 기본 경로 사용, 필요시 환경 변수로 재정의 가능
+if(DEFINED ENV{GEOGRAPHICLIB_CMAKE_DIR})
+  list(APPEND CMAKE_MODULE_PATH $ENV{GEOGRAPHICLIB_CMAKE_DIR})
+else()
+  list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
+endif()
 find_package(GeographicLib REQUIRED)
 
 include_directories(

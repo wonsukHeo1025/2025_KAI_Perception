@@ -3,7 +3,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
-#include <visualization_msgs/msg/marker_array.hpp>
+#include <vision_msgs/msg/bounding_box3_d_array.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/extract_clusters.h>
@@ -87,7 +87,7 @@ protected:
     rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr cones_time_v2_pub;       // New TrackedConeArray format
     rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr cones_time_ukf_pub_;     // UKF tracked cones
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cones_cloud_;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr raw_cone_marker_pub_;  // Raw LiDAR cone markers
+    rclcpp::Publisher<vision_msgs::msg::BoundingBox3DArray>::SharedPtr bbox_publisher_;            // Bounding box publisher (data only)
 
     // ROS2 서브스크라이버
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_sub_;
@@ -132,7 +132,7 @@ protected:
         const rclcpp::Time &timestamp,
         const std::string& frame_id = "os_sensor");
     
-    void publishRawConeMarkers(
+    void publishBoundingBoxes(
         const std::vector<ConeDescriptor> &cones,
         const rclcpp::Time &timestamp,
         const std::string& frame_id = "os_sensor");
