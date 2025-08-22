@@ -43,46 +43,106 @@ EkfFusionNode::EkfFusionNode(const rclcpp::NodeOptions& options)
   RCLCPP_INFO(this->get_logger(), "Listening to IMU on: %s", imu_sub_->get_topic_name());
 }
 
+// C++
 void EkfFusionNode::loadParameters() {
+  // 1. 파라미터가 아직 선언되지 않은 경우에만 선언하도록 수정합니다.
   if (!this->has_parameter("world_frame_id")) {
-    RCLCPP_INFO(this->get_logger(), "Parameters not loaded from file, using defaults");
-    
-    this->declare_parameter("world_frame_id", "map");
-    this->declare_parameter("base_frame_id", "base_link");
-    this->declare_parameter("gnss_frame_id", "gps");
-    this->declare_parameter("imu_frame_id", "imu_link");
-    this->declare_parameter("update_rate", 50.0); 
-    this->declare_parameter("mag_declination", 0.0); 
-    this->declare_parameter("use_magnetic_declination", false);
-    this->declare_parameter("publish_tf", true);
-    this->declare_parameter("use_gnss_heading", true);
-    this->declare_parameter("min_speed_for_gnss_heading", 0.5);  
-  this->declare_parameter("zupt_speed_threshold", 0.15);
-  this->declare_parameter("zupt_noise_scale", 0.01);
-    this->declare_parameter("reference_altitude", 39.5);
-    // ZUPT IMU 기준 임계치
-    this->declare_parameter("zupt_gyro_threshold", 0.02);
-    this->declare_parameter("zupt_accel_threshold", 0.2);
-    this->declare_parameter("accel_noise", 0.05);
-    this->declare_parameter("gyro_noise", 0.00175);
-    this->declare_parameter("accel_bias_noise", 0.01);
-    this->declare_parameter("gyro_bias_noise", 0.00025);
-    this->declare_parameter("accel_bias_tau", 100.0);
-    this->declare_parameter("gyro_bias_tau", 50.0);
-    this->declare_parameter("gps_pos_noise_ne", 3.0);
-    this->declare_parameter("gps_pos_noise_d", 6.0);
-    this->declare_parameter("gps_vel_noise_ne", 0.5);
-    this->declare_parameter("gps_vel_noise_d", 1.0);
-    this->declare_parameter("init_pos_unc", 10.0);
-    this->declare_parameter("init_vel_unc", 1.0);
-    this->declare_parameter("init_att_unc", 0.34906);
-    this->declare_parameter("init_hdg_unc", 3.14159);
-    this->declare_parameter("init_accel_bias_unc", 0.981);
-    this->declare_parameter("init_gyro_bias_unc", 0.01745);
-  } else {
-    RCLCPP_INFO(this->get_logger(), "Parameters loaded from file");
+    this->declare_parameter<std::string>("world_frame_id", "map");
+  }
+  if (!this->has_parameter("base_frame_id")) {
+    this->declare_parameter<std::string>("base_frame_id", "base_link");
+  }
+  if (!this->has_parameter("gnss_frame_id")) {
+    this->declare_parameter<std::string>("gnss_frame_id", "gps");
+  }
+  if (!this->has_parameter("imu_frame_id")) {
+    this->declare_parameter<std::string>("imu_frame_id", "imu_link");
+  }
+  if (!this->has_parameter("update_rate")) {
+    this->declare_parameter<double>("update_rate", 50.0); 
+  }
+  if (!this->has_parameter("mag_declination")) {
+    this->declare_parameter<double>("mag_declination", 0.0); 
+  }
+  if (!this->has_parameter("use_magnetic_declination")) {
+    this->declare_parameter<bool>("use_magnetic_declination", false);
+  }
+  if (!this->has_parameter("publish_tf")) {
+    this->declare_parameter<bool>("publish_tf", true);
+  }
+  if (!this->has_parameter("use_gnss_heading")) {
+    this->declare_parameter<bool>("use_gnss_heading", true);
+  }
+  if (!this->has_parameter("min_speed_for_gnss_heading")) {
+    this->declare_parameter<double>("min_speed_for_gnss_heading", 0.5);  
+  }
+  if (!this->has_parameter("zupt_speed_threshold")) {
+    this->declare_parameter<double>("zupt_speed_threshold", 0.15);
+  }
+  if (!this->has_parameter("zupt_noise_scale")) {
+    this->declare_parameter<double>("zupt_noise_scale", 0.01);
+  }
+  if (!this->has_parameter("reference_altitude")) {
+    this->declare_parameter<double>("reference_altitude", 39.5);
+  }
+  if (!this->has_parameter("zupt_gyro_threshold")) {
+    this->declare_parameter<double>("zupt_gyro_threshold", 0.02);
+  }
+  if (!this->has_parameter("zupt_accel_threshold")) {
+    this->declare_parameter<double>("zupt_accel_threshold", 0.2);
+  }
+  // ... 이런 식으로 모든 파라미터에 if(!this->has_parameter(...)) 조건을 추가합니다 ...
+  if (!this->has_parameter("accel_noise")) {
+    this->declare_parameter<double>("accel_noise", 0.05);
+  }
+  if (!this->has_parameter("gyro_noise")) {
+    this->declare_parameter<double>("gyro_noise", 0.00175);
+  }
+  if (!this->has_parameter("accel_bias_noise")) {
+    this->declare_parameter<double>("accel_bias_noise", 0.01);
+  }
+  if (!this->has_parameter("gyro_bias_noise")) {
+    this->declare_parameter<double>("gyro_bias_noise", 0.00025);
+  }
+  if (!this->has_parameter("accel_bias_tau")) {
+    this->declare_parameter<double>("accel_bias_tau", 100.0);
+  }
+  if (!this->has_parameter("gyro_bias_tau")) {
+    this->declare_parameter<double>("gyro_bias_tau", 50.0);
+  }
+  if (!this->has_parameter("gps_pos_noise_ne")) {
+    this->declare_parameter<double>("gps_pos_noise_ne", 3.0);
+  }
+  if (!this->has_parameter("gps_pos_noise_d")) {
+    this->declare_parameter<double>("gps_pos_noise_d", 6.0);
+  }
+  if (!this->has_parameter("gps_vel_noise_ne")) {
+    this->declare_parameter<double>("gps_vel_noise_ne", 0.5);
+  }
+  if (!this->has_parameter("gps_vel_noise_d")) {
+    this->declare_parameter<double>("gps_vel_noise_d", 1.0);
+  }
+  if (!this->has_parameter("init_pos_unc")) {
+    this->declare_parameter<double>("init_pos_unc", 10.0);
+  }
+  if (!this->has_parameter("init_vel_unc")) {
+    this->declare_parameter<double>("init_vel_unc", 1.0);
+  }
+  if (!this->has_parameter("init_att_unc")) {
+    this->declare_parameter<double>("init_att_unc", 0.34906);
+  }
+  if (!this->has_parameter("init_hdg_unc")) {
+    this->declare_parameter<double>("init_hdg_unc", 3.14159);
+  }
+  if (!this->has_parameter("init_accel_bias_unc")) {
+    this->declare_parameter<double>("init_accel_bias_unc", 0.981);
+  }
+  if (!this->has_parameter("init_gyro_bias_unc")) {
+    this->declare_parameter<double>("init_gyro_bias_unc", 0.01745);
   }
   
+  // 2. 선언된 파라미터의 값을 가져와 멤버 변수에 할당합니다.
+  //    (yaml에 값이 있으면 그 값을, 없으면 위에서 선언한 기본값을 가져옵니다)
   world_frame_id_ = this->get_parameter("world_frame_id").as_string();
   base_frame_id_ = this->get_parameter("base_frame_id").as_string();
   gnss_frame_id_ = this->get_parameter("gnss_frame_id").as_string();
@@ -99,6 +159,8 @@ void EkfFusionNode::loadParameters() {
   zupt_gyro_threshold_ = this->get_parameter("zupt_gyro_threshold").as_double();
   zupt_accel_threshold_ = this->get_parameter("zupt_accel_threshold").as_double();
   
+  // 3. 파라미터 로딩 상태를 로깅합니다.
+  RCLCPP_INFO(this->get_logger(), "Parameters loaded successfully.");
   RCLCPP_INFO(this->get_logger(), "Update rate: %.1f Hz", update_rate_);
   RCLCPP_INFO(this->get_logger(), "Magnetic declination: %.2f deg (%s)", 
               this->get_parameter("mag_declination").as_double(),
