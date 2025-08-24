@@ -15,7 +15,6 @@ def generate_launch_description():
           └── base_link (dynamic, published by EKF)
                ├── os_sensor (static: -0.3m back, 0.7m up)
                ├── gps (static: 0.5m forward, 0.2m up) 
-               └── imu_link (static: -0.3m back, 0.7m up, co-located with os_sensor)
     """
     
     pkg_share = FindPackageShare('gps_imu_fusion')
@@ -146,23 +145,6 @@ def generate_launch_description():
                 LaunchConfiguration('gps_z'),
                 '0', '0', '0',  # No rotation
                 'base_link', 'gps'
-            ],
-            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
-        ),
-        
-        # Static transform: base_link -> imu_link (IMU sensor)
-        # Co-located with os_sensor: 30cm backward, 70cm upward
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='base_to_imu',
-            output='screen',
-            arguments=[
-                LaunchConfiguration('imu_x'),
-                LaunchConfiguration('imu_y'),
-                LaunchConfiguration('imu_z'),
-                '0', '0', '0',  # No rotation
-                'base_link', 'imu_link'
             ],
             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
         ),
