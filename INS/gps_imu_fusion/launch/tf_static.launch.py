@@ -11,17 +11,17 @@ def generate_launch_description():
         DeclareLaunchArgument('publish_reference_tf', default_value='false', description='Publish map->reference identity for legacy Planning nodes'),
 
         # Sensor offsets relative to base_link
-        DeclareLaunchArgument('os_sensor_x', default_value='-0.3'),
+        DeclareLaunchArgument('os_sensor_x', default_value='0.483785'),
         DeclareLaunchArgument('os_sensor_y', default_value='0.0'),
-        DeclareLaunchArgument('os_sensor_z', default_value='0.7'),
+        DeclareLaunchArgument('os_sensor_z', default_value='0.912377'),
 
         DeclareLaunchArgument('gps_x', default_value='0.5'),
         DeclareLaunchArgument('gps_y', default_value='0.0'),
         DeclareLaunchArgument('gps_z', default_value='0.2'),
 
-        DeclareLaunchArgument('imu_x', default_value='-0.3'),
+        DeclareLaunchArgument('imu_x', default_value='0.835317'),
         DeclareLaunchArgument('imu_y', default_value='0.0'),
-        DeclareLaunchArgument('imu_z', default_value='0.7'),
+        DeclareLaunchArgument('imu_z', default_value='-0.149874'),
 
         # map -> odom (identity until SLAM/localization owns it)
         Node(
