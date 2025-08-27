@@ -2,7 +2,6 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -44,6 +43,42 @@ def generate_launch_description():
                 'base_link', 'os_sensor'
             ]
         ),
+        
+        # ###############################################################
+        # ##               최종 수정된 os_sensor to camera TF          ##
+        # ###############################################################
+
+        # os_sensor -> camera_1
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='os_sensor_to_cam1',
+            arguments=[
+                # Translation (x y z)
+                '0.12429922', '0.08384356', '-0.10144900',
+                # Quaternion (qx qy qz qw)
+                '0.62267844', '-0.37316381', '0.37352383', '-0.57749482',
+                # Parent -> Child
+                'os_sensor', 'camera_1'
+            ]
+        ),
+
+        # os_sensor -> camera_2
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='os_sensor_to_cam2',
+            arguments=[
+                # Translation (x y z)
+                '0.14285914', '-0.09870662', '-0.07061942',
+                # Quaternion (qx qy qz qw)
+                '-0.38646373', '0.61188201', '-0.57029629', '0.38859790',
+                # Parent -> Child
+                'os_sensor', 'camera_2'
+            ]
+        ),
+        
+        # ###############################################################
 
         # base_link -> gps
         Node(
@@ -71,14 +106,5 @@ def generate_launch_description():
                 '0', '0', '0',
                 'base_link', 'imu_link'
             ]
-        ),
-
-        # Optional: map -> reference identity for short-term compatibility
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='map_to_reference_tf',
-            condition=IfCondition(LaunchConfiguration('publish_reference_tf')),
-            arguments=['0', '0', '0', '0', '0', '0', 'map', 'reference']
         ),
     ])
