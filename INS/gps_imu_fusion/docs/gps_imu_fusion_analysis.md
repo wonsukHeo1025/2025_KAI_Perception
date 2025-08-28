@@ -46,11 +46,10 @@
 - **좌표 변환**: GPS → UTM → 로컬 카르테시안
 - **고도 처리**: `z = ekf_alt_m - reference_altitude_`
 
-### 3.2 Lever Arm 보정 필요사항
-현재 GPS/IMU 데이터가 센서 위치에서 base_link로 변환 없이 직접 사용됨:
-- **GPS 안테나**: base_link에서 (0.5m, 0, 0.2m) 오프셋
-- **IMU**: base_link에서 (-0.3m, 0, 0) 오프셋
-- **문제**: 회전 시 lever arm 효과로 위치 오차 발생
+### 3.2 Lever Arm 보정 ✅ 완료 (2025.08.27)
+- **GPS 안테나**: base_link에서 (0.5m, 0, 0.2m) 오프셋 → TF로 자동 보정
+- **IMU**: base_link에서 (-0.3m, 0, 0) 오프셋 → TF로 자동 보정
+- **구현 완료**: GPS position/velocity, IMU acceleration에 대한 lever arm dynamics 보정
 
 ## 4. 해결된 문제들
 
@@ -60,37 +59,39 @@
 - **수치적 안정성**: asin() 범위 제한, 쿼터니언 NaN 체크
 - **ZUPT 구현**: 3단계 속도 기반 융합 완료
 - **GPS Heading 융합**: 동적 노이즈 조절 구현
+- **Lever Arm 보정**: GPS/IMU lever arm dynamics 완전 구현 (2025.08.27)
 
 ## 5. 남아있는 문제
 
 ### 5.1 High Priority
 - **시간 동기화 부재**: IMU와 GPS 타임스탬프 동기화 없음
-- **Lever arm 보정 부재**: 센서 오프셋 미고려
-- **IMU calibration 미적용**: JSON 파일 미사용
+  - 상세 계획: [시간 동기화 구현 계획](./time_synchronization_plan.md) (예정)
+- **Lever arm 보정**: ✅ 완료 (2025.08.27)
+  - GPS position/velocity 및 IMU 가속도 lever arm 보정 구현 완료
+  - TF 방향 문제 및 프레임 불일치 수정 완료
+- **ZUPT 관련 문제**: 정지/이동 전환 시 불안정성 발생
+  - IMU 정지 감지와 GPS 속도 기반 판단 간 충돌
+  - 전환 상태(transition state) 로직 개선 필요
+  - 히스테리시스 파라미터 재조정 필요
+- **IMU calibration 미적용**: ~~JSON 파일 미사용~~ (해결됨)
 
 ### 5.2 Medium Priority
 - **오류 복구 메커니즘 부재**: 센서 실패 시 대응 로직 없음
 - **초기화 순서 문제**: GPS/GNSS velocity 모두 필요
 - **map → odom TF 미발행**: SLAM 통합 시 필요
 
-## 6. TF 변환 및 Lever Arm 보정 계획
+## 6. Lever Arm 보정 구현 완료 (2025.08.27)
 
-### 6.1 GPS 데이터 변환 방안
-```
-GPS (lat,lon,alt) → UTM (x,y,z) → TF 적용 → base_link (x,y,z) → (lat,lon,alt)
-```
-- 로컬 카르테시안 변환은 이미 구현 (UTM 사용)
-- TF lookup 추가하여 GPS → base_link 변환
-- 역변환하여 EKF에 전달 (기존 파이프라인 유지)
+### 6.1 구현된 보정 항목
+- ✅ **GPS position lever arm**: `p_base = p_gps - R_wb * t_bg`
+- ✅ **GPS velocity lever arm**: `v_base = v_gps - ω × (R_wb * t_bg)`  
+- ✅ **IMU acceleration lever arm**: `a_base = a_imu - α×r - ω×(ω×r)`
+- ✅ **TF 방향 수정**: `lookupTransform("base_link", source)` 형식으로 통일
+- ✅ **프레임 일치 보장**: gnssVelCallback에서 base frame 각속도 사용
 
-### 6.2 IMU 데이터 변환
-- TF lookup: imu_link/os_imu → base_link
-- 각속도/가속도 벡터 회전 변환 (TF가 lever arm 자동 처리)
-- 쿼터니언 변환으로 회전 적용
-
-### 6.3 고도 오프셋
-- base_link가 지면에서 0.235m (타이어 반지름)
-- `z = ekf_alt_m - reference_altitude_ + 0.235` 적용 필요
+### 6.2 미구현 항목
+- **고도 오프셋**: base_link 지면 높이(0.235m) 미적용
+- **Higher-order terms**: 큰 lever arm(>0.5m)에 대한 고차항 미고려
 
 
 
@@ -102,10 +103,10 @@ GPS (lat,lon,alt) → UTM (x,y,z) → TF 적용 → base_link (x,y,z) → (lat,l
 - **자동차 특화**: 평지 주행 가정, yaw rate 중심
 
 ### 7.2 주요 개선 필요사항
-1. **TF 변환 적용**: GPS/IMU 데이터를 base_link 기준으로 변환
-2. **고도 오프셋 추가**: 타이어 반지름 고려
-3. **시간 동기화**: 센서 간 타임스탬프 동기화
-4. **IMU calibration**: JSON 파일 활용
+1. **ZUPT 안정성 개선**: 정지/이동 전환 시 불안정성 해결 필요
+2. **시간 동기화**: 센서 간 타임스탬프 동기화
+3. **고도 오프셋 추가**: 타이어 반지름 고려
+4. **오류 복구**: 센서 실패 시 graceful degradation
 
 ### 7.3 평가
-테스트 및 개발 목적으로 충분히 사용 가능한 상태. Lever arm 보정과 시간 동기화가 추가되면 프로덕션 수준 도달 가능.
+테스트 및 개발 목적으로 충분히 사용 가능한 상태. Lever arm 보정 완료로 정확도가 크게 향상됨. ZUPT 안정성 개선과 시간 동기화가 추가되면 프로덕션 수준 도달 가능.
