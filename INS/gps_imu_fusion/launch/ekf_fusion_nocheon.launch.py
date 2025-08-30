@@ -60,7 +60,7 @@ def generate_launch_description():
         
         DeclareLaunchArgument('gps_x', default_value='0.5', description='GPS antenna X offset from base_link (m)'),
         DeclareLaunchArgument('gps_y', default_value='0.0', description='GPS antenna Y offset from base_link (m)'),
-        DeclareLaunchArgument('gps_z', default_value='0.2', description='GPS antenna Z offset from base_link (m)'),
+        DeclareLaunchArgument('gps_z', default_value='0.0', description='GPS antenna Z offset from base_link (m)'),
         
         DeclareLaunchArgument('imu_x', default_value='0.0', description='IMU X offset from base_link (m)'),
         DeclareLaunchArgument('imu_y', default_value='0.0', description='IMU Y offset from base_link (m)'),

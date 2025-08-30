@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.5)
 project(rtcm_msgs)
 
 # ros_environment is needed to have ROS_VERSION
