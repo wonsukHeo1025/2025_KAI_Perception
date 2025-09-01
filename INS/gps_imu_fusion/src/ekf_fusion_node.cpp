@@ -310,9 +310,9 @@ void EkfFusionNode::gnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr ms
                latest_utm_.zone, latest_utm_.band, latest_utm_.easting, latest_utm_.northing);
   
   if (!origin_set_) {
-    // 건국대 일감호를 원점으로 설정
-    double ref_lat = 37.540091;
-    double ref_lon = 127.076555;
+    // 테스트 장소를 원점으로 설정
+    double ref_lat = 37.237394; 
+    double ref_lon = 126.770827;
     auto ref_utm = llToUtm(ref_lat, ref_lon);
     origin_utm_x_ = ref_utm.easting;
     origin_utm_y_ = ref_utm.northing;

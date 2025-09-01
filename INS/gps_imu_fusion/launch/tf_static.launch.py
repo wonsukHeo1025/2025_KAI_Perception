@@ -9,18 +9,31 @@ def generate_launch_description():
         # Optional: temporary compatibility alias for reference frame
         DeclareLaunchArgument('publish_reference_tf', default_value='false', description='Publish map->reference identity for legacy Planning nodes'),
 
-        # Sensor offsets relative to base_link
-        DeclareLaunchArgument('os_sensor_x', default_value='0.483785'),
+        # # Sensor offsets relative to base_link
+        # DeclareLaunchArgument('os_sensor_x', default_value='0.483785'),
+        # DeclareLaunchArgument('os_sensor_y', default_value='0.0'),
+        # DeclareLaunchArgument('os_sensor_z', default_value='0.912377'),
+
+        # DeclareLaunchArgument('gps_x', default_value='1.3'),
+        # DeclareLaunchArgument('gps_y', default_value='0.0'),
+        # DeclareLaunchArgument('gps_z', default_value='0.357'),
+
+        # DeclareLaunchArgument('imu_x', default_value='1.307'),
+        # DeclareLaunchArgument('imu_y', default_value='0.0'),
+        # DeclareLaunchArgument('imu_z', default_value='-0.142'),
+
+        # ignore lever arm
+        DeclareLaunchArgument('os_sensor_x', default_value='0.0'),
         DeclareLaunchArgument('os_sensor_y', default_value='0.0'),
-        DeclareLaunchArgument('os_sensor_z', default_value='0.912377'),
+        DeclareLaunchArgument('os_sensor_z', default_value='0.0'),
 
-        DeclareLaunchArgument('gps_x', default_value='0.5'),
+        DeclareLaunchArgument('gps_x', default_value='0.0'),
         DeclareLaunchArgument('gps_y', default_value='0.0'),
-        DeclareLaunchArgument('gps_z', default_value='0.2'),
+        DeclareLaunchArgument('gps_z', default_value='0.0'),
 
-        DeclareLaunchArgument('imu_x', default_value='0.835317'),
+        DeclareLaunchArgument('imu_x', default_value='0.0'),
         DeclareLaunchArgument('imu_y', default_value='0.0'),
-        DeclareLaunchArgument('imu_z', default_value='-0.149874'),
+        DeclareLaunchArgument('imu_z', default_value='0.0'),
 
         # map -> odom (identity until SLAM/localization owns it)
         Node(
