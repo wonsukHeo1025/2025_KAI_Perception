@@ -1,8 +1,8 @@
 cone_detection:
   ros__parameters:
     # Input topic selection (choose one based on your setup)
-    input_topic_name: "/ouster/points"                      # Default: raw LiDAR data
-    #input_topic_name: "/ouster/points/interpolated"  # Alternative: FILC enhanced data (4x density)
+    #input_topic_name: "/ouster/points"                      # Default: raw LiDAR data
+    input_topic_name: "/ouster/points/interpolated"  # Alternative: FILC enhanced data (4x density)
     
     x_threshold_enable: false      # X축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
     y_threshold_enable: false      # Y축 필터링 활성화 여부 (True: 활성화, False: 비활성화)

@@ -317,7 +317,7 @@ void EkfFusionNode::gnssCallback(const sensor_msgs::msg::NavSatFix::SharedPtr ms
     origin_utm_x_ = ref_utm.easting;
     origin_utm_y_ = ref_utm.northing;
     origin_set_ = true;
-    RCLCPP_INFO(this->get_logger(), "Origin set at Konkuk University Ilgamho: %.2f, %.2f (zone %d%c)", 
+    RCLCPP_INFO(this->get_logger(), "Origin set at: %.2f, %.2f (zone %d%c)", 
                 origin_utm_x_, origin_utm_y_, ref_utm.zone, ref_utm.band);
   }
   
