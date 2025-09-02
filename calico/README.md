@@ -9,40 +9,53 @@
 [![C++](https://img.shields.io/badge/C++-17-green)](https://en.cppreference.com/w/cpp/17)
 [![Status](https://img.shields.io/badge/Status-Active-success)](https://github.com)
 
-자율주행 레이싱을 위한 고성능 C++ 센서 융합 패키지로, YOLO 객체 검출과 LiDAR 포인트 클라우드 데이터를 실시간으로 결합합니다.
+자율주행 레이싱을 위한 고성능 C++ 센서 융합 패키지로, YOLO 객체 검출과 LiDAR 3D 박스 데이터를 실시간으로 결합합니다.
 
-## 🎯 주요 특징
+## 주요 특징
 
-- **⚡ 고성능**: Python 대비 5배 이상의 성능 향상
-- **🔄 시간 동기화**: ApproximateTimeSynchronizer로 정확한 메시지 동기화
-- **🎯 정확한 융합**: 자체 구현 Hungarian 알고리즘으로 최적 매칭
-- **📷 멀티 카메라**: 2개 카메라 동시 지원 및 충돌 해결
-- **📊 안정적 출력**: 19Hz 입력 → 19Hz 안정적 출력
-- **🔧 IMU 보정**: 가속도계 데이터를 이용한 모션 보상
-- **📊 시각화**: RViz 마커 및 디버그 오버레이 제공
-- **♻️ 호환성**: 기존 Python 패키지와 100% 인터페이스 호환
+- **고성능**: Python 대비 5배 이상의 성능 향상
+- **시간 동기화**: 헤더 기반 동기화 + 수신시각(arrival) 기반 동기화(ROS/wall time)
+- **정확한 융합**: 자체 구현 Hungarian 알고리즘으로 최적 매칭
+- **멀티 카메라**: 2개 카메라 동시 지원 및 충돌 해결 (결손 시 graceful degrade 예정)
+- **안정적 출력**: 19Hz 입력 -> 19Hz 안정적 출력
+- **IMU 보정**: 가속도계 데이터를 이용한 모션 보상
+- **시각화**: RViz 마커 및 디버그 오버레이 제공
+- **호환성**: 기존 Python 패키지와 100% 인터페이스 호환
 
-## 📈 현재 상태 (2025-07-02)
+## 현재 상태 (2025-09-01)
 
-### ✅ 작동 확인된 기능
+### 작동 확인된 기능
 
 | 구성 요소 | 상태 | 품질 | 설명 |
 |-----------|------|------|------|
-| **시간 동기화** | ✅ 완료 | 100% | ApproximateTimeSynchronizer 구현 |
-| **멀티카메라 융합** | ✅ 완료 | 95% | 정확한 인덱스 매핑, 색상 할당 |
-| **Hungarian 매칭** | ✅ 완료 | 100% | kalman_filters 라이브러리 구현 (자동 패딩) |
-| **주파수 안정성** | ✅ 완료 | 100% | 19Hz 일정한 출력 유지 |
-| **투영 정확도** | ✅ 완료 | 95% | 원본 인덱스 보존, Z축 필터링 |
-| **UKF 추적** | ✅ 완료 | 95% | kalman_filters 라이브러리로 완전 구현 |
-| **IMU 보상** | ⚠️ 기본 | 70% | 간소화된 필터 구현 |
+| **시간 동기화** | 개선 | 100% | 헤더 동기화 + 도착시간 기반 동기화(ROS/wall) |
+| **멀티카메라 융합** | 완료 | 95% | 정확한 인덱스 매핑, 색상 할당 |
+| **Hungarian 매칭** | 완료 | 100% | kalman_filters 라이브러리 구현 (자동 패딩) |
+| **주파수 안정성** | 완료 | 100% | 19Hz 일정한 출력 유지 |
+| **투영 정확도** | 완료 | 95% | 원본 인덱스 보존, Z축 필터링 |
+| **UKF 추적** | 완료 | 95% | kalman_filters 라이브러리로 완전 구현 |
+| **IMU 보상** | 기본 | 70% | 간소화된 필터 구현 |
 
-### 🚧 개선 필요 사항
+### 개선 필요 사항
 
-1. **~~UKF 완전 구현~~**: ✅ kalman_filters 라이브러리로 해결
+1. **~~UKF 완전 구현~~**: kalman_filters 라이브러리로 해결
 2. **Butterworth 필터**: 완전한 DSP 구현
 4. **단위 테스트**: 핵심 모듈 테스트 커버리지
 
-## 🔧 시스템 구조
+### 신규/변경 사항
+
+- 시간 동기화 모드 추가: `time_sync_mode = header | arrival_ros | arrival_wall`
+  - arrival_ros: `/clock`(use_sim_time) 기반 now()로 동기화
+  - arrival_wall: 시스템 벽시계 기반 now()로 동기화
+- QoS 정합: 주요 구독을 `RELIABLE`로 통일하여 퍼블리셔와 매칭 안정화
+- 출력 타임스탬프 옵션: 융합/추적 출력의 `header.stamp`를 now()로 덮어쓰는 옵션 추가
+- 런치 인자 확장: `use_sim_time`, `time_sync_mode`, `arrival_slop`, `override_*_stamp_now` 등
+
+### 예정 사항
+
+- Graceful Degrade: 카메라 일부 결손 시에도 남은 입력만으로 융합을 진행하고, 결손 카메라의 분류는 `"Unknown"`으로 처리하는 폴백 로직 추가 예정
+
+## 시스템 구조
 
 ```
 CALICO 시스템 아키텍처
@@ -56,10 +69,10 @@ CALICO 시스템 아키텍처
                    Time Sync
               (ApproximateTime)
                         │
-                        ▼
+                        v
 ┌─────────────────────────────────────────────┐
 │          Multi-Camera Fusion Node           │
-│  • 3D→2D Projection (with index tracking)   │
+│  • 3D->2D Projection (with index tracking)   │
 │  • Hungarian Matching (kalman_filters)      │
 │  • Voting-based Conflict Resolution         │
 └─────────────────────┬───────────────────────┘
@@ -81,7 +94,7 @@ CALICO 시스템 아키텍처
 └─────────────────────────────────────────────┘
 ```
 
-## 🚀 빠른 시작
+## 빠른 시작
 
 ### 1. 의존성 설치
 
@@ -118,70 +131,84 @@ source install/setup.bash
 
 ```bash
 # 전체 시스템 실행 (융합 + 추적 + 시각화)
-ros2 launch calico calico_full.launch.py
+ros2 launch calico calico_full.launch.py enable_debug_viz:=false
 
 # 설정 파일 지정
 ros2 launch calico calico_full.launch.py \
-    config_file:=/path/to/multi_hungarian_config.yaml
+  config_file:=/path/to/multi_hungarian_config.yaml \
+  enable_debug_viz:=false
 
-# 디버그 시각화 활성화
+# rosbag + /clock 기반 (권장)
+ros2 bag play <bag> --clock
 ros2 launch calico calico_full.launch.py \
-    enable_debug_viz:=true \
-    debug_camera_id:=camera_1
+  use_sim_time:=true \
+  time_sync_mode:=arrival_ros \
+  arrival_slop:=0.2 \
+  enable_debug_viz:=false
+
+# 시스템 시각 기반 (bag에 /clock 없을 때)
+ros2 bag play <bag>
+ros2 launch calico calico_full.launch.py \
+  use_sim_time:=false \
+  time_sync_mode:=arrival_ros \
+  arrival_slop:=0.2 \
+  enable_debug_viz:=false
 ```
 
-## 📡 ROS2 인터페이스
+## ROS2 인터페이스
 
 ### 입력 토픽
-| 토픽 | 타입 | 주파수 | 설명 |
-|------|------|--------|------|
-| `/sorted_cones_time` | `custom_interface/ModifiedFloat32MultiArray` | ~19Hz | LiDAR 검출 콘 (os_sensor 프레임) |
-| `/camera_1/detections` | `yolo_msgs/DetectionArray` | ~30Hz | 카메라 1 YOLO 검출 |
-| `/camera_2/detections` | `yolo_msgs/DetectionArray` | ~30Hz | 카메라 2 YOLO 검출 |
-| `/ouster/imu` | `sensor_msgs/Imu` | 100Hz | IMU 데이터 (선택) |
+| 토픽 | 타입 | 설명 |
+|------|------|------|
+| `/cone/lidar/box` | `vision_msgs/BoundingBox3DArray` | LiDAR 3D 박스 (코드가 자동으로 이 토픽으로 고정) |
+| `/camera_1/detections` | `yolo_msgs/DetectionArray` | 카메라 1 YOLO 검출 |
+| `/camera_2/detections` | `yolo_msgs/DetectionArray` | 카메라 2 YOLO 검출 |
+| `/camera_1/dbg_image` | `sensor_msgs/Image` | 선택: 디버그 오버레이용 이미지 |
+| `/camera_2/dbg_image` | `sensor_msgs/Image` | 선택: 디버그 오버레이용 이미지 |
+| `/ouster/imu` | `sensor_msgs/Imu` | 선택: 추적 보정용 IMU |
 
 ### 출력 토픽
-| 토픽 | 타입 | 주파수 | 설명 |
-|------|------|--------|------|
-| `/fused_sorted_cones` | `custom_interface/ModifiedFloat32MultiArray` | ~19Hz | 색상 라벨된 콘 |
-| `/cone/fused/ukf` | `custom_interface/TrackedConeArray` | ~19Hz | 추적된 콘 (ID 포함) |
-| `/visualization_marker_array` | `visualization_msgs/MarkerArray` | ~19Hz | RViz 마커 |
+| 토픽 | 타입 | 설명 |
+|------|------|------|
+| `/cone/fused` | `custom_interface/TrackedConeArray` | 융합 결과 (클래스 포함) |
+| `/cone/fused/ukf` | `custom_interface/TrackedConeArray` | UKF 추적 결과 (ID/속도 포함) |
+| `/vis/cone/fused` | `visualization_msgs/MarkerArray` | 단순 콘 마커 |
+| `/vis/cone/fused/ukf` | `visualization_msgs/MarkerArray` | 추적 콘 마커 |
+| `/vis/cone/fused/velocity` | `visualization_msgs/MarkerArray` | 속도 화살표 |
+| `/vis/cone/fused/text` | `visualization_msgs/MarkerArray` | 트랙 ID 텍스트 |
 
-## ⚙️ 설정 파일
+## 설정 파일
 
 CALICO는 자체 설정 파일을 사용:
 
 ```yaml
-# multi_hungarian_config.yaml
+# config/multi_hungarian_config.yaml (예시)
 calico:
-  # 매칭 파라미터
-  max_matching_distance: 50.0  # 픽셀 단위
-  
-  # 토픽 설정
-  cones_topic: "/sorted_cones_time"
-  output_topic: "/fused_sorted_cones"
-  
-  # 캘리브레이션 파일
-  calibration:
-    config_folder: "${ROS2_WS}/src/calico/config"  # ROS2_WS 환경변수 또는 상대경로 사용
-    camera_extrinsic_calibration: "multi_camera_extrinsic_calibration.yaml"
-    camera_intrinsic_calibration: "multi_camera_intrinsic_calibration.yaml"
-  
-  # 카메라 설정
+  cones_topic: "/cone/lidar"        # 코드에서 자동으로 "/cone/lidar/box"로 오버라이드됨
+  output_topic: "/cone/fused"
+
+  max_matching_distance: 25.0        # 픽셀 단위 매칭 거리 임계값
+
   cameras:
     - id: "camera_1"
       detections_topic: "/camera_1/detections"
+      # image_topic: "/camera_1/dbg_image"   # (선택) 디버그 이미지 토픽 명시 가능
     - id: "camera_2"
       detections_topic: "/camera_2/detections"
-  
-  # QoS 및 동기화
+      # image_topic: "/camera_2/dbg_image"
+
+  calibration:
+    config_folder: ""  # 비우면 패키지 기본 경로 사용 (share/calico/config)
+    camera_extrinsic_calibration: "multi_camera_extrinsic_calibration.yaml"
+    camera_intrinsic_calibration: "multi_camera_intrinsic_calibration.yaml"
+
   qos:
     history_depth: 1
+    sync_slop: 0.1
     sync_queue_size: 10
-    sync_slop: 0.1  # 초 (시간 동기화 허용 오차)
 ```
 
-## 🔍 디버깅 도구
+## 디버깅 도구
 
 ### 투영 시각화
 LiDAR 포인트가 카메라 이미지에 올바르게 투영되는지 확인:
@@ -201,32 +228,69 @@ ros2 run rqt_image_view rqt_image_view
 ### 주파수 모니터링
 ```bash
 # 입력/출력 주파수 확인
-ros2 topic hz /sorted_cones_time
-ros2 topic hz /fused_sorted_cones
+ros2 topic hz /cone/lidar/box
+ros2 topic hz /cone/fused
 ros2 topic hz /cone/fused/ukf
 
 # 메시지 동기화 확인
-ros2 topic echo /fused_sorted_cones --once
+ros2 topic echo /cone/fused --once
 ```
 
 ### 로그 레벨
 ```bash
 # 디버그 로그 활성화
 export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}]: {message}"
-ros2 run calico multi_camera_fusion_node --ros-args --log-level debug
+ros2 run calico multi_iou_fusion_node --ros-args --log-level debug
 ```
 
-## 📊 성능 비교
+## 런치 인자
+
+다음 인자를 통해 시간/동기화/시각화 동작을 제어할 수 있습니다.
+
+- `config_file`: 설정 파일 경로 (기본: 패키지 내 config/multi_hungarian_config.yaml)
+- `iou_threshold`: IoU 임계값 (기본: 0.01)
+- `enable_debug_viz`: 디버그 이미지 기반 오버레이 활성화 (기본: false)
+- `use_imu`: UKF에 IMU 사용 (기본: true)
+- `show_track_ids`: RViz에 트랙 ID 텍스트 표시 (기본: true)
+- `time_sync_mode`: `header | arrival_ros | arrival_wall`
+- `arrival_slop`: arrival 기반 동기화 허용 오차(sec)
+- `use_sim_time`: `/clock` 사용 여부 (bag 재생 시 권장)
+- `override_fused_stamp_now`: 융합 출력의 header.stamp를 now()로 덮어쓰기
+- `override_tracked_stamp_now`: 추적 출력의 header.stamp를 now()로 덮어쓰기
+
+권장 조합
+- bag 재생 + /clock: `use_sim_time:=true time_sync_mode:=arrival_ros`
+- 생방송/시스템 시간: `use_sim_time:=false time_sync_mode:=arrival_ros`
+
+## Graceful Degrade (설계)
+
+원칙은 단순합니다. LiDAR는 기본적으로 클래스가 미정(Unknown)이며, 카메라 검출이 들어오면 그때 해당 LiDAR 박스에 “색상 클래스”를 덮어씌웁니다. 카메라가 일부/전부 없으면 그냥 덮어씌우지 않습니다 → 그대로 Unknown 유지.
+
+핵심 동작
+- LiDAR는 필수 입력입니다. LiDAR가 없으면 융합을 수행하지 않습니다.
+- 카메라 검출은 “가용한 카메라만” 사용합니다. 결손 카메라는 자동 제외(추가 파라미터 없음).
+- 매칭/분류가 없으면 LiDAR 박스는 그대로 Unknown입니다(별도 라벨 로직 불필요).
+- 디버그 이미지는 시각화 전용이며, 없어도 융합/출력에는 영향이 없습니다(오버레이만 생략).
+
+시나리오별 처리
+- 카메라 1만 활성: Cam1 검출만으로 매칭/덮어쓰기, 나머지는 Unknown 유지.
+- 실행 중 카메라 2 드롭: 남은 카메라만 사용하여 지속.
+- YOLO 미발행: 모든 카메라 검출이 없으면 LiDAR만 pass-through(전부 Unknown)로 퍼블리시.
+- 디버그 이미지 미발행: 이미지 오버레이만 생략, 융합/출력은 정상 수행.
+
+추가 파라미터: 없음(기존 파라미터로 충분). 최소 카메라 수, 라벨 이름 지정 등의 설정은 도입하지 않습니다.
+
+## 성능 비교
 
 | 메트릭 | Python | CALICO | 개선 |
 |--------|--------|---------|------|
-| 평균 처리 시간 | ~50ms | <10ms | 5x ⬇️ |
-| 메모리 사용량 | ~1GB | <500MB | 2x ⬇️ |
-| CPU 사용률 | 40% | 15% | 2.7x ⬇️ |
-| 출력 안정성 | 가변적 | 19Hz 일정 | ✅ |
-| 시작 시간 | ~5초 | <1초 | 5x ⬇️ |
+| 평균 처리 시간 | ~50ms | <10ms | 5x ↓ |
+| 메모리 사용량 | ~1GB | <500MB | 2x ↓ |
+| CPU 사용률 | 40% | 15% | 2.7x ↓ |
+| 출력 안정성 | 가변적 | 19Hz 일정 | [OK] |
+| 시작 시간 | ~5초 | <1초 | 5x ↓ |
 
-## 🔄 최근 해결된 이슈
+## 최근 해결된 이슈
 
 ### OR-Tools INFEASIBLE 오류 (해결됨)
 - **문제**: OR-Tools LinearSumAssignment가 INFEASIBLE 상태 반환
@@ -243,7 +307,7 @@ ros2 run calico multi_camera_fusion_node --ros-args --log-level debug
 - **원인**: 각 메시지마다 tryFusion() 호출
 - **해결**: ApproximateTimeSynchronizer로 동기화된 콜백만 실행
 
-## 🐛 문제 해결
+## 문제 해결
 
 ### "No matching found" 오류
 1. 카메라 캘리브레이션 파라미터 확인
@@ -260,7 +324,7 @@ ros2 run calico multi_camera_fusion_node --ros-args --log-level debug
 2. 디버그 로그로 행렬 크기 확인
 3. 정방 행렬 패딩 로직 확인
 
-## 🔄 Python에서 마이그레이션
+## Python에서 마이그레이션
 
 ```bash
 # 기존 Python 실행
@@ -273,12 +337,12 @@ ros2 launch calico multi_camera_fusion.launch.py \
 # 문제 시 Python으로 롤백 가능
 ```
 
-## 📝 기술 상세
+## 기술 상세
 
 ### 좌표 변환
 ```
-os_sensor → os_lidar → camera_frame → image_plane
-    ↓           ↓            ↓              ↓
+os_sensor -> os_lidar -> camera_frame -> image_plane
+    |           |            |              |
 T_sensor   T_lidar_cam   Projection   Distortion
 _to_lidar  (Extrinsic)   (Intrinsic)  Correction
 ```
@@ -294,7 +358,7 @@ _to_lidar  (Extrinsic)   (Intrinsic)  Correction
 - 투표 기반 해결 (가장 많은 카메라가 본 색상)
 - 동점 시 낮은 비용의 매칭 우선
 
-## 🚀 향후 계획
+## 향후 계획
 
 ### 단기 (1-2주)
 - [x] UKF 완전 구현 (kalman_filters 라이브러리 사용)
@@ -310,23 +374,23 @@ _to_lidar  (Extrinsic)   (Intrinsic)  Correction
 - [ ] 실시간 성능 프로파일링 도구
 - [ ] 웹 기반 캘리브레이션 UI
 
-## 📄 라이센스
+## 라이센스
 
 Apache License 2.0 - [LICENSE](LICENSE) 파일 참조
 
-## 👥 기여자
+## 기여자
 
 - 원본 Python 구현: hungarian_association 팀
 - C++ 포팅: CALICO 개발팀
 - 유지보수: kikiws70@gmail.com
 
-## 📞 지원
+## 지원
 
 - 이슈: [GitHub Issues](https://github.com/anthropics/claude-code/issues)
 - 문서: [CLAUDE.md](CLAUDE.md) (AI 지원 가이드)
 - 설계: [PRD_CALICO.md](PRD_CALICO.md) (프로젝트 계획 문서)
 
-## 📁 소스 파일 구조
+## 소스 파일 구조
 
 ### 전체 디렉토리 구조
 ```
@@ -351,9 +415,9 @@ calico/
 └── config/                  # 설정 파일 (Python과 공유)
 ```
 
-### 🔧 핵심 소스 파일 상세 설명
+### 핵심 소스 파일 상세 설명
 
-#### 📂 **fusion/** - 센서 융합 알고리즘
+#### **fusion/** - 센서 융합 알고리즘
 
 ##### `multi_camera_fusion.cpp/.hpp`
 - **기능**: 멀티카메라-LiDAR 융합의 핵심 로직
@@ -379,11 +443,11 @@ calico/
   - `computeCostMatrix()`: 비용 행렬 생성
 - **수정 시**: 매칭 알고리즘, 거리 계산 방식 변경
 
-#### 📂 **tracking/** - 외부 라이브러리 사용
+#### **tracking/** - 외부 라이브러리 사용
 
 CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러리를 사용합니다. 추적 관련 로직은 `nodes/ukf_tracking_node.cpp`에서 처리됩니다.
 
-#### 📂 **utils/** - 유틸리티 함수
+#### **utils/** - 유틸리티 함수
 
 ##### `config_loader.cpp/.hpp`
 - **기능**: YAML 설정 파일 로드
@@ -402,9 +466,9 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 - **수정 시**: 메시지 형식 변경, 필드 추가
 
 ##### `projection_utils.cpp/.hpp`
-- **기능**: 3D→2D 카메라 투영
+- **기능**: 3D->2D 카메라 투영
 - **역할**:
-  - 좌표계 변환 (os_sensor → os_lidar → camera → image)
+  - 좌표계 변환 (os_sensor -> os_lidar -> camera -> image)
   - 렌즈 왜곡 보정
   - 이미지 경계 검사
   - 원본 인덱스 추적
@@ -424,7 +488,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
   - `getCompensatedAcceleration()`: 필터링된 가속도 반환
 - **수정 시**: 필터 파라미터, 버퍼 크기 변경
 
-#### 📂 **visualization/** - RViz 시각화
+#### **visualization/** - RViz 시각화
 
 ##### `rviz_marker_publisher.cpp/.hpp`
 - **기능**: RViz 마커 생성 및 관리
@@ -438,7 +502,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
   - `createVelocityArrowMarker()`: 속도 화살표 생성
 - **수정 시**: 마커 스타일, 색상 매핑, 시각화 옵션
 
-#### 📂 **nodes/** - ROS2 노드 실행 파일
+#### **nodes/** - ROS2 노드 실행 파일
 
 ##### `multi_camera_fusion_node.cpp`
 - **기능**: 멀티카메라 융합 노드의 main()
@@ -468,7 +532,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
   - 디버그 이미지 오버레이 생성
 - **수정 시**: 디버그 정보, 시각화 스타일
 
-#### 📂 **launch/** - Launch 파일
+#### **launch/** - Launch 파일
 
 ##### `calico_full.launch.py`
 - **기능**: 전체 CALICO 시스템 실행
@@ -486,13 +550,13 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 - **역할**: 두 카메라의 LiDAR 투영을 동시에 확인
 - **출력**: 각 카메라별 디버그 오버레이 이미지
 
-### 🔄 데이터 흐름과 파일 관계
+### 데이터 흐름과 파일 관계
 
 ```
 1. 센서 데이터 입력
    └─> multi_camera_fusion_node.cpp
        └─> MultiCameraFusion (fusion/multi_camera_fusion.cpp)
-           ├─> ProjectionUtils (utils/projection_utils.cpp) - 3D→2D 투영
+           ├─> ProjectionUtils (utils/projection_utils.cpp) - 3D->2D 투영
            ├─> HungarianMatcher (fusion/hungarian_matcher.cpp) - 매칭
            └─> MessageConverter (utils/message_converter.cpp) - 출력 변환
 
@@ -508,7 +572,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
            └─> 속도 추정 + 마커 생성
 ```
 
-### 🛠️ 기능별 수정 가이드
+### 기능별 수정 가이드
 
 | 수정하려는 기능 | 수정해야 할 파일 |
 |----------------|------------------|
@@ -522,7 +586,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 | 시각화 스타일 | `visualization/rviz_marker_publisher.cpp` |
 | 설정 파일 형식 | `utils/config_loader.cpp` |
 
-## 🎓 기술 배경
+## 기술 배경
 
 ### 핵심 알고리즘
 1. **Hungarian Algorithm**: 이분 그래프 최적 매칭
@@ -533,10 +597,10 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
    - Python/C++: message_filters::ApproximateTimeSynchronizer
    - 허용 오차(slop): 0.1초
 
-3. **Coordinate Transformation**: 3D→2D 투영
-   - os_sensor → os_lidar: 하드웨어 오프셋 보정
-   - os_lidar → camera: 외부 캘리브레이션
-   - camera → image: 내부 캘리브레이션 + 왜곡 보정
+3. **Coordinate Transformation**: 3D->2D 투영
+   - os_sensor -> os_lidar: 하드웨어 오프셋 보정
+   - os_lidar -> camera: 외부 캘리브레이션
+   - camera -> image: 내부 캘리브레이션 + 왜곡 보정
 
 4. **Unscented Kalman Filter (UKF)**: 비선형 상태 추정
    - 상태 벡터: [x, y, vx, vy]
@@ -545,7 +609,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-## 🔄 최근 업데이트 (2025-07-23)
+## 최근 업데이트 (2025-07-23)
 
 ### 주요 변경사항
 1. **dlib 의존성 제거**: 
@@ -569,13 +633,13 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-*CALICO - 자율주행 레이싱을 위한 빠르고 안정적인 센서 융합* 🏁
+*CALICO - 자율주행 레이싱을 위한 빠르고 안정적인 센서 융합*
 
 ---
 
-## 📊 Comprehensive Analysis Summary (2025-08-09)
+## Comprehensive Analysis Summary (2025-08-09)
 
-### 🔍 Architecture Assessment Results
+### Architecture Assessment Results
 
 **Current System Status:**
 - **Operational**: Core sensor fusion pipeline functioning with 19Hz stable output
@@ -595,7 +659,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 - Monolithic fusion node without modular sensor handling
 - Limited error recovery and fault tolerance mechanisms
 
-### ⚡ Performance Optimization Opportunities
+### Performance Optimization Opportunities
 
 **Algorithm Optimization:**
 - **Hungarian Algorithm**: Current O(n³) complexity can be reduced to O(n²) with gating
@@ -609,7 +673,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 - **Adaptive Processing**: Dynamic quality scaling based on computational load
 - **Predictive Filtering**: Pre-filtering detections before expensive matching
 
-### 🚨 Critical Issues Identified
+### Critical Issues Identified
 
 **Priority 1 - Safety & Stability (15 Critical Issues):**
 - Thread safety violations in static counter variables
@@ -634,7 +698,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-## 🎯 Priority Improvement Roadmap
+## Priority Improvement Roadmap
 
 ### Phase 0 - CRITICAL FIXES (Immediate - 2 weeks)
 
@@ -718,7 +782,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-## 💡 Innovative Feature Opportunities
+## Innovative Feature Opportunities
 
 ### Next-Generation Sensor Integration
 **Event-Based Camera Fusion:**
@@ -767,7 +831,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-## 📋 Technical Debt Summary
+## Technical Debt Summary
 
 ### Quantified Issue Analysis
 
@@ -814,7 +878,7 @@ CALICO는 이제 자체 UKF 구현 대신 `kalman_filters` 외부 라이브러�
 
 ---
 
-## 🎯 Recommended Actions
+## Recommended Actions
 
 ### Immediate Actions (This Sprint)
 1. **Fix Critical Safety Issues**

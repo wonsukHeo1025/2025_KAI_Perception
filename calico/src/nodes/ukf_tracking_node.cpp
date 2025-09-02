@@ -30,6 +30,10 @@ public:
         this->declare_parameter<double>("ukf.Q_process_diag_vel", 0.1);
         this->declare_parameter<bool>("use_imu", true);
         this->declare_parameter<double>("fixed_dt", 0.056);
+        // Time sync parameters
+        this->declare_parameter<std::string>("time_sync_mode", "arrival_ros"); // header | arrival_ros | arrival_wall
+        this->declare_parameter<double>("arrival_slop", 0.2);
+        this->declare_parameter<bool>("override_tracked_stamp_now", true);
         
         // IMU filter parameters (matching Python)
         this->declare_parameter<std::string>("imu_filter.type", "butterworth");
@@ -62,6 +66,14 @@ public:
         
         use_imu_ = this->get_parameter("use_imu").as_bool();
         fixed_dt_ = this->get_parameter("fixed_dt").as_double();
+        {
+            const auto mode = this->get_parameter("time_sync_mode").as_string();
+            if (mode == "header") time_sync_mode_ = TimeSyncMode::HEADER;
+            else if (mode == "arrival_wall") time_sync_mode_ = TimeSyncMode::ARRIVAL_WALL;
+            else time_sync_mode_ = TimeSyncMode::ARRIVAL_ROS;
+            arrival_slop_ = this->get_parameter("arrival_slop").as_double();
+            override_tracked_stamp_now_ = this->get_parameter("override_tracked_stamp_now").as_bool();
+        }
         
         // Initialize tracker with IMU transform
         auto transform_vec = this->get_parameter("imu_to_sensor_transform").as_double_array();
@@ -95,34 +107,77 @@ public:
             imu_compensator_ = std::make_unique<utils::IMUCompensator>(imu_config);
         }
         
-        // Setup QoS
-        rclcpp::QoS qos(10);
-        qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+        // Setup QoS (align with RELIABLE publishers)
+        rclcpp::QoS qos_rel(10);
+        qos_rel.reliability(rclcpp::ReliabilityPolicy::Reliable);
+        // IMU often publishes BestEffort (e.g., rosbag2 or sensor drivers)
+        rclcpp::QoS qos_bef(10);
+        qos_bef.reliability(rclcpp::ReliabilityPolicy::BestEffort);
         
-        // Create subscribers for time synchronization
-        if (use_imu_) {
-            cones_sub_.subscribe(this, "/cone/fused", qos.get_rmw_qos_profile());
-            imu_sub_.subscribe(this, "/ouster/imu", qos.get_rmw_qos_profile());
-            
-            // Create synchronizer
+        // Create subscribers according to sync mode
+        if (use_imu_ && time_sync_mode_ == TimeSyncMode::HEADER) {
+            // message_filters-based header sync
+            cones_sub_.subscribe(this, "/cone/fused", qos_rel.get_rmw_qos_profile());
+            imu_sub_.subscribe(this, "/ouster/imu", qos_bef.get_rmw_qos_profile());
+
             sync_ = std::make_shared<Synchronizer>(
-                SyncPolicy(20),  // queue size
-                cones_sub_,
-                imu_sub_);
-            sync_->setMaxIntervalDuration(rclcpp::Duration(0, 150000000));  // 0.15s slop
+                SyncPolicy(20),
+                cones_sub_, imu_sub_);
+            sync_->setMaxIntervalDuration(rclcpp::Duration::from_seconds(arrival_slop_));
             sync_->registerCallback(
                 std::bind(&UKFTrackingNode::synchronizedCallback, this,
-                         std::placeholders::_1, std::placeholders::_2));
+                          std::placeholders::_1, std::placeholders::_2));
         } else {
-            // Without IMU, use simple subscription
-            cones_only_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
-                "/cone/fused", qos,
-                std::bind(&UKFTrackingNode::conesOnlyCallback, this, std::placeholders::_1));
+            // Arrival-time based processing
+            if (use_imu_) {
+                imu_arrival_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+                    "/ouster/imu", qos_bef,
+                    [this](sensor_msgs::msg::Imu::SharedPtr msg){
+                        last_imu_msg_ = msg;
+                        last_imu_recv_time_ = nowForSync();
+                        if (imu_compensator_) {
+                            auto imu_data = utils::MessageConverter::fromImuMsg(*msg);
+                            imu_compensator_->processIMU(imu_data);
+                            utils::IMUData filtered = imu_data;
+                            auto filtered_acc = imu_compensator_->getCompensatedAcceleration();
+                            filtered.linear_accel_x = filtered_acc.x();
+                            filtered.linear_accel_y = filtered_acc.y();
+                            filtered.linear_accel_z = filtered_acc.z();
+                            auto ang = imu_compensator_->getAngularVelocity();
+                            filtered.angular_vel_x = ang.x();
+                            filtered.angular_vel_y = ang.y();
+                            filtered.angular_vel_z = ang.z();
+                            last_kf_imu_ = utils::MessageConverter::toKalmanIMUData(filtered);
+                            has_kf_imu_ = true;
+                        }
+                    });
+            }
+            cones_arrival_sub_ = this->create_subscription<custom_interface::msg::TrackedConeArray>(
+                "/cone/fused", qos_rel,
+                [this](custom_interface::msg::TrackedConeArray::SharedPtr msg){
+                    // Convert to detections
+                    auto cones = utils::MessageConverter::fromTrackedConeArray(*msg);
+                    auto detections = utils::MessageConverter::conesToDetections(cones);
+                    const auto t = nowForSync();
+                    double timestamp = t.seconds();
+
+                    if (use_imu_ && has_kf_imu_ && withinSlop(t, last_imu_recv_time_)) {
+                        auto imu_copy = last_kf_imu_;
+                        tracker_->update(detections, timestamp, &imu_copy);
+                    } else if (use_imu_) {
+                        // Update without IMU if not within slop
+                        tracker_->update(detections, timestamp, nullptr);
+                    } else {
+                        tracker_->update(detections, timestamp, nullptr);
+                    }
+
+                    publishTrackedConesWithStamp(msg->header);
+                });
         }
         
         // Create publisher
         tracked_cones_pub_ = this->create_publisher<custom_interface::msg::TrackedConeArray>(
-            "/cone/fused/ukf", qos);
+            "/cone/fused/ukf", qos_rel);
         
         // Add parameter callback for dynamic reconfiguration
         parameter_callback_handle_ = this->add_on_set_parameters_callback(
@@ -305,8 +360,22 @@ private:
                        tracked_cones.size(), tracker_->getNumTracks());
         }
     }
+
+    // Variant that can override timestamp
+    void publishTrackedConesWithStamp(const std_msgs::msg::Header& header) {
+        auto tracked_objects = tracker_->getTrackedObjects();
+        auto tracked_cones = utils::MessageConverter::trackedObjectsToCones(tracked_objects);
+        auto output_msg = utils::MessageConverter::toTrackedConeArray(tracked_cones);
+        output_msg.header = header;
+        if (override_tracked_stamp_now_) {
+            const auto t = nowForSync();
+            output_msg.header.stamp = t;
+        }
+        tracked_cones_pub_->publish(output_msg);
+    }
     
 private:
+    enum class TimeSyncMode { HEADER, ARRIVAL_ROS, ARRIVAL_WALL };
     // Tracker
     std::shared_ptr<kalman_filters::tracking::MultiTracker> tracker_;
     std::unique_ptr<utils::IMUCompensator> imu_compensator_;
@@ -318,6 +387,9 @@ private:
     
     // Simple subscriber (when IMU not used)
     rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr cones_only_sub_;
+    // Arrival-based subscribers
+    rclcpp::Subscription<custom_interface::msg::TrackedConeArray>::SharedPtr cones_arrival_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_arrival_sub_;
     
     // Publisher
     rclcpp::Publisher<custom_interface::msg::TrackedConeArray>::SharedPtr tracked_cones_pub_;
@@ -326,10 +398,31 @@ private:
     bool use_imu_;
     double fixed_dt_;
     Eigen::Matrix4d imu_to_sensor_transform_;
+    TimeSyncMode time_sync_mode_;
+    double arrival_slop_;
+    bool override_tracked_stamp_now_;
+    
+    // Arrival-time IMU cache
+    sensor_msgs::msg::Imu::SharedPtr last_imu_msg_;
+    rclcpp::Time last_imu_recv_time_{0, 0, RCL_ROS_TIME};
+    kalman_filters::tracking::IMUData last_kf_imu_{};
+    bool has_kf_imu_{false};
     
     // Parameter callback handle
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr 
         parameter_callback_handle_;
+
+    // Helpers
+    rclcpp::Time nowForSync() const {
+        if (time_sync_mode_ == TimeSyncMode::ARRIVAL_WALL) {
+            return rclcpp::Clock(RCL_SYSTEM_TIME).now();
+        }
+        return this->now();
+    }
+    bool withinSlop(const rclcpp::Time& a, const rclcpp::Time& b) const {
+        const rclcpp::Duration d = (a > b) ? (a - b) : (b - a);
+        return d <= rclcpp::Duration::from_seconds(arrival_slop_);
+    }
 };
 
 } // namespace calico

@@ -44,6 +44,33 @@ def generate_launch_description():
         description='Enable projection debug visualization'
     )
     
+    # Time sync and clock control
+    time_sync_mode_arg = DeclareLaunchArgument(
+        'time_sync_mode',
+        default_value='arrival_ros',
+        description='Time sync mode: header | arrival_ros | arrival_wall'
+    )
+    arrival_slop_arg = DeclareLaunchArgument(
+        'arrival_slop',
+        default_value='0.2',
+        description='Arrival-time synchronization slop in seconds'
+    )
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation time from /clock'
+    )
+    override_fused_stamp_now_arg = DeclareLaunchArgument(
+        'override_fused_stamp_now',
+        default_value='true',
+        description='Override fused output header.stamp with now()'
+    )
+    override_tracked_stamp_now_arg = DeclareLaunchArgument(
+        'override_tracked_stamp_now',
+        default_value='true',
+        description='Override tracked output header.stamp with now()'
+    )
+    
     debug_camera_id_arg = DeclareLaunchArgument(
         'debug_camera_id',
         default_value='camera_1',
@@ -57,6 +84,11 @@ def generate_launch_description():
     show_track_ids = LaunchConfiguration('show_track_ids')
     enable_debug_viz = LaunchConfiguration('enable_debug_viz')
     debug_camera_id = LaunchConfiguration('debug_camera_id')
+    time_sync_mode = LaunchConfiguration('time_sync_mode')
+    arrival_slop = LaunchConfiguration('arrival_slop')
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    override_fused_stamp_now = LaunchConfiguration('override_fused_stamp_now')
+    override_tracked_stamp_now = LaunchConfiguration('override_tracked_stamp_now')
     
     # Multi-camera IoU fusion node (boundingbox branch)
     multi_iou_fusion_node = Node(
@@ -67,7 +99,11 @@ def generate_launch_description():
         parameters=[{
             'config_file': config_file,
             'iou_threshold': iou_threshold,
-            'enable_debug_viz': enable_debug_viz
+            'enable_debug_viz': enable_debug_viz,
+            'time_sync_mode': time_sync_mode,
+            'arrival_slop': arrival_slop,
+            'override_fused_stamp_now': override_fused_stamp_now,
+            'use_sim_time': use_sim_time
         }]
     )
     
@@ -84,7 +120,11 @@ def generate_launch_description():
             'r_pos': 0.1,
             'max_age_before_deletion': 4,
             'min_hits_before_confirmation': 3,
-            'max_association_distance': 0.7
+            'max_association_distance': 0.7,
+            'time_sync_mode': time_sync_mode,
+            'arrival_slop': arrival_slop,
+            'override_tracked_stamp_now': override_tracked_stamp_now,
+            'use_sim_time': use_sim_time
         }]
     )
     
@@ -99,7 +139,8 @@ def generate_launch_description():
             'show_color_labels': False,
             'cone_height': 0.5,
             'cone_radius': 0.15,
-            'frame_id': 'ouster_lidar'
+            'frame_id': 'ouster_lidar',
+            'use_sim_time': use_sim_time
         }]
     )
     
@@ -145,6 +186,11 @@ def generate_launch_description():
         show_track_ids_arg,
         enable_debug_viz_arg,
         debug_camera_id_arg,
+        time_sync_mode_arg,
+        arrival_slop_arg,
+        use_sim_time_arg,
+        override_fused_stamp_now_arg,
+        override_tracked_stamp_now_arg,
         multi_iou_fusion_node,
         ukf_tracking_node,
         visualization_node,

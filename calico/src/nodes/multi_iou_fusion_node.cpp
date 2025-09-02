@@ -50,6 +50,10 @@ public:
         this->declare_parameter<std::string>("config_file", "");
         this->declare_parameter<double>("iou_threshold", 0.01);
         this->declare_parameter<bool>("enable_debug_viz", true);
+        // Time sync parameters
+        this->declare_parameter<std::string>("time_sync_mode", "arrival_ros"); // header | arrival_ros | arrival_wall
+        this->declare_parameter<double>("arrival_slop", 0.2); // seconds
+        this->declare_parameter<bool>("override_fused_stamp_now", true);
         
         // Load configuration
         std::string config_file = this->get_parameter("config_file").as_string();
@@ -72,9 +76,26 @@ public:
         // Get runtime parameters
         iou_threshold_ = this->get_parameter("iou_threshold").as_double();
         enable_debug_viz_ = this->get_parameter("enable_debug_viz").as_bool();
+        // Parse time sync parameters
+        {
+            const auto mode = this->get_parameter("time_sync_mode").as_string();
+            if (mode == "header") {
+                time_sync_mode_ = TimeSyncMode::HEADER;
+            } else if (mode == "arrival_wall") {
+                time_sync_mode_ = TimeSyncMode::ARRIVAL_WALL;
+            } else {
+                time_sync_mode_ = TimeSyncMode::ARRIVAL_ROS;
+            }
+            arrival_slop_ = this->get_parameter("arrival_slop").as_double();
+            override_fused_stamp_now_ = this->get_parameter("override_fused_stamp_now").as_bool();
+        }
         
         RCLCPP_INFO(this->get_logger(), "IoU threshold: %.2f", iou_threshold_);
         RCLCPP_INFO(this->get_logger(), "Debug visualization: %s", enable_debug_viz_ ? "enabled" : "disabled");
+        RCLCPP_INFO(this->get_logger(), "Time sync mode: %s", 
+            time_sync_mode_ == TimeSyncMode::HEADER ? "header" :
+            (time_sync_mode_ == TimeSyncMode::ARRIVAL_WALL ? "arrival_wall" : "arrival_ros"));
+        RCLCPP_INFO(this->get_logger(), "Arrival slop: %.3f s", arrival_slop_);
         
         // Setup publishers and subscribers
         setupPublishers();
@@ -111,6 +132,7 @@ private:
     };
     
     // Configuration
+    enum class TimeSyncMode { HEADER, ARRIVAL_ROS, ARRIVAL_WALL };
     std::vector<CameraConfig> camera_configs_;
     std::string lidar_boxes_topic_;
     std::string fused_output_topic_;
@@ -118,6 +140,9 @@ private:
     bool enable_debug_viz_;
     int sync_queue_size_;
     double sync_slop_;
+    TimeSyncMode time_sync_mode_;
+    double arrival_slop_;
+    bool override_fused_stamp_now_;
     
     // Publishers
     rclcpp::Publisher<TrackedConeArray>::SharedPtr fused_pub_;
@@ -132,6 +157,9 @@ private:
     using SyncPolicy2 = message_filters::sync_policies::ApproximateTime<
         BoundingBox3DArray, DetectionArray, DetectionArray, Image, Image>;
     std::shared_ptr<message_filters::Synchronizer<SyncPolicy2>> sync_2_;
+    using SyncPolicyNoImg = message_filters::sync_policies::ApproximateTime<
+        BoundingBox3DArray, DetectionArray, DetectionArray>;
+    std::shared_ptr<message_filters::Synchronizer<SyncPolicyNoImg>> sync_no_img_;
     
     // Hungarian matcher
     std::unique_ptr<fusion::HungarianMatcher> matcher_;
@@ -146,6 +174,19 @@ private:
     std::atomic<size_t> lidar_msg_count_{0};
     std::atomic<size_t> det1_msg_count_{0};
     std::atomic<size_t> det2_msg_count_{0};
+
+    // Raw subscriptions for counters and arrival-time sync
+    rclcpp::Subscription<BoundingBox3DArray>::SharedPtr lidar_raw_sub_;
+    std::vector<rclcpp::Subscription<DetectionArray>::SharedPtr> det_raw_subs_;
+    std::vector<rclcpp::Subscription<Image>::SharedPtr> img_raw_subs_;
+
+    // Arrival-time caches
+    BoundingBox3DArray::ConstSharedPtr last_lidar_boxes_;
+    rclcpp::Time last_lidar_recv_time_{0, 0, RCL_ROS_TIME};
+    std::vector<DetectionArray::ConstSharedPtr> last_detections_;
+    std::vector<rclcpp::Time> last_det_recv_times_;
+    std::vector<Image::ConstSharedPtr> last_images_;
+    std::vector<rclcpp::Time> last_img_recv_times_;
     
     void loadConfiguration(const std::string& config_file)
     {
@@ -335,98 +376,126 @@ private:
     
     void setupSubscribers()
     {
-        // QoS settings
+        // Initialize arrival-time caches according to number of cameras
+        last_detections_.resize(camera_configs_.size());
+        last_det_recv_times_.resize(camera_configs_.size(), rclcpp::Time(0, 0, RCL_ROS_TIME));
+        last_images_.resize(camera_configs_.size());
+        last_img_recv_times_.resize(camera_configs_.size(), rclcpp::Time(0, 0, RCL_ROS_TIME));
+
+        // QoS settings (align with RELIABLE publishers)
         rmw_qos_profile_t qos_profile = rmw_qos_profile_default;
-        qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+        qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_RELIABLE;
         qos_profile.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
-        qos_profile.depth = 10;  // Increased from 1 to buffer more messages
-        
-        // Create raw subscribers first to debug
-        auto lidar_raw_sub = this->create_subscription<BoundingBox3DArray>(
-            lidar_boxes_topic_, 10,
-            [this](const BoundingBox3DArray::ConstSharedPtr& msg) {
-                lidar_msg_count_++;
-                RCLCPP_DEBUG(this->get_logger(), "Received LiDAR msg with %zu boxes", msg->boxes.size());
-            });
-        
-        auto det1_raw_sub = this->create_subscription<DetectionArray>(
-            camera_configs_[0].detections_topic, 10,
-            [this](const DetectionArray::ConstSharedPtr& msg) {
-                det1_msg_count_++;
-                RCLCPP_DEBUG(this->get_logger(), "Received Cam1 detections: %zu", msg->detections.size());
-            });
-            
-        auto det2_raw_sub = this->create_subscription<DetectionArray>(
-            camera_configs_[1].detections_topic, 10,
-            [this](const DetectionArray::ConstSharedPtr& msg) {
-                det2_msg_count_++;
-                RCLCPP_DEBUG(this->get_logger(), "Received Cam2 detections: %zu", msg->detections.size());
-            });
-        
-        // LiDAR bounding boxes subscriber for synchronizer
-        lidar_sub_ = std::make_shared<message_filters::Subscriber<BoundingBox3DArray>>(
-            this, lidar_boxes_topic_, qos_profile);
-        
-        // Create subscribers for each camera
-        for (const auto& cam : camera_configs_) {
-            auto det_sub = std::make_shared<message_filters::Subscriber<DetectionArray>>(
-                this, cam.detections_topic, qos_profile);
-            detection_subs_.push_back(det_sub);
-            
-            if (enable_debug_viz_) {
-                auto img_sub = std::make_shared<message_filters::Subscriber<Image>>(
-                    this, cam.image_topic, qos_profile);
-                image_subs_.push_back(img_sub);
+        qos_profile.depth = 10;
+
+        if (time_sync_mode_ == TimeSyncMode::HEADER) {
+            // LiDAR bounding boxes subscriber for synchronizer
+            lidar_sub_ = std::make_shared<message_filters::Subscriber<BoundingBox3DArray>>(
+                this, lidar_boxes_topic_, qos_profile);
+
+            // Create subscribers for each camera
+            for (const auto& cam : camera_configs_) {
+                auto det_sub = std::make_shared<message_filters::Subscriber<DetectionArray>>(
+                    this, cam.detections_topic, qos_profile);
+                detection_subs_.push_back(det_sub);
+                
+                if (enable_debug_viz_) {
+                    auto img_sub = std::make_shared<message_filters::Subscriber<Image>>(
+                        this, cam.image_topic, qos_profile);
+                    image_subs_.push_back(img_sub);
+                }
             }
+
+            // Setup synchronizer for 2 cameras (most common case)
+            if (camera_configs_.size() == 2 && enable_debug_viz_) {
+                sync_2_ = std::make_shared<message_filters::Synchronizer<SyncPolicy2>>(
+                    SyncPolicy2(sync_queue_size_),
+                    *lidar_sub_,
+                    *detection_subs_[0], *detection_subs_[1],
+                    *image_subs_[0], *image_subs_[1]);
+                
+                // Set larger time tolerance for synchronization
+                sync_2_->setMaxIntervalDuration(rclcpp::Duration::from_seconds(sync_slop_));
+                
+                sync_2_->registerCallback(
+                    std::bind(&MultiIoUFusionNode::syncCallback2WithImages, this,
+                             std::placeholders::_1, std::placeholders::_2, 
+                             std::placeholders::_3, std::placeholders::_4,
+                             std::placeholders::_5));
+                
+                RCLCPP_INFO(this->get_logger(), "Synchronizer (header) with images configured for topics:");
+                RCLCPP_INFO(this->get_logger(), "  LiDAR: %s", lidar_boxes_topic_.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam1 Det: %s", camera_configs_[0].detections_topic.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam2 Det: %s", camera_configs_[1].detections_topic.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam1 Img: %s", camera_configs_[0].image_topic.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam2 Img: %s", camera_configs_[1].image_topic.c_str());
+                             
+            } else if (camera_configs_.size() == 2) {
+                // Without images for visualization
+                sync_no_img_ = std::make_shared<message_filters::Synchronizer<SyncPolicyNoImg>>(
+                    SyncPolicyNoImg(sync_queue_size_),
+                    *lidar_sub_, *detection_subs_[0], *detection_subs_[1]);
+                
+                // Set larger time tolerance for synchronization
+                sync_no_img_->setMaxIntervalDuration(rclcpp::Duration::from_seconds(sync_slop_));
+                
+                sync_no_img_->registerCallback(
+                    std::bind(&MultiIoUFusionNode::syncCallback2NoImages, this,
+                             std::placeholders::_1, std::placeholders::_2, 
+                             std::placeholders::_3));
+                
+                RCLCPP_INFO(this->get_logger(), "Synchronizer (header) without images configured for topics:");
+                RCLCPP_INFO(this->get_logger(), "  LiDAR: %s", lidar_boxes_topic_.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam1 Det: %s", camera_configs_[0].detections_topic.c_str());
+                RCLCPP_INFO(this->get_logger(), "  Cam2 Det: %s", camera_configs_[1].detections_topic.c_str());
+            }
+            RCLCPP_INFO(this->get_logger(), "Synchronizer setup complete");
+        } else {
+            // Arrival-time based synchronization using latest messages within slop
+            rclcpp::QoS qos(10);
+            qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+            
+            // Raw LiDAR subscriber (cache + counter + trigger)
+            lidar_raw_sub_ = this->create_subscription<BoundingBox3DArray>(
+                lidar_boxes_topic_, qos,
+                [this](const BoundingBox3DArray::ConstSharedPtr& msg) {
+                    lidar_msg_count_++;
+                    last_lidar_boxes_ = msg;
+                    last_lidar_recv_time_ = nowForSync();
+                    tryProcessByArrival();
+                });
+
+            // Raw detection subscribers per camera
+            det_raw_subs_.reserve(camera_configs_.size());
+            for (size_t i = 0; i < camera_configs_.size(); ++i) {
+                const auto& cam = camera_configs_[i];
+                auto sub = this->create_subscription<DetectionArray>(
+                    cam.detections_topic, qos,
+                    [this, i](const DetectionArray::ConstSharedPtr& msg) {
+                        if (i == 0) det1_msg_count_++; else if (i == 1) det2_msg_count_++;
+                        last_detections_[i] = msg;
+                        last_det_recv_times_[i] = nowForSync();
+                    });
+                det_raw_subs_.push_back(sub);
+            }
+
+            // Optional image subscribers for visualization constraints
+            if (enable_debug_viz_) {
+                img_raw_subs_.reserve(camera_configs_.size());
+                for (size_t i = 0; i < camera_configs_.size(); ++i) {
+                    const auto& cam = camera_configs_[i];
+                    auto sub = this->create_subscription<Image>(
+                        cam.image_topic, qos,
+                        [this, i](const Image::ConstSharedPtr& msg) {
+                            last_images_[i] = msg;
+                            last_img_recv_times_[i] = nowForSync();
+                        });
+                    img_raw_subs_.push_back(sub);
+                }
+            }
+
+            RCLCPP_INFO(this->get_logger(), "Arrival-time synchronization enabled (slop=%.3f s)", arrival_slop_);
         }
-        
-        // Setup synchronizer for 2 cameras (most common case)
-        if (camera_configs_.size() == 2 && enable_debug_viz_) {
-            sync_2_ = std::make_shared<message_filters::Synchronizer<SyncPolicy2>>(
-                SyncPolicy2(sync_queue_size_),
-                *lidar_sub_,
-                *detection_subs_[0], *detection_subs_[1],
-                *image_subs_[0], *image_subs_[1]);
-            
-            // Set larger time tolerance for synchronization
-            sync_2_->setMaxIntervalDuration(rclcpp::Duration(0, 200000000));  // 200ms
-            
-            sync_2_->registerCallback(
-                std::bind(&MultiIoUFusionNode::syncCallback2WithImages, this,
-                         std::placeholders::_1, std::placeholders::_2, 
-                         std::placeholders::_3, std::placeholders::_4,
-                         std::placeholders::_5));
-            
-            RCLCPP_INFO(this->get_logger(), "Synchronizer with images configured for topics:");
-            RCLCPP_INFO(this->get_logger(), "  LiDAR: %s", lidar_boxes_topic_.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam1 Det: %s", camera_configs_[0].detections_topic.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam2 Det: %s", camera_configs_[1].detections_topic.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam1 Img: %s", camera_configs_[0].image_topic.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam2 Img: %s", camera_configs_[1].image_topic.c_str());
-                         
-        } else if (camera_configs_.size() == 2) {
-            // Without images for visualization
-            using SyncPolicyNoImg = message_filters::sync_policies::ApproximateTime<
-                BoundingBox3DArray, DetectionArray, DetectionArray>;
-            auto sync_no_img = std::make_shared<message_filters::Synchronizer<SyncPolicyNoImg>>(
-                SyncPolicyNoImg(sync_queue_size_),
-                *lidar_sub_, *detection_subs_[0], *detection_subs_[1]);
-            
-            // Set larger time tolerance for synchronization
-            sync_no_img->setMaxIntervalDuration(rclcpp::Duration(0, 200000000));  // 200ms
-            
-            sync_no_img->registerCallback(
-                std::bind(&MultiIoUFusionNode::syncCallback2NoImages, this,
-                         std::placeholders::_1, std::placeholders::_2, 
-                         std::placeholders::_3));
-            
-            RCLCPP_INFO(this->get_logger(), "Synchronizer without images configured for topics:");
-            RCLCPP_INFO(this->get_logger(), "  LiDAR: %s", lidar_boxes_topic_.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam1 Det: %s", camera_configs_[0].detections_topic.c_str());
-            RCLCPP_INFO(this->get_logger(), "  Cam2 Det: %s", camera_configs_[1].detections_topic.c_str());
-        }
-        
-        RCLCPP_INFO(this->get_logger(), "Synchronizer setup complete");
     }
     
     void syncCallback2WithImages(
@@ -650,7 +719,14 @@ private:
         
         // Convert to TrackedConeArray using MessageConverter
         auto msg = calico::utils::MessageConverter::toTrackedConeArray(cones);
-        msg.header = lidar_boxes->header;  // Preserve original header
+        msg.header = lidar_boxes->header;  // Preserve original frame and stamp by default
+        if (override_fused_stamp_now_) {
+            // Override timestamp to now based on selected clock
+            const auto t = (time_sync_mode_ == TimeSyncMode::ARRIVAL_WALL)
+                ? rclcpp::Clock(RCL_SYSTEM_TIME).now()
+                : this->now();
+            msg.header.stamp = t;            
+        }
         
         fused_pub_->publish(msg);
         
@@ -820,6 +896,59 @@ private:
         
         // Publish debug image
         debug_image_pubs_[cam_idx]->publish(*cv_ptr->toImageMsg());
+    }
+    
+    // Helpers for arrival-based sync
+    rclcpp::Time nowForSync() const {
+        if (time_sync_mode_ == TimeSyncMode::ARRIVAL_WALL) {
+            return rclcpp::Clock(RCL_SYSTEM_TIME).now();
+        }
+        return this->now();
+    }
+
+    bool withinSlop(const rclcpp::Time& a, const rclcpp::Time& b) const {
+        const rclcpp::Duration d = (a > b) ? (a - b) : (b - a);
+        return d <= rclcpp::Duration::from_seconds(arrival_slop_);
+    }
+
+    void tryProcessByArrival() {
+        if (time_sync_mode_ == TimeSyncMode::HEADER) return; // Not used in header sync
+        if (!last_lidar_boxes_) return;
+
+        // Build detection inputs per camera. If a camera is missing or stale, use an empty array.
+        std::vector<DetectionArray::ConstSharedPtr> det_msgs;
+        det_msgs.reserve(camera_configs_.size());
+        for (size_t i = 0; i < camera_configs_.size(); ++i) {
+            bool usable = last_detections_[i] && withinSlop(last_lidar_recv_time_, last_det_recv_times_[i]);
+            if (usable) {
+                det_msgs.push_back(last_detections_[i]);
+            } else {
+                auto empty = std::make_shared<DetectionArray>();
+                empty->header = last_lidar_boxes_->header; // keep frame alignment
+                det_msgs.push_back(empty);
+            }
+        }
+
+        // Debug image visualization must not gate publishing. Only include images if ALL are fresh.
+        std::vector<Image::ConstSharedPtr> img_msgs; // leave empty to disable viz when any is missing/stale
+        if (enable_debug_viz_) {
+            bool all_images_fresh = true;
+            for (size_t i = 0; i < camera_configs_.size(); ++i) {
+                if (!last_images_[i] || !withinSlop(last_lidar_recv_time_, last_img_recv_times_[i])) {
+                    all_images_fresh = false;
+                    break;
+                }
+            }
+            if (all_images_fresh) {
+                img_msgs.reserve(camera_configs_.size());
+                for (size_t i = 0; i < camera_configs_.size(); ++i) {
+                    img_msgs.push_back(last_images_[i]);
+                }
+            }
+        }
+
+        // Always process with available inputs; unmatched cones remain "Unknown".
+        processFusion(last_lidar_boxes_, det_msgs, img_msgs);
     }
     
 };
