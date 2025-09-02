@@ -1,0 +1,41 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/user1/nav2_ws/install/serial/include/**",
+        "/home/user1/nav2_ws/install/openslam_gmapping/include/**",
+        "/home/user1/ouster_ws/install/ouster_ros/include/**",
+        "/home/user1/ouster_ws/install/ouster_sensor_msgs/include/**",
+        "/home/user1/ros2_ws/install/yolo_msgs/include/**",
+        "/home/user1/ros2_ws/install/usb_cam/include/**",
+        "/home/user1/ros2_ws/install/ublox_gps/include/**",
+        "/home/user1/ros2_ws/install/ublox_msgs/include/**",
+        "/home/user1/ros2_ws/install/ublox_serialization/include/**",
+        "/home/user1/ros2_ws/install/rtcm_msgs/include/**",
+        "/home/user1/ros2_ws/install/gps_imu_fusion/include/**",
+        "/home/user1/ros2_ws/install/cone_detection/include/**",
+        "/home/user1/ros2_ws/install/custom_interface/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/user1/ros2_ws/src/INS/RTK_GPS_NTRIP/ublox_gps/include/**",
+        "/home/user1/ros2_ws/src/INS/RTK_GPS_NTRIP/ublox_msgs/include/**",
+        "/home/user1/ros2_ws/src/INS/RTK_GPS_NTRIP/ublox_serialization/include/**",
+        "/home/user1/ros2_ws/src/INS/gps_imu_fusion/include/**",
+        "/home/user1/ros2_ws/src/INS/myahrs_ros2_driver/myahrs_ros2_driver/include/**",
+        "/home/user1/ros2_ws/src/cone_detection/include/**",
+        "/home/user1/ros2_ws/src/custom_interface/include/**",
+        "/home/user1/ros2_ws/src/usb_cam/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

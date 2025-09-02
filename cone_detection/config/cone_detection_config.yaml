@@ -1,0 +1,54 @@
+cone_detection:
+  ros__parameters:
+    # Input topic selection (choose one based on your setup)
+    #input_topic_name: "/ouster/points"                      # Default: raw LiDAR data
+    input_topic_name: "/ouster/points/interpolated"  # Alternative: FILC enhanced data (4x density)
+    
+    x_threshold_enable: false      # X축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    y_threshold_enable: false      # Y축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    z_threshold_enable: true      # Z축 필터링 활성화 여부 (True: 활성화, False: 비활성화)
+    x_threshold_min: 0.0         # X축 최소값 (필터링 기준, 최소 범위) 
+    x_threshold_max: 10.0           # X축 최대값 (필터링 기준, 최대 범위)
+    y_threshold_min: -3.0          # Y축 최소값 (필터링 기준, 최소 범위)
+    y_threshold_max: 3.0           # Y축 최대값 (필터링 기준, 최대 범위)
+    z_threshold_min: -3.2          # Z축 최소값 (필터링 기준, 지면 제거를 위한 값)
+    z_threshold_max: -0.3           # Z축 최대값 (필터링 기준, 최대 높이 제한)
+    min_distance: 0.5               # 최소 거리 필터링 (LIDAR로부터 너무 가까운 점 제거)
+    max_distance: 25.0             # 최대 거리 필터링 (LIDAR로부터 너무 먼 점 제거)
+    intensity_threshold: 0.1       # Intensity 필터링 기준값 (값이 낮은 점 제거)
+    plane_distance_threshold: 0.10  # RANSAC 평면 세그먼테이션의 거리 허용 오차 (어떤 점 is in 평면 판별 기준)
+    
+    # ROI 0도 기준은 라이다 왼쪽이 0도, 라이다 오른쪽이 180도, 라이다 정면이 90도
+    roi_angle_min: 0.0             # ROI(관심 영역)의 최소 각도 (X축 기준, 좌측 범위)
+    roi_angle_max: 180.0            # ROI(관심 영역)의 최대 각도 (X축 기준, 우측 범위)
+
+    voxel_leaf_size: 0.1           # Voxel Grid 필터링의 leaf 크기 (다운샘플링 해상도)
+    
+    # Clustering method selection
+    use_dbscan: true                # Use DBSCAN (true) or Euclidean clustering (false)
+    
+    # DBSCAN/Euclidean clustering parameters
+    ec_cluster_tolerance: 0.30      # DBSCAN: eps (neighborhood radius) / Euclidean: distance threshold
+    ec_min_cluster_size: 3          # DBSCAN: minPts (minimum points) / Euclidean: min cluster size
+    ec_max_cluster_size: 35         # Maximum points in a cluster (both methods)
+
+    # 검증 단계 파라미터 (최종)
+    min_cone_height: 0.1           # 최종 콘으로 인정할 최소 높이(m)
+    max_cone_height: 0.6           # 최종 콘으로 인정할 최대 높이(m)
+
+    # Legacy 2-stage validation parameters (deprecated - removed from code)
+    # These parameters are kept for reference but are no longer used
+    # enable_stage2_validation: false
+    
+    # UKF Tracking parameters
+    enable_tracking: true               # Enable UKF tracking
+    max_association_distance: 0.5       # Maximum distance for cone association (m)
+    min_hits_before_confirmation: 3     # Minimum hits before track is confirmed
+    max_age_before_deletion: 8          # Maximum frames without update before deletion
+    
+    # UKF filter parameters
+    ukf_p_initial_pos: 1.0              # Initial position covariance
+    ukf_p_initial_vel: 10.0             # Initial velocity covariance
+    ukf_r_measurement: 0.1              # Measurement noise
+    ukf_q_pos: 0.01                     # Process noise for position
+    ukf_q_vel: 0.1                      # Process noise for velocity
