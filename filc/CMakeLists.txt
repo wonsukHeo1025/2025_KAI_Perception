@@ -49,7 +49,6 @@ find_package(OpenMP)
 
 # 포함 디렉토리
 include_directories(
-  include
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
@@ -78,11 +77,6 @@ endif()
 install(TARGETS
   improved_interpolation_node
   DESTINATION lib/${PROJECT_NAME}
-)
-
-# 헤더 파일 설치
-install(DIRECTORY include/
-  DESTINATION include
 )
 
 # 설정 파일 설치
