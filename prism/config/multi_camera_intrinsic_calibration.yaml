@@ -1,0 +1,67 @@
+camera_1:
+  calibration_date: '2025-08-20 16:17:26'
+  camera_matrix:
+    columns: 3
+    data:
+    - - 463.9186249624122
+      - 0.0
+      - 334.66835933975716
+    - - 0.0
+      - 463.8214827698133
+      - 187.82161536326356
+    - - 0.0
+      - 0.0
+      - 1.0
+    rows: 3
+  chessboard:
+    pattern_size:
+      columns: 8
+      rows: 9
+    square_size_meters: 0.07
+  distortion_coefficients:
+    columns: 5
+    data:
+    - 0.09810743988052466
+    - -0.6717642186234357
+    - -0.00010477674586266845
+    - -0.0019440759464733378
+    - 1.1443015384731787
+    rows: 1
+  image_size:
+    height: 360
+    width: 640
+  rms_reprojection_error: 0.3851374575040474
+
+camera_2:
+  calibration_date: '2025-08-20 15:43:55'
+  camera_matrix:
+    columns: 3
+    data:
+    - - 474.4123189111415
+      - 0.0
+      - 341.95545337711593
+    - - 0.0
+      - 473.8807843591584
+      - 186.69314593389416
+    - - 0.0
+      - 0.0
+      - 1.0
+    rows: 3
+  chessboard:
+    pattern_size:
+      columns: 8
+      rows: 9
+    square_size_meters: 0.07
+  distortion_coefficients:
+    columns: 5
+    data:
+    - 0.044901608964672234
+    - -0.19313300439149164
+    - 0.0008851088845194323
+    - -0.0003407820658887399
+    - 0.14254907997636998
+    rows: 1
+  image_size:
+    height: 360
+    width: 640
+  rms_reprojection_error: 0.11393635107766405

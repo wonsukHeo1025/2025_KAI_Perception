@@ -1,0 +1,82 @@
+prism_interpolation_node:
+  ros__parameters:
+    interpolation:
+      scale_factor: 2.0  # Override for testing lower density
+
+projection_debug_node:
+  ros__parameters:
+    camera_ids: ["camera_1", "camera_2"]
+    camera_topics:
+      camera_1: "/camera_1/dbg_image"
+      camera_2: "/camera_2/dbg_image"
+    lidar_topic: "/ouster/points/interpolated"
+    output_topic_prefix: "/prism/projection_debug"
+    calibration_directory: ""  # Leave empty to use package default directory
+    time_tolerance_sec: 0.2
+    enable_time_sync: true
+    enable_status_overlay: true
+    point_radius: 1
+    projection.min_depth: 0.5
+    projection.max_depth: 100.0
+    projection.margin_pixels: 5
+    projection.enable_frustum_culling: true
+    projection.enable_distortion_correction: true
+    projection.enable_debug_visualization: true
+        
+prism_fusion_node:
+  ros__parameters:
+    # Topics
+    topics:
+      lidar_input: "/ouster/points"
+      camera_1_input: "/usb_cam_1/image_raw"
+      camera_2_input: "/usb_cam_2/image_raw"
+      colored_output: "/ouster/points/colored"
+
+    # Calibration
+    calibration:
+      path: ""  # Leave empty to use package default directory
+      intrinsic_file: "multi_camera_intrinsic_calibration.yaml"
+      extrinsic_file: "multi_camera_extrinsic_calibration.yaml"
+
+    # Synchronization & throttling for stability
+    synchronization:
+      queue_size: 1
+      min_interval_ms: 0
+
+    # Color mapping control
+    enable_color_mapping: true  # Set to false for interpolation-only mode (FILC-like performance)
+
+    # Interpolation disabled (use raw points)
+    interpolation:
+      enabled: true
+      scale_factor: 2.0
+      input_channels: 32
+      output_topic: "/ouster/points/interpolated"
+      spline_tension: 0.5
+      enable_discontinuity_detection: true
+      grid_mode: true
+      discontinuity_threshold: 0.5
+
+    # Projection configuration
+    projection:
+      enable_distortion_correction: true
+      enable_frustum_culling: true
+      min_depth: 0.5
+      max_depth: 100.0
+      parallel_cameras: true
+      sample_stride: 2           # use every 2nd point for speed
+      max_points: 120000         # cap per frame (0 disables)
+
+    # Color extraction config (node expects 'extraction.*')
+    extraction:
+      interpolation: "bilinear"
+      enable_subpixel: true
+      confidence_threshold: 0.7
+      blur_kernel_size: 0
+
+    # Fusion configuration
+    fusion:
+      strategy: "weighted_average"
+      confidence_threshold: 0.5
+      distance_weight_factor: 1.0
+      enable_outlier_rejection: true
