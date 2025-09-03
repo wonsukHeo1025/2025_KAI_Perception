@@ -26,7 +26,8 @@ class IMUCalibration(Node):
         # IMU 구독자 설정
         self.subscription = self.create_subscription(
             Imu,
-            '/ouster/imu',
+            #'/ouster/imu',
+            '/imu/data',
             self.imu_callback,
             qos_profile
         )

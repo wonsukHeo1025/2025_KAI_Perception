@@ -81,7 +81,8 @@ install(DIRECTORY
 
 install(PROGRAMS
   scripts/gps_vis/gps_to_cartesian.py
-  scripts/gps_vis/gps_vis_node.py
+  scripts/gps_vis/gps_online_vis_node.py
+  scripts/gps_vis/gps_offline_vis_node.py
   scripts/gps_vis/fixed_gps_publisher.py
   scripts/cone_frame_transformer.py
   scripts/velocity_magnitude_node.py
