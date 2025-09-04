@@ -2,6 +2,8 @@
 
 import cv2
 import numpy as np
+import os
+from pathlib import Path
 import rclpy
 from rclpy.node import Node
 import threading
@@ -12,9 +14,10 @@ from std_msgs.msg import String
 from yolo_msgs.msg import BoundingBox2D, Detection, DetectionArray
 from cv_bridge import CvBridge
 from ultralytics import YOLO
+from ament_index_python.packages import get_package_share_directory
 
 class YoloCameraProcessor:
-    def __init__(self, name, model, threshold, iou, max_det, bridge, node, input_topic,
+    def __init__(self, name, model, threshold, iou, max_det, bridge, node, input_topic, 
                 detection_topic, debug_topic, info_topic):
         self.name = name
         self.model = model
@@ -190,8 +193,8 @@ class YoloDualCameraNode(Node):
         self.declare_parameter("imgsz_width", 640)
         
         # 카메라 토픽 설정
-        self.declare_parameter("camera1_image_topic", "/usb_cam_1/image_raw/uncompressed")
-        self.declare_parameter("camera2_image_topic", "/usb_cam_2/image_raw/uncompressed")
+        self.declare_parameter("camera1_image_topic", "/usb_cam_1/image_raw")
+        self.declare_parameter("camera2_image_topic", "/usb_cam_2/image_raw")
         
         # 파라미터 값 가져오기
         self.threshold = self.get_parameter("threshold").get_parameter_value().double_value
@@ -203,10 +206,40 @@ class YoloDualCameraNode(Node):
         self.camera1_image_topic = self.get_parameter("camera1_image_topic").get_parameter_value().string_value
         self.camera2_image_topic = self.get_parameter("camera2_image_topic").get_parameter_value().string_value
 
-        # YOLO 모델 로드 (모델 경로는 실제 환경에 맞게 수정)
-        model_path = "/home/kdh/KAI_Perception_ws/src/yolo_ros/best.pt"
-        self.get_logger().info(f"YOLO 모델 로드 중: {model_path}")
+        # ========================================================================
+        # YOLO 모델 로드 - get_package_share_directory 사용
+        # ========================================================================
+        try:
+            # 패키지 설치 경로에서 모델 파일 찾기
+            package_share_dir = get_package_share_directory('yolo_ros')
+            model_path = os.path.join(package_share_dir, 'models', 'best.pt')
+        except Exception as e:
+            self.get_logger().warning(f"패키지 경로에서 모델을 찾을 수 없습니다: {e}")
+            # 환경변수 fallback
+            model_path = os.environ.get('YOLO_MODEL_PATH')
+            if not model_path:
+                # 소스 디렉토리 fallback - 상대 경로 사용
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                model_path = os.path.join(current_dir, '..', 'models', 'best.pt')
+                if not os.path.exists(model_path):
+                    # 파라미터로 전달된 경로 시도
+                    model_path = self.get_parameter("model").get_parameter_value().string_value
+                    if not model_path:
+                        # 최종 fallback
+                        model_path = "models/best.pt"
+        
+        # 모델 파일 존재 여부 확인
+        if not os.path.exists(model_path):
+            self.get_logger().error(f"❌ YOLO 모델 파일을 찾을 수 없습니다: {model_path}")
+            self.get_logger().error(f"❌ 다음 위치 중 하나에 best.pt 파일을 배치하세요:")
+            self.get_logger().error(f"   1. 패키지 설치: share/yolo_ros/models/best.pt")
+            self.get_logger().error(f"   2. 환경 변수: YOLO_MODEL_PATH")
+            self.get_logger().error(f"   3. 소스 디렉토리: src/yolo_ros/yolo_ros/models/best.pt")
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+        
+        self.get_logger().info(f"✅ YOLO 모델 로드 중: {model_path}")
         self.model = YOLO(model_path)
+        # ========================================================================
 
         # cv_bridge 초기화
         self.cv_bridge = CvBridge()

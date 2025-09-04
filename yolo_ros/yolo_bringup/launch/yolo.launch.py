@@ -17,6 +17,8 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch.conditions import IfCondition
+from ament_index_python.packages import get_package_share_directory
+import os
 
 def generate_launch_description():
     # run_yolo 함수: 실제로 각 노드를 생성 및 실행하는 부분.
@@ -36,12 +38,25 @@ def generate_launch_description():
             description="Ultralytics 모델 타입 (YOLO, World 중 선택)",
         )
 
+        # Use package-relative path or environment variable for model path
+        # First check if YOLO_MODEL_PATH environment variable is set, otherwise use package-relative path
+        default_model_path = os.environ.get('YOLO_MODEL_PATH')
+        if not default_model_path:
+            # Use the best.pt file in the models directory as default
+            package_dir = get_package_share_directory('yolo_ros')
+            default_model_path = os.path.join(package_dir, 'models', 'best.pt')
+            # If best.pt doesn't exist in share/models, try source directory
+            if not os.path.exists(default_model_path):
+                default_model_path = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                    'models', 'best.pt'
+                )
+        
         model = LaunchConfiguration("model")
         model_cmd = DeclareLaunchArgument(
             "model",
-            # default_value="/home/user1/yolov12/pretrained_models/yolov12n.pt",
-            default_value="/home/user1/yolov12/pretrained_models/yolov8_cone.pt",
-            description="모델 이름 또는 경로",
+            default_value=default_model_path,
+            description="모델 이름 또는 경로 (환경변수 YOLO_MODEL_PATH 또는 패키지 내 models/best.pt 사용)",
         )
 
         tracker = LaunchConfiguration("tracker")
