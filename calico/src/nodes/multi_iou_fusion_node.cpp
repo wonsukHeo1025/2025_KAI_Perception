@@ -138,6 +138,7 @@ private:
     std::string fused_output_topic_;
     double iou_threshold_;
     bool enable_debug_viz_;
+    bool filter_unknown_ = false;
     int sync_queue_size_;
     double sync_slop_;
     TimeSyncMode time_sync_mode_;
@@ -215,6 +216,14 @@ private:
             auto cameras = calico_config["cameras"];
             auto calib_config = calico_config["calibration"];
             std::string config_folder = calib_config["config_folder"].as<std::string>();
+
+            // Optional: filter_unknown to drop Unknown cones from output
+            if (calico_config["filter_unknown"]) {
+                filter_unknown_ = calico_config["filter_unknown"].as<bool>();
+            } else {
+                filter_unknown_ = false;
+            }
+            RCLCPP_INFO(this->get_logger(), "Filter unknown cones: %s", filter_unknown_ ? "enabled" : "disabled");
             
             // Handle relative paths - make them relative to config file directory
             if (config_folder == "./" || config_folder[0] != '/') {
@@ -706,7 +715,14 @@ private:
     {
         // Convert to internal Cone representation first
         std::vector<calico::utils::Cone> cones;
+        size_t dropped_unknown = 0;
+        cones.reserve(lidar_boxes->boxes.size());
         for (size_t i = 0; i < lidar_boxes->boxes.size(); ++i) {
+            const bool is_unknown = (class_names[i] == "Unknown");
+            if (filter_unknown_ && is_unknown) {
+                dropped_unknown++;
+                continue;
+            }
             calico::utils::Cone cone;
             cone.x = lidar_boxes->boxes[i].center.position.x;
             cone.y = lidar_boxes->boxes[i].center.position.y;
@@ -729,9 +745,15 @@ private:
         }
         
         fused_pub_->publish(msg);
-        
-        RCLCPP_INFO(this->get_logger(), "Published %zu fused cones to %s", 
-                    lidar_boxes->boxes.size(), fused_output_topic_.c_str());
+
+        if (filter_unknown_) {
+            RCLCPP_INFO(this->get_logger(),
+                        "Published %zu fused cones to %s (dropped %zu Unknown)",
+                        cones.size(), fused_output_topic_.c_str(), dropped_unknown);
+        } else {
+            RCLCPP_INFO(this->get_logger(), "Published %zu fused cones to %s",
+                        cones.size(), fused_output_topic_.c_str());
+        }
     }
     
     std::vector<cv::Point2f> project3DBoxCorners(const vision_msgs::msg::BoundingBox3D& box3d,
