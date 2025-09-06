@@ -1,6 +1,8 @@
 calico:
   cones_topic: "/cone/lidar/box" 
   output_topic: "/cone/fused"
+  # Unknown(미분류) 콘을 결과에서 제거할지 여부
+  filter_unknown: true
 
   max_matching_distance: 25.0 # 픽셀 단위 매칭 거리 임계값
 
@@ -19,4 +21,3 @@ calico:
     history_depth: 1
     sync_slop: 0.1 # 초 단위
     sync_queue_size: 10
-

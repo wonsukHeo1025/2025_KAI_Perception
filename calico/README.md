@@ -186,6 +186,7 @@ CALICO는 자체 설정 파일을 사용:
 calico:
   cones_topic: "/cone/lidar"        # 코드에서 자동으로 "/cone/lidar/box"로 오버라이드됨
   output_topic: "/cone/fused"
+  filter_unknown: false              # Unknown(미분류) 콘을 결과에서 제거할지 여부
 
   max_matching_distance: 25.0        # 픽셀 단위 매칭 거리 임계값
 
