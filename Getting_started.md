@@ -66,3 +66,46 @@ ros2 launch gps_imu_fusion ekf_fusion.launch.py
 ros2 run gps_imu_fusion velocity_magnitude_node.py
 ```
 
+---
+
+## 통합 런치 파일 사용법
+
+### 필수 드라이버 (개별 실행)
+
+- 라이다 드라이버
+```
+ros2 launch ouster_ros driver.launch.py params_file:='/home/kai/KAI_ws/src/ouster-ros/ouster-ros/config/driver_params.yaml'
+```
+
+- 카메라 드라이버
+```
+usbcam1
+```
+```
+usbcam2
+```
+
+### 통합 런치 파일
+
+- 비전 파이프라인 (YOLO + 라이다 보간 + 콘 디텍션 + 카메라-라이다 퓨전)
+```
+ros2 launch calico perception_vision.launch.py
+```
+
+- 네비게이션 파이프라인 (GPS + IMU + tf_static + 속도 노드)
+```
+ros2 launch calico perception_navigation.launch.py
+```
+
+### 개별 실행이 필요한 노드
+
+- NTRIP RTK 신호 수신 클라이언트 (인터넷 연결 확인 후 패킷 받아와질때까지 명령어 무한 반복 실행)
+```
+ros2 launch ntrip_client ntrip_client_launch.py
+```
+
+- GPS + IMU EKF 퓨전
+```
+ros2 launch gps_imu_fusion ekf_fusion.launch.py
+```
+
