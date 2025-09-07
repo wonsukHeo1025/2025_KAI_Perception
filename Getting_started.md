@@ -36,6 +36,26 @@ ros2 launch calico calico_full.launch.py
 ros2 launch gps_imu_fusion tf_static.launch.py
 ```
 
+- GPS 노드 키기 (ttyinfo.sh 로 /dev/ttyACM* 번호 체크)
+```
+ros2 launch ublox_gps ublox_gps_node-launch.py
+```
+
+- NTRIP RTK 신호 수신 클라이언트 (인터넷 연결 확인 후 패킷 받아와질때까지 명령어 무한 반복 실행)
+```
+ros2 launch ntrip_client ntrip_client_launch.py
+```
+
+- NTRIP 신호 Ublox 변환 노드
+```
+ros2 run fix2nmea fix2nmea
+```
+
+- IMU 드라이버
+```
+ros2 launch myahrs_ros2_driver myahrs_ros2_driver.launch.py 
+```
+
 - GPS + IMU EKF 퓨전
 ```
 ros2 launch gps_imu_fusion ekf_fusion.launch.py 
