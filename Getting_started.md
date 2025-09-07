@@ -70,24 +70,9 @@ ros2 run gps_imu_fusion velocity_magnitude_node.py
 
 ## 통합 런치 파일 사용법
 
-### 필수 드라이버 (개별 실행)
-
-- 라이다 드라이버
-```
-ros2 launch ouster_ros driver.launch.py params_file:='/home/kai/KAI_ws/src/ouster-ros/ouster-ros/config/driver_params.yaml'
-```
-
-- 카메라 드라이버
-```
-usbcam1
-```
-```
-usbcam2
-```
-
 ### 통합 런치 파일
 
-- 비전 파이프라인 (YOLO + 라이다 보간 + 콘 디텍션 + 카메라-라이다 퓨전)
+- 비전 파이프라인 (라이다 드라이버 + 카메라 드라이버 + YOLO + 라이다 보간 + 콘 디텍션 + 카메라-라이다 퓨전)
 ```
 ros2 launch calico perception_vision.launch.py
 ```
