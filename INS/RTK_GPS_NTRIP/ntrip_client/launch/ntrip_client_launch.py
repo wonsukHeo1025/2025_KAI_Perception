@@ -12,7 +12,7 @@ def generate_launch_description():
  
           DeclareLaunchArgument('host',                  default_value='www.gnssdata.or.kr'),
           DeclareLaunchArgument('port',                  default_value='2101'),
-          DeclareLaunchArgument('mountpoint',            default_value='DBON-RTCM31'), 
+          DeclareLaunchArgument('mountpoint',            default_value='SWGS-RTCM31'), 
           DeclareLaunchArgument('ntrip_version',         default_value='None'),
           DeclareLaunchArgument('authenticate',          default_value='True'),
           DeclareLaunchArgument('username',              default_value='wonsuk1025@konkuk.ac.kr'),
