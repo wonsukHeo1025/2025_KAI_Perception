@@ -4,6 +4,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 from .metrics import TopicStats
 
@@ -63,6 +64,31 @@ class TopicsManager:
         self.monitors: Dict[str, TopicMonitor] = {}
         self.subscriptions = []
 
+    def _get_qos_profile(self, topic_name: str) -> QoSProfile:
+        """토픽별 적절한 QoS 프로필 반환"""
+        # LiDAR 데이터는 BEST_EFFORT로 설정 (실시간성 우선)
+        if topic_name in ['/ouster/points', 'lidar']:
+            return QoSProfile(
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+                durability=DurabilityPolicy.VOLATILE,
+                depth=5
+            )
+
+        # 카메라 데이터는 BEST_EFFORT (실시간성 우선)
+        elif topic_name in ['/usb_cam_1/image_raw', '/usb_cam_2/image_raw', 'cam1', 'cam2']:
+            return QoSProfile(
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+                durability=DurabilityPolicy.VOLATILE,
+                depth=5
+            )
+
+        # 기타 토픽들은 RELIABLE 기본값
+        return QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+            depth=10
+        )
+
     def _resolve_type(self, type_str: str):
         t = _TYPE_MAP.get(type_str)
         if t is None:
@@ -82,7 +108,12 @@ class TopicsManager:
             mon.stats.add_event(data=msg)
             mon.extra_value = self._extract_value(mon, msg)
 
-        sub = self.node.create_subscription(msg_type, topic, callback, 10)
+        # 토픽별 QoS 프로필 적용
+        qos_profile = self._get_qos_profile(name)
+        reliability_name = "RELIABLE" if qos_profile.reliability == ReliabilityPolicy.RELIABLE else "BEST_EFFORT"
+        self.node.get_logger().info(f"Subscribing to {topic} with QoS: reliability={reliability_name}")
+
+        sub = self.node.create_subscription(msg_type, topic, callback, qos_profile)
         self.subscriptions.append(sub)
 
     def _extract_value(self, mon: TopicMonitor, msg: Any) -> Optional[str]:

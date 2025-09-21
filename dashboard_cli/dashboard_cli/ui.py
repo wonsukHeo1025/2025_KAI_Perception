@@ -1,7 +1,7 @@
 import os
 import shutil
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # ANSI Color codes
 class Colors:
@@ -78,7 +78,7 @@ def _pad_visible(s: str, width: int) -> str:
     return s2
 
 
-def render_dashboard(perception: Dict[str, Any], planning: Dict[str, Any], control: Dict[str, Any], safety: Dict[str, Any], nodes: Dict[str, Any]) -> str:
+def render_dashboard(perception: Dict[str, Any], planning: Dict[str, Any], control: Dict[str, Any], safety: Dict[str, Any], nodes: Dict[str, Any], devices: Optional[list] = None) -> str:
     cols, _ = _term_size()
     lines: List[str] = []
 
@@ -231,6 +231,30 @@ def render_dashboard(perception: Dict[str, Any], planning: Dict[str, Any], contr
             text_padded = _pad_visible(text, fixed_width)
             lines.append(f"{Colors.CYAN}║{Colors.RESET} {text_padded} {Colors.CYAN}║{Colors.RESET}")
 
+    # DEVICES 섹션 (ttyACM/ttyUSB/video)
+    if devices:
+        section_separator('double')
+        section_header("DEVICES (ttyACM/ttyUSB/video)", Colors.WHITE)
+
+        # 헤더 행
+        headers = [f"{Colors.DIM}DEVICE{Colors.RESET}", f"{Colors.DIM}VENDOR{Colors.RESET}", f"{Colors.DIM}MODEL{Colors.RESET}", f"{Colors.DIM}BY-ID{Colors.RESET}"]
+        fixed_width = cols - 4
+        colW = max(10, (fixed_width - 6) // 4)  # 4열 균등
+        header_line = f"{_pad_visible(headers[0], colW)} │ {_pad_visible(headers[1], colW)} │ {_pad_visible(headers[2], colW)} │ {_pad_visible(headers[3], colW)}"
+        header_line = _pad_visible(header_line, fixed_width)
+        lines.append(f"{Colors.CYAN}║{Colors.RESET} {header_line} {Colors.CYAN}║{Colors.RESET}")
+
+        for d in devices[:8]:  # 최대 8개 표시
+            dev = d.dev
+            vendor = d.vendor or ''
+            model = d.model or ''
+            if d.cls:
+                model = f"{model} {Colors.DIM}[{d.cls}]{Colors.RESET}"
+            by_id = d.by_id or ''
+            line = f"{_pad_visible(dev, colW)} │ {_pad_visible(vendor, colW)} │ {_pad_visible(model, colW)} │ {_pad_visible(by_id, colW)}"
+            line = _pad_visible(line, fixed_width)
+            lines.append(f"{Colors.CYAN}║{Colors.RESET} {line} {Colors.CYAN}║{Colors.RESET}")
+
     # 푸터
     lines.append(f"{Colors.CYAN}╚{header_sep}╝{Colors.RESET}")
 
@@ -242,4 +266,3 @@ def clear_screen():
         os.system('clear')
     except Exception:
         pass
-

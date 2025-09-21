@@ -9,6 +9,7 @@ from .topics import TopicsManager
 from .nodes import NodeWatcher
 from .ui import render_dashboard, clear_screen
 from .spec import TOPICS, EXPECTED_NODES, UI_REFRESH_HZ, SHOW_NODES
+from .devices import DeviceScanner
 
 
 class DashboardNode(Node):
@@ -21,10 +22,13 @@ class DashboardNode(Node):
 
         # Nodes
         self.node_watcher = NodeWatcher(self, EXPECTED_NODES)
+        self.dev_scanner = DeviceScanner()
+        self.devices = []
 
         # Timers
         ui_period = 1.0 / max(1e-3, UI_REFRESH_HZ)
         self.create_timer(0.5, self._scan_nodes)
+        self.create_timer(2.0, self._scan_devices)
         self.create_timer(ui_period, self._update_ui)
 
         self.last_render = 0.0
@@ -35,6 +39,13 @@ class DashboardNode(Node):
             self.node_watcher.scan()
         except Exception as e:
             self.get_logger().warn(f'Node scan failed: {e}')
+
+    def _scan_devices(self):
+        try:
+            self.dev_scanner.scan()
+            self.devices = self.dev_scanner.devices
+        except Exception as e:
+            self.get_logger().warn(f'Device scan failed: {e}')
 
     def _update_ui(self):
         # split by module for UI convenience
@@ -54,7 +65,7 @@ class DashboardNode(Node):
         nodes = self.node_watcher.status() if SHOW_NODES else {}
 
         clear_screen()
-        print(render_dashboard(perception, planning, control, safety, nodes))
+        print(render_dashboard(perception, planning, control, safety, nodes, self.devices))
 
 
 def main():
