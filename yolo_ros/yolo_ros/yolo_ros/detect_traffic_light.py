@@ -30,15 +30,13 @@ class TrafficLightDetector(Node):
 
         # --- 파라미터 선언 ---
         self.declare_parameter('roi_mode', 'manual', ParameterDescriptor(description='ROI 감지 모드: \'yolo\' 또는 \'manual\''))
-        self.declare_parameter('target_class_name', 'traffic_light', ParameterDescriptor(description='YOLO 모드에서 찾을 객체의 클래스 이름'))
-        self.declare_parameter('pixel_threshold', 200, ParameterDescriptor(description='색상 검출을 위한 최소 픽셀 수 임계값'))
+        self.declare_parameter('pixel_threshold', 200, ParameterDescriptor(description='(Manual 모드용) 색상 검출을 위한 최소 픽셀 수 임계값'))
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
         self.declare_parameter('show_mask_windows', True, ParameterDescriptor(description='마스크 시각화 창 표시 여부'))
         
         # --- 파라미터 값 읽어오기 ---
         self.roi_mode = self.get_parameter('roi_mode').get_parameter_value().string_value
-        self.target_class_name = self.get_parameter('target_class_name').get_parameter_value().string_value
         self.threshold_pixels = self.get_parameter('pixel_threshold').get_parameter_value().integer_value
         self.show_camera_windows = self.get_parameter('show_camera_windows').get_parameter_value().bool_value
         self.show_control_windows = self.get_parameter('show_control_windows').get_parameter_value().bool_value
@@ -58,6 +56,7 @@ class TrafficLightDetector(Node):
         self.retry_green_service_timer = None
         self.gui_is_first_print = True; self.gui_state = "Waiting..."
         self.gui_service_status = "Idle"; self.gui_last_error = "None"
+        self.gui_confidence = "N/A"
         
         if self.show_camera_windows or self.show_control_windows or self.show_mask_windows:
             self.setup_control_windows()
@@ -99,8 +98,6 @@ class TrafficLightDetector(Node):
         self.gui_detection_status = "YOLO-Based"
         if self.show_camera_windows: 
             cv2.namedWindow("Camera 1"); cv2.namedWindow("Camera 2")
-            # Camera 1 창 생성 후 Threshold 트랙바 추가
-            cv2.createTrackbar("Threshold (Pixels)", "Camera 1", self.threshold_pixels, 1000, lambda v: setattr(self, 'threshold_pixels', v))
         
         image_sub1 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_1/image_raw/compressed')
         yolo_sub1 = message_filters.Subscriber(self, DetectionArray, '/camera_1/detections')
@@ -126,11 +123,58 @@ class TrafficLightDetector(Node):
             cv2.setMouseCallback("Camera 2", self.mouse_callback, 2)
 
     def yolo_synchronized_callback(self, img1_msg, yolo1_msg, img2_msg, yolo2_msg):
+        if self.mission_triggered or not rclpy.ok(): return
+
         frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
         frame2 = self.bridge.compressed_imgmsg_to_cv2(img2_msg, 'bgr8')
-        roi1 = self.get_box_from_yolo(yolo1_msg)
-        roi2 = self.get_box_from_yolo(yolo2_msg)
-        self.process_and_update(frame1, roi1, frame2, roi2)
+
+        # 각 카메라 스트림에서 최상의 탐지 결과 찾기
+        best_detection1 = self.find_best_traffic_light_detection(yolo1_msg)
+        best_detection2 = self.find_best_traffic_light_detection(yolo2_msg)
+
+        # 두 카메라를 통틀어 가장 신뢰도 높은 탐지 결과 선택
+        overall_best_detection = None
+        if best_detection1 and best_detection2:
+            overall_best_detection = best_detection1 if best_detection1.score > best_detection2.score else best_detection2
+        elif best_detection1:
+            overall_best_detection = best_detection1
+        elif best_detection2:
+            overall_best_detection = best_detection2
+        
+        final_color = "Unknown"
+        
+        if overall_best_detection:
+            # 탐지된 신호등 색상 로그 출력
+            self.get_logger().info(f"YOLO detected: '{overall_best_detection.class_name}' with confidence {overall_best_detection.score:.2f}")
+            
+            # 탐지된 클래스 이름을 상태로 매핑
+            if 'green light' in overall_best_detection.class_name:
+                final_color = "Green"
+            elif 'red light' in overall_best_detection.class_name:
+                final_color = "Red"
+            
+            self.gui_confidence = f"{overall_best_detection.score:.2f}"
+
+            # 녹색 신호등이 탐지되면 미션 트리거
+            if final_color == "Green":
+                self.trigger_green_mission()
+        else:
+            self.gui_confidence = "N/A"
+
+        # GUI 상태 업데이트
+        self.gui_state = final_color.capitalize()
+        self.gui_detection_status = f"YOLO-Based ({'Detected' if final_color != 'Unknown' else 'Not Detected'})"
+        self.update_gui()
+
+        # 시각화
+        if rclpy.ok() and (self.show_camera_windows or self.show_control_windows or self.show_mask_windows):
+            if self.show_camera_windows:
+                self.draw_yolo_boxes(frame1, yolo1_msg)
+                self.draw_yolo_boxes(frame2, yolo2_msg)
+                cv2.imshow("Camera 1", frame1)
+                cv2.imshow("Camera 2", frame2)
+            key = cv2.waitKey(1) & 0xFF
+
 
     def manual_synchronized_callback(self, img1_msg, img2_msg):
         frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
@@ -170,6 +214,7 @@ class TrafficLightDetector(Node):
         self.gui_state = final_color.capitalize()
         pixel_str = f"R:{best_res['result']['red_pixels']}, G:{best_res['result']['green_pixels']} / Thr:{self.threshold_pixels}"
         self.gui_detection_status = f"{self.roi_mode.capitalize()}-Based ({'Detected' if final_color != 'Unknown' else 'Not Detected'}) | {pixel_str}"
+        self.gui_confidence = "N/A (HSV Range-based)"
 
         if final_color.lower() == 'green': self.trigger_green_mission()
         self.update_gui()
@@ -198,13 +243,42 @@ class TrafficLightDetector(Node):
 
         return {'result': detection_result, 'result_img': result_img, 'roi': roi_tuple, 'box_found': box_found}
 
-    def get_box_from_yolo(self, yolo_msg):
+    def find_best_traffic_light_detection(self, yolo_msg):
+        """YOLO 탐지 결과에서 가장 신뢰도 높은 신호등 객체를 찾습니다."""
+        best_detection = None
+        highest_score = -1.0
+        target_classes = ['green light', 'red light', 'unknown light']
         for detection in yolo_msg.detections:
-            if detection.class_name == self.target_class_name:
-                cx, cy = detection.bbox.center.position.x, detection.bbox.center.position.y
-                w, h = detection.bbox.size.x, detection.bbox.size.y
-                return (int(cx - w/2), int(cy - h/2), int(w), int(h))
-        return None
+            if detection.class_name in target_classes:
+                if detection.score > highest_score:
+                    highest_score = detection.score
+                    best_detection = detection
+        return best_detection
+
+    def draw_yolo_boxes(self, frame, yolo_msg):
+        """프레임에 YOLO 탐지 결과를 시각화합니다."""
+        target_classes = ['green light', 'red light', 'unknown light']
+        for detection in yolo_msg.detections:
+            if detection.class_name in target_classes:
+                cx = detection.bbox.center.position.x
+                cy = detection.bbox.center.position.y
+                w = detection.bbox.size.x
+                h = detection.bbox.size.y
+                x1 = int(cx - w / 2)
+                y1 = int(cy - h / 2)
+                x2 = int(cx + w / 2)
+                y2 = int(cy + h / 2)
+
+                color_map = {
+                    'green light': (0, 255, 0),
+                    'red light': (0, 0, 255),
+                    'unknown light': (255, 255, 0)
+                }
+                color = color_map.get(detection.class_name, (255, 0, 255))
+                
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                label = f"{detection.class_name}: {detection.score:.2f}"
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     def detect_color_with_hsv_range(self, roi_img):
         hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
@@ -233,7 +307,7 @@ class TrafficLightDetector(Node):
         print((f"--- Traffic Light Detector ({self.roi_mode.capitalize()}) ---\n"
                f"  Detection   : {self.gui_detection_status}\n"
                f"  State       : {self.gui_state}\n"
-               f"  Confidence  : N/A (HSV Range-based)\n"
+               f"  Confidence  : {self.gui_confidence}\n"
                f"  Service     : {self.gui_service_status}\n"
                f"  Last Error  : {self.gui_last_error}\n"
                f"-------------------------------------"), flush=True)
