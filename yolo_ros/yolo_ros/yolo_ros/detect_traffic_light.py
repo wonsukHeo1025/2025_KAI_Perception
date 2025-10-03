@@ -8,12 +8,17 @@ from std_srvs.srv import Trigger
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
-from yolo_msgs.msg import DetectionArray
 import message_filters
 import sys
 import json
 import os
+from types import SimpleNamespace
 from rcl_interfaces.msg import ParameterDescriptor
+
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 
 class TrafficLightDetector(Node):
     """
@@ -26,6 +31,7 @@ class TrafficLightDetector(Node):
         super().__init__('traffic_light_detector')
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.script_dir = script_dir
         self.ROI_FILE = os.path.join(script_dir, "rois.json")
 
         # --- 파라미터 선언 ---
@@ -34,6 +40,9 @@ class TrafficLightDetector(Node):
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
         self.declare_parameter('show_mask_windows', True, ParameterDescriptor(description='마스크 시각화 창 표시 여부'))
+        default_model_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
+        self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_lightonly_251002.pt YOLO 모델 파일 경로'))
+        self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
         
         # --- 파라미터 값 읽어오기 ---
         self.roi_mode = self.get_parameter('roi_mode').get_parameter_value().string_value
@@ -41,6 +50,9 @@ class TrafficLightDetector(Node):
         self.show_camera_windows = self.get_parameter('show_camera_windows').get_parameter_value().bool_value
         self.show_control_windows = self.get_parameter('show_control_windows').get_parameter_value().bool_value
         self.show_mask_windows = self.get_parameter('show_mask_windows').get_parameter_value().bool_value
+        self.configured_yolo_model_path = self.get_parameter('yolo_model_path').get_parameter_value().string_value
+        yolo_conf_param = self.get_parameter('yolo_confidence_threshold').get_parameter_value().double_value
+        self.yolo_confidence_threshold = max(0.0, min(yolo_conf_param, 1.0))
         
         self.hsv_ranges = {
             'red1': {'h_min': 0, 'h_max': 31, 's_min': 150, 's_max': 255, 'v_min': 173, 'v_max': 255},
@@ -49,6 +61,9 @@ class TrafficLightDetector(Node):
         }
 
         self.bridge = CvBridge()
+        self.yolo_model = None
+        self.resolved_yolo_model_path = None
+        self.yolo_target_classes = {'green light', 'red light', 'unknown light'}
         self.green_client = self.create_client(Trigger, '/green')
         self.virtual_green_service = self.create_service(Trigger, '/virtual_green', self.virtual_green_callback)
         
@@ -95,15 +110,30 @@ class TrafficLightDetector(Node):
             cv2.namedWindow("Mask 1"); cv2.namedWindow("Mask 2")
 
     def init_yolo_mode(self):
-        self.gui_detection_status = "YOLO-Based"
-        if self.show_camera_windows: 
+        self.gui_detection_status = f"YOLO-Based | Thr:{self.yolo_confidence_threshold:.2f}"
+        if self.show_camera_windows:
             cv2.namedWindow("Camera 1"); cv2.namedWindow("Camera 2")
-        
+
+        if YOLO is None:
+            self.get_logger().fatal("Ultralytics YOLO 패키지를 찾을 수 없어 'yolo' 모드를 사용할 수 없습니다.")
+            self.create_timer(0.1, self.destroy_node); return
+
+        if self.yolo_model is None:
+            model_path = self.resolve_yolo_model_path()
+            if model_path is None:
+                self.get_logger().fatal("유효한 YOLO 모델 경로를 찾을 수 없습니다. 'yolo_model_path' 파라미터와 models 디렉터리를 확인하세요.")
+                self.create_timer(0.1, self.destroy_node); return
+            try:
+                self.yolo_model = YOLO(model_path)
+                self.resolved_yolo_model_path = model_path
+                self.get_logger().info(f"Loaded YOLO model from '{model_path}'")
+            except Exception as exc:
+                self.get_logger().fatal(f"YOLO 모델 로드에 실패했습니다: {exc}")
+                self.create_timer(0.1, self.destroy_node); return
+
         image_sub1 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_1/image_raw/compressed')
-        yolo_sub1 = message_filters.Subscriber(self, DetectionArray, '/camera_1/detections')
         image_sub2 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_2/image_raw/compressed')
-        yolo_sub2 = message_filters.Subscriber(self, DetectionArray, '/camera_2/detections')
-        self.time_synchronizer = message_filters.ApproximateTimeSynchronizer([image_sub1, yolo_sub1, image_sub2, yolo_sub2], queue_size=10, slop=0.2)
+        self.time_synchronizer = message_filters.ApproximateTimeSynchronizer([image_sub1, image_sub2], queue_size=10, slop=0.2)
         self.time_synchronizer.registerCallback(self.yolo_synchronized_callback)
 
     def init_manual_mode(self):
@@ -122,15 +152,21 @@ class TrafficLightDetector(Node):
             cv2.setMouseCallback("Camera 1", self.mouse_callback, 1)
             cv2.setMouseCallback("Camera 2", self.mouse_callback, 2)
 
-    def yolo_synchronized_callback(self, img1_msg, yolo1_msg, img2_msg, yolo2_msg):
+    def yolo_synchronized_callback(self, img1_msg, img2_msg):
         if self.mission_triggered or not rclpy.ok(): return
 
-        frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
-        frame2 = self.bridge.compressed_imgmsg_to_cv2(img2_msg, 'bgr8')
+        try:
+            frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
+            frame2 = self.bridge.compressed_imgmsg_to_cv2(img2_msg, 'bgr8')
+        except Exception as exc:
+            self.get_logger().error(f"Compressed image 변환 실패: {exc}")
+            return
 
-        # 각 카메라 스트림에서 최상의 탐지 결과 찾기
-        best_detection1 = self.find_best_traffic_light_detection(yolo1_msg)
-        best_detection2 = self.find_best_traffic_light_detection(yolo2_msg)
+        results1 = self.run_yolo_inference(frame1)
+        results2 = self.run_yolo_inference(frame2)
+
+        best_detection1 = self.find_best_traffic_light_detection(results1)
+        best_detection2 = self.find_best_traffic_light_detection(results2)
 
         # 두 카메라를 통틀어 가장 신뢰도 높은 탐지 결과 선택
         overall_best_detection = None
@@ -144,33 +180,25 @@ class TrafficLightDetector(Node):
         final_color = "Unknown"
         
         if overall_best_detection:
-            # 탐지된 신호등 색상 로그 출력
             self.get_logger().info(f"YOLO detected: '{overall_best_detection.class_name}' with confidence {overall_best_detection.score:.2f}")
-            
-            # 탐지된 클래스 이름을 상태로 매핑
             if 'green light' in overall_best_detection.class_name:
                 final_color = "Green"
             elif 'red light' in overall_best_detection.class_name:
                 final_color = "Red"
-            
             self.gui_confidence = f"{overall_best_detection.score:.2f}"
-
-            # 녹색 신호등이 탐지되면 미션 트리거
-            if final_color == "Green":
-                self.trigger_green_mission()
+            if final_color == "Green": self.trigger_green_mission()
         else:
             self.gui_confidence = "N/A"
 
-        # GUI 상태 업데이트
         self.gui_state = final_color.capitalize()
-        self.gui_detection_status = f"YOLO-Based ({'Detected' if final_color != 'Unknown' else 'Not Detected'})"
+        detection_state = "Detected" if final_color != "Unknown" else "Not Detected"
+        self.gui_detection_status = f"YOLO-Based ({detection_state}) | Thr:{self.yolo_confidence_threshold:.2f}"
         self.update_gui()
 
-        # 시각화
         if rclpy.ok() and (self.show_camera_windows or self.show_control_windows or self.show_mask_windows):
             if self.show_camera_windows:
-                self.draw_yolo_boxes(frame1, yolo1_msg)
-                self.draw_yolo_boxes(frame2, yolo2_msg)
+                self.draw_yolo_results(frame1, results1)
+                self.draw_yolo_results(frame2, results2)
                 cv2.imshow("Camera 1", frame1)
                 cv2.imshow("Camera 2", frame2)
             key = cv2.waitKey(1) & 0xFF
@@ -243,42 +271,78 @@ class TrafficLightDetector(Node):
 
         return {'result': detection_result, 'result_img': result_img, 'roi': roi_tuple, 'box_found': box_found}
 
-    def find_best_traffic_light_detection(self, yolo_msg):
-        """YOLO 탐지 결과에서 가장 신뢰도 높은 신호등 객체를 찾습니다."""
+    def resolve_yolo_model_path(self):
+        candidates = []
+        if self.configured_yolo_model_path:
+            if os.path.isabs(self.configured_yolo_model_path):
+                candidates.append(self.configured_yolo_model_path)
+            else:
+                rel_path = self.configured_yolo_model_path.lstrip('/\\')
+                candidates.append(os.path.join(self.script_dir, self.configured_yolo_model_path))
+                candidates.append(os.path.join(self.script_dir, rel_path))
+        default_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
+        candidates.append(default_path)
+        for path in candidates:
+            if path and os.path.exists(path): return path
+        return None
+
+    def run_yolo_inference(self, frame):
+        if self.yolo_model is None: return None
+        try:
+            return self.yolo_model(frame, verbose=False)[0]
+        except Exception as exc:
+            self.get_logger().error(f"YOLO 추론 실패: {exc}")
+            return None
+
+    def find_best_traffic_light_detection(self, yolo_results):
+        """YOLO 결과에서 가장 신뢰도 높은 신호등 객체를 찾습니다."""
+        if yolo_results is None or not getattr(yolo_results, 'boxes', None): return None
+        names = yolo_results.names
         best_detection = None
-        highest_score = -1.0
-        target_classes = ['green light', 'red light', 'unknown light']
-        for detection in yolo_msg.detections:
-            if detection.class_name in target_classes:
-                if detection.score > highest_score:
-                    highest_score = detection.score
-                    best_detection = detection
+        best_score = self.yolo_confidence_threshold
+        for box in yolo_results.boxes:
+            class_idx = int(box.cls[0])
+            try:
+                class_name = names[class_idx] if isinstance(names, (list, tuple)) else names.get(class_idx, str(class_idx))
+            except Exception:
+                class_name = str(class_idx)
+            if class_name not in self.yolo_target_classes: continue
+            score = float(box.conf[0])
+            if score < self.yolo_confidence_threshold: continue
+            if best_detection is None or score > best_score:
+                best_detection = SimpleNamespace(class_name=class_name, score=score)
+                best_score = score
         return best_detection
 
-    def draw_yolo_boxes(self, frame, yolo_msg):
+    def draw_yolo_results(self, frame, yolo_results):
         """프레임에 YOLO 탐지 결과를 시각화합니다."""
-        target_classes = ['green light', 'red light', 'unknown light']
-        for detection in yolo_msg.detections:
-            if detection.class_name in target_classes:
-                cx = detection.bbox.center.position.x
-                cy = detection.bbox.center.position.y
-                w = detection.bbox.size.x
-                h = detection.bbox.size.y
-                x1 = int(cx - w / 2)
-                y1 = int(cy - h / 2)
-                x2 = int(cx + w / 2)
-                y2 = int(cy + h / 2)
-
-                color_map = {
-                    'green light': (0, 255, 0),
-                    'red light': (0, 0, 255),
-                    'unknown light': (255, 255, 0)
-                }
-                color = color_map.get(detection.class_name, (255, 0, 255))
-                
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                label = f"{detection.class_name}: {detection.score:.2f}"
-                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        if yolo_results is None or not getattr(yolo_results, 'boxes', None): return
+        names = yolo_results.names
+        for box in yolo_results.boxes:
+            class_idx = int(box.cls[0])
+            try:
+                class_name = names[class_idx] if isinstance(names, (list, tuple)) else names.get(class_idx, str(class_idx))
+            except Exception:
+                class_name = str(class_idx)
+            if class_name not in self.yolo_target_classes: continue
+            score = float(box.conf[0])
+            if score < self.yolo_confidence_threshold: continue
+            box_xywh = box.xywh[0].detach().cpu().numpy()
+            x_center, y_center, w, h = box_xywh
+            x1 = int(x_center - w / 2); y1 = int(y_center - h / 2)
+            x2 = int(x_center + w / 2); y2 = int(y_center + h / 2)
+            x1 = max(0, x1); y1 = max(0, y1)
+            x2 = min(frame.shape[1] - 1, x2); y2 = min(frame.shape[0] - 1, y2)
+            if x2 <= x1 or y2 <= y1: continue
+            color_map = {
+                'green light': (0, 255, 0),
+                'red light': (0, 0, 255),
+                'unknown light': (255, 255, 0)
+            }
+            color = color_map.get(class_name, (255, 0, 255))
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            label = f"{class_name}: {score:.2f}"
+            cv2.putText(frame, label, (x1, max(0, y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     def detect_color_with_hsv_range(self, roi_img):
         hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
