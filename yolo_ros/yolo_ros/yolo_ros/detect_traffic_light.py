@@ -26,6 +26,8 @@ class TrafficLightDetector(Node):
     HSV 색상 범위를 트랙바로 실시간 조절하고, GUI 창 표시 여부를 파라미터로 제어하는 기능이 통합되었습니다.
     """
     GUI_HEIGHT = 6
+    GREEN_TOP_MAX_RATIO = 0.05  # 최대 허용 상단 점등 비율 (전체 영역 대비)
+    GREEN_BOTTOM_MIN_RATIO = 0.4  # 최소 요구 하단 점등 비율 (전체 영역 대비)
 
     def __init__(self):
         super().__init__('traffic_light_detector')
@@ -35,7 +37,7 @@ class TrafficLightDetector(Node):
         self.ROI_FILE = os.path.join(script_dir, "rois.json")
 
         # --- 파라미터 선언 ---
-        self.declare_parameter('roi_mode', 'manual', ParameterDescriptor(description='ROI 감지 모드: \'yolo\' 또는 \'manual\''))
+        self.declare_parameter('roi_mode', 'yolo', ParameterDescriptor(description='ROI 감지 모드: \'yolo\' 또는 \'manual\''))
         self.declare_parameter('pixel_threshold', 200, ParameterDescriptor(description='(Manual 모드용) 색상 검출을 위한 최소 픽셀 수 임계값'))
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
@@ -165,8 +167,11 @@ class TrafficLightDetector(Node):
         results1 = self.run_yolo_inference(frame1)
         results2 = self.run_yolo_inference(frame2)
 
-        best_detection1 = self.find_best_traffic_light_detection(results1)
-        best_detection2 = self.find_best_traffic_light_detection(results2)
+        detections1 = self.extract_valid_detections(frame1, results1)
+        detections2 = self.extract_valid_detections(frame2, results2)
+
+        best_detection1 = self.find_best_traffic_light_detection(detections1)
+        best_detection2 = self.find_best_traffic_light_detection(detections2)
 
         # 두 카메라를 통틀어 가장 신뢰도 높은 탐지 결과 선택
         overall_best_detection = None
@@ -197,8 +202,8 @@ class TrafficLightDetector(Node):
 
         if rclpy.ok() and (self.show_camera_windows or self.show_control_windows or self.show_mask_windows):
             if self.show_camera_windows:
-                self.draw_yolo_results(frame1, results1)
-                self.draw_yolo_results(frame2, results2)
+                self.draw_yolo_results(frame1, detections1)
+                self.draw_yolo_results(frame2, detections2)
                 cv2.imshow("Camera 1", frame1)
                 cv2.imshow("Camera 2", frame2)
             key = cv2.waitKey(1) & 0xFF
@@ -294,55 +299,96 @@ class TrafficLightDetector(Node):
             self.get_logger().error(f"YOLO 추론 실패: {exc}")
             return None
 
-    def find_best_traffic_light_detection(self, yolo_results):
-        """YOLO 결과에서 가장 신뢰도 높은 신호등 객체를 찾습니다."""
-        if yolo_results is None or not getattr(yolo_results, 'boxes', None): return None
-        names = yolo_results.names
-        best_detection = None
-        best_score = self.yolo_confidence_threshold
-        for box in yolo_results.boxes:
-            class_idx = int(box.cls[0])
-            try:
-                class_name = names[class_idx] if isinstance(names, (list, tuple)) else names.get(class_idx, str(class_idx))
-            except Exception:
-                class_name = str(class_idx)
-            if class_name not in self.yolo_target_classes: continue
-            score = float(box.conf[0])
-            if score < self.yolo_confidence_threshold: continue
-            if best_detection is None or score > best_score:
-                best_detection = SimpleNamespace(class_name=class_name, score=score)
-                best_score = score
-        return best_detection
+    def find_best_traffic_light_detection(self, detections):
+        """검증을 통과한 탐지 중에서 가장 높은 신뢰도를 반환합니다."""
+        if not detections: return None
+        return max(detections, key=lambda det: det.score)
 
-    def draw_yolo_results(self, frame, yolo_results):
-        """프레임에 YOLO 탐지 결과를 시각화합니다."""
-        if yolo_results is None or not getattr(yolo_results, 'boxes', None): return
+    def draw_yolo_results(self, frame, detections):
+        """프레임에 검증된 YOLO 탐지 결과를 시각화합니다."""
+        if not detections: return
+        color_map = {
+            'green light': (0, 255, 0),
+            'red light': (0, 0, 255),
+            'unknown light': (255, 255, 0)
+        }
+        for det in detections:
+            x1, y1, x2, y2 = det.bbox
+            color = color_map.get(det.class_name, (255, 0, 255))
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            label = f"{det.class_name}: {det.score:.2f}"
+            cv2.putText(frame, label, (x1, max(0, y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    def extract_valid_detections(self, frame, yolo_results):
+        """YOLO 결과에서 필요한 클래스만 추려 이중 검증을 통과한 탐지를 반환합니다."""
+        detections = []
+        if yolo_results is None or not getattr(yolo_results, 'boxes', None):
+            return detections
+
         names = yolo_results.names
+        height, width = frame.shape[:2]
         for box in yolo_results.boxes:
             class_idx = int(box.cls[0])
             try:
                 class_name = names[class_idx] if isinstance(names, (list, tuple)) else names.get(class_idx, str(class_idx))
             except Exception:
                 class_name = str(class_idx)
-            if class_name not in self.yolo_target_classes: continue
+            if class_name not in self.yolo_target_classes:
+                continue
+
             score = float(box.conf[0])
-            if score < self.yolo_confidence_threshold: continue
+            if score < self.yolo_confidence_threshold:
+                continue
+
             box_xywh = box.xywh[0].detach().cpu().numpy()
             x_center, y_center, w, h = box_xywh
-            x1 = int(x_center - w / 2); y1 = int(y_center - h / 2)
-            x2 = int(x_center + w / 2); y2 = int(y_center + h / 2)
-            x1 = max(0, x1); y1 = max(0, y1)
-            x2 = min(frame.shape[1] - 1, x2); y2 = min(frame.shape[0] - 1, y2)
-            if x2 <= x1 or y2 <= y1: continue
-            color_map = {
-                'green light': (0, 255, 0),
-                'red light': (0, 0, 255),
-                'unknown light': (255, 255, 0)
-            }
-            color = color_map.get(class_name, (255, 0, 255))
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            label = f"{class_name}: {score:.2f}"
-            cv2.putText(frame, label, (x1, max(0, y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            x1 = int(x_center - w / 2)
+            y1 = int(y_center - h / 2)
+            x2 = int(x_center + w / 2)
+            y2 = int(y_center + h / 2)
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(width - 1, x2)
+            y2 = min(height - 1, y2)
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            is_valid = True
+            if class_name == 'green light':
+                is_valid = self.is_green_light_active(frame, (x1, y1, x2, y2))
+                if not is_valid:
+                    self.get_logger().debug(
+                        f"Rejected green light detection due to guard check (score={score:.2f}).")
+
+            if is_valid:
+                detections.append(SimpleNamespace(class_name=class_name, score=score, bbox=(x1, y1, x2, y2)))
+
+        return detections
+
+    def is_green_light_active(self, frame, bbox):
+        """green light 탐지 결과가 실제 점등 상태인지 이진화 기반으로 검증합니다."""
+        x1, y1, x2, y2 = bbox
+        roi = frame[y1:y2, x1:x2]
+        if roi.size == 0:
+            return False
+
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        h, w = binary.shape
+        if h < 2 or w < 2:
+            return False
+
+        split_idx = h // 2
+        top_half = binary[:split_idx, :]
+        bottom_half = binary[split_idx:, :]
+
+        total_pixels = h * w
+        top_ratio = float(np.count_nonzero(top_half)) / total_pixels
+        bottom_ratio = float(np.count_nonzero(bottom_half)) / total_pixels
+
+        return top_ratio <= self.GREEN_TOP_MAX_RATIO and bottom_ratio >= self.GREEN_BOTTOM_MIN_RATIO
 
     def detect_color_with_hsv_range(self, roi_img):
         hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
