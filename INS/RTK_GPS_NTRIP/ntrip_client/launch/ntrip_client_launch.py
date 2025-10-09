@@ -15,7 +15,7 @@ def generate_launch_description():
           DeclareLaunchArgument('mountpoint',            default_value='SWGS-RTCM31'), 
           DeclareLaunchArgument('ntrip_version',         default_value='None'),
           DeclareLaunchArgument('authenticate',          default_value='True'),
-          DeclareLaunchArgument('username',              default_value='wonsuk1025@konkuk.ac.kr'),
+          DeclareLaunchArgument('username',              default_value='kikiws70@gmail.com'),
           DeclareLaunchArgument('password',              default_value='gnss'),
           DeclareLaunchArgument('ssl',                   default_value='False'),
           DeclareLaunchArgument('cert',                  default_value='None'),

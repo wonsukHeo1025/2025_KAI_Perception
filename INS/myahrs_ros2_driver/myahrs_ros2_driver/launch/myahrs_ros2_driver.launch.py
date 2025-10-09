@@ -40,13 +40,13 @@ def generate_launch_description():
         default_value='True',
         description='Whether to start RVIZ')
 
-    rviz_cmd = Node(
-        condition=IfCondition(use_rviz),
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_file],
-        output='screen')
+    # rviz_cmd = Node(
+    #     condition=IfCondition(use_rviz),
+    #     package='rviz2',
+    #     executable='rviz2',
+    #     name='rviz2',
+    #     arguments=['-d', rviz_config_file],
+    #     output='screen')
 
     return LaunchDescription([
         Node(
@@ -59,5 +59,5 @@ def generate_launch_description():
         ),
         declare_rviz_config_file_cmd,
         declare_use_rviz_cmd,
-        rviz_cmd,
+        # rviz_cmd,
     ])
