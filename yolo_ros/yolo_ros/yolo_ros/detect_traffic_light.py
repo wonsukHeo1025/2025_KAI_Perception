@@ -8,7 +8,6 @@ from std_srvs.srv import Trigger
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
-import message_filters
 import sys
 import json
 import os
@@ -30,12 +29,10 @@ class TrafficLightDetector(Node):
     GREEN_BOTTOM_MIN_RATIO = 0.4  # 최소 요구 하단 점등 비율 (전체 영역 대비)
     CONSENSUS_REQUIRED_FRAMES = 2  # YOLO와 규칙 기반 결과 일치 시 필요한 연속 프레임 수
     CONFLICT_REQUIRED_FRAMES = 10  # 결과가 불일치할 때 규칙 기반 결과가 유지되어야 하는 연속 프레임 수
-    INTENSITY_DIFF_THRESHOLD = 12.0  # 위/아래 평균 밝기 차이가 이 값보다 작으면 Unknown 처리
-    RATIO_DIFF_THRESHOLD = 0.05  # 위/아래 이진화 픽셀 비율 차이가 이 값보다 크면 신뢰 가능한 변화로 간주
-    MIN_BASE_INTENSITY_DELTA = 10.0  # 환경 잡음을 억제하기 위한 최소 ΔI 임계값
-    ACTIVE_MIN_RATIO_DEFAULT = 0.35  # 점등된 절반으로 인정하기 위한 최소 비율(기본값)
-    INACTIVE_MAX_RATIO_DEFAULT = 0.25  # 꺼진 절반으로 인정하기 위한 최대 비율(기본값)
     DEFAULT_BINARY_THRESHOLD = 140  # 이진화 기본 임계값
+    MIN_CLUSTER_WIDTH_PIXELS = 40   # 유효한 클러스터로 인정하기 위한 최소 너비
+    MIN_CLUSTER_HEIGHT_PIXELS = 40  # 유효한 클러스터로 인정하기 위한 최소 높이
+    MIN_CLUSTER_CIRCULARITY = 0.75  # contour area 대비 최소 원형 유사도 비율
     MIN_RULE_HEIGHT = 10  # 규칙 기반 판별을 수행하기 위한 최소 ROI 높이
     MIN_RULE_WIDTH = 6   # 규칙 기반 판별을 수행하기 위한 최소 ROI 너비
     MIN_RULE_AREA = 160  # 규칙 기반 판별을 수행하기 위한 최소 ROI 면적
@@ -48,7 +45,7 @@ class TrafficLightDetector(Node):
         self.ROI_FILE = os.path.join(script_dir, "rois.json")
 
         # --- 파라미터 선언 ---
-        self.declare_parameter('roi_mode', 'yolo', ParameterDescriptor(description='ROI 감지 모드: \'yolo\' 또는 \'manual\''))
+        self.declare_parameter('roi_mode', 'manual', ParameterDescriptor(description='ROI 감지 모드: \'yolo\' 또는 \'manual\''))
         self.declare_parameter('pixel_threshold', 200, ParameterDescriptor(description='(Manual 모드용) 색상 검출을 위한 최소 픽셀 수 임계값'))
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
@@ -56,7 +53,7 @@ class TrafficLightDetector(Node):
         default_model_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
         self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_lightonly_251002.pt YOLO 모델 파일 경로'))
         self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
-        self.declare_parameter('debug_mode', False, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
+        self.declare_parameter('debug_mode', True, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
         
         # --- 파라미터 값 읽어오기 ---
         self.roi_mode = self.get_parameter('roi_mode').get_parameter_value().string_value
@@ -94,18 +91,15 @@ class TrafficLightDetector(Node):
         self.consensus_candidate = None; self.consensus_count = 0
         self.conflict_candidate = None; self.conflict_count = 0
         self.last_primary_color = "Unknown"; self.last_secondary_color = "Unknown"
-        self.last_yolo_confidence = None; self.last_rule_intensity_delta = None
-        self.last_rule_ratio_delta = None
+        self.last_yolo_confidence = None
+        self.last_rule_blob_summary = "RuleBlob:N/A"
         self.last_decision_source = "None"
         self.debug_window_names = set()
-        self.debug_last_rule_visuals = {}
-        self.debug_trackbars_initialized = False
         self.binary_trackbar_initialized = False
-        self.rule_intensity_threshold = self.INTENSITY_DIFF_THRESHOLD
-        self.rule_ratio_threshold = self.RATIO_DIFF_THRESHOLD
-        self.rule_active_min_ratio = self.ACTIVE_MIN_RATIO_DEFAULT
-        self.rule_inactive_max_ratio = self.INACTIVE_MAX_RATIO_DEFAULT
         self.rule_binary_threshold = self.DEFAULT_BINARY_THRESHOLD
+        self.rule_ema_alpha = 0.2
+        self.rule_red_ema = 0.0
+        self.rule_green_ema = 0.0
         
         if self.roi_mode == 'yolo': self.init_yolo_mode()
         elif self.roi_mode == 'manual': self.init_manual_mode()
@@ -118,7 +112,7 @@ class TrafficLightDetector(Node):
     def init_yolo_mode(self):
         self.gui_detection_status = f"YOLO-Based | Thr:{self.yolo_confidence_threshold:.2f}"
         if self.show_camera_windows:
-            cv2.namedWindow("Camera 1"); cv2.namedWindow("Camera 2")
+            cv2.namedWindow("Camera 1")
 
         if YOLO is None:
             self.get_logger().fatal("Ultralytics YOLO 패키지를 찾을 수 없어 'yolo' 모드를 사용할 수 없습니다.")
@@ -137,116 +131,74 @@ class TrafficLightDetector(Node):
                 self.get_logger().fatal(f"YOLO 모델 로드에 실패했습니다: {exc}")
                 self.create_timer(0.1, self.destroy_node); return
 
-        image_sub1 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_1/image_raw/compressed')
-        image_sub2 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_2/image_raw/compressed')
-        self.time_synchronizer = message_filters.ApproximateTimeSynchronizer([image_sub1, image_sub2], queue_size=10, slop=0.2)
-        self.time_synchronizer.registerCallback(self.yolo_synchronized_callback)
+        self.image_subscriber = self.create_subscription(
+            CompressedImage,
+            '/usb_cam_1/image_raw/compressed',
+            self.yolo_image_callback,
+            10
+        )
 
     def init_manual_mode(self):
         self.gui_detection_status = self.decorate_status("Manual (rule-based)")
-        self.rois = {1: None, 2: None}; self.roi_points = {1: [], 2: []}
-        self.temp_roi_end_point = {1: None, 2: None}; self.edit_mode = False
+        self.rois = {1: None}; self.roi_points = {1: []}
+        self.temp_roi_end_point = {1: None}; self.edit_mode = False
         self.load_rois_from_file()
-        image_sub1 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_1/image_raw/compressed')
-        image_sub2 = message_filters.Subscriber(self, CompressedImage, '/usb_cam_2/image_raw/compressed')
-        self.time_synchronizer = message_filters.ApproximateTimeSynchronizer([image_sub1, image_sub2], queue_size=10, slop=0.2)
-        self.time_synchronizer.registerCallback(self.manual_synchronized_callback)
+        self.image_subscriber = self.create_subscription(
+            CompressedImage,
+            '/usb_cam_1/image_raw/compressed',
+            self.manual_image_callback,
+            10
+        )
         if self.show_camera_windows:
-            cv2.namedWindow("Camera 1"); cv2.namedWindow("Camera 2")
+            cv2.namedWindow("Camera 1")
             cv2.setMouseCallback("Camera 1", self.mouse_callback, 1)
-            cv2.setMouseCallback("Camera 2", self.mouse_callback, 2)
 
-    def yolo_synchronized_callback(self, img1_msg, img2_msg):
+    def yolo_image_callback(self, img_msg):
         if self.mission_triggered or not rclpy.ok(): return
 
         try:
-            frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
-            frame2 = self.bridge.compressed_imgmsg_to_cv2(img2_msg, 'bgr8')
+            frame = self.bridge.compressed_imgmsg_to_cv2(img_msg, 'bgr8')
         except Exception as exc:
             self.get_logger().error(f"Compressed image 변환 실패: {exc}")
             return
 
-        results1 = self.run_yolo_inference(frame1)
-       
-        results2 = self.run_yolo_inference(frame2)
-
-        detections1 = self.extract_valid_detections(frame1, results1, camera_id=1)
-        detections2 = self.extract_valid_detections(frame2, results2, camera_id=2)
-
-        best_detection1 = self.find_best_traffic_light_detection(detections1)
-        best_detection2 = self.find_best_traffic_light_detection(detections2)
-
-        # 두 카메라를 통틀어 가장 신뢰도 높은 탐지 결과 선택
-        overall_best_detection = None
-        if best_detection1 and best_detection2:
-            overall_best_detection = best_detection1 if best_detection1.score > best_detection2.score else best_detection2
-        elif best_detection1:
-            overall_best_detection = best_detection1
-        elif best_detection2:
-            overall_best_detection = best_detection2
+        results = self.run_yolo_inference(frame)
+        detections = self.extract_valid_detections(frame, results, camera_id=1)
+        best_detection = self.find_best_traffic_light_detection(detections)
 
         primary_color = 'Unknown'
         secondary_color = 'Unknown'
-        decision_source = None
-        rule_metrics = {'color': 'Unknown', 'intensity_delta': None, 'top_mean': None, 'bottom_mean': None}
-        camera_rule_metrics = {}
+        rule_metrics = None
 
-        if best_detection1:
-            metrics1 = self.evaluate_rule_based_color(
-                frame1,
-                best_detection1.bbox,
-                source_label='Camera 1'
-            )
-            camera_rule_metrics[1] = metrics1
-            if self.debug_mode:
-                self.update_debug_rule_visuals(metrics1)
-
-        if best_detection2:
-            metrics2 = self.evaluate_rule_based_color(
-                frame2,
-                best_detection2.bbox,
-                source_label='Camera 2'
-            )
-            camera_rule_metrics[2] = metrics2
-            if self.debug_mode:
-                self.update_debug_rule_visuals(metrics2)
-
-        if self.debug_mode:
-            for cam_id in (1, 2):
-                if cam_id not in camera_rule_metrics:
-                    self.update_debug_rule_visuals({'source_label': f"Camera {cam_id}"})
-
-        if overall_best_detection:
+        if best_detection:
             self.get_logger().info(
-                f"YOLO detected: '{overall_best_detection.class_name}' with confidence {overall_best_detection.score:.2f}")
+                f"YOLO detected: '{best_detection.class_name}' with confidence {best_detection.score:.2f}")
 
-            if 'green light' in overall_best_detection.class_name:
+            if 'green light' in best_detection.class_name:
                 primary_color = 'Green'
-            elif 'red light' in overall_best_detection.class_name:
+            elif 'red light' in best_detection.class_name:
                 primary_color = 'Red'
             else:
                 primary_color = 'Unknown'
 
-            rule_metrics = camera_rule_metrics.get(overall_best_detection.camera_id)
-            if rule_metrics is None:
-                source_frame = frame1 if overall_best_detection.camera_id == 1 else frame2
-                source_label = f"Camera {overall_best_detection.camera_id}"
-                rule_metrics = self.evaluate_rule_based_color(
-                    source_frame,
-                    overall_best_detection.bbox,
-                    source_label=source_label
-                )
-                camera_rule_metrics[overall_best_detection.camera_id] = rule_metrics
-            secondary_color = rule_metrics['color']
+            rule_metrics = self.evaluate_rule_based_color(
+                frame,
+                best_detection.bbox,
+                source_label='Camera 1'
+            )
+            secondary_color = rule_metrics.get('color', 'Unknown')
+            self.last_yolo_confidence = best_detection.score
 
-            self.last_yolo_confidence = overall_best_detection.score
+            if self.debug_mode:
+                self.update_debug_rule_visuals(rule_metrics)
         else:
             self.last_yolo_confidence = None
+            if self.debug_mode:
+                self.update_debug_rule_visuals({'source_label': 'Camera 1'})
 
-        self.last_rule_intensity_delta = rule_metrics.get('intensity_delta')
-        self.last_rule_ratio_delta = rule_metrics.get('ratio_delta')
         self.last_primary_color = primary_color
         self.last_secondary_color = secondary_color
+        self.last_rule_blob_summary = self._format_rule_blob_summary(rule_metrics)
 
         final_color, decision_source = self.update_final_color_decision(primary_color, secondary_color)
 
@@ -254,15 +206,7 @@ class TrafficLightDetector(Node):
             self.trigger_green_mission()
 
         yolo_conf_str = f"YOLO:{self.last_yolo_confidence:.2f}" if self.last_yolo_confidence is not None else "YOLO:N/A"
-        rule_delta = self.last_rule_intensity_delta
-        rule_conf_str = (
-            f"RuleΔI:{rule_delta:.1f}" if isinstance(rule_delta, (float, int)) else "RuleΔI:N/A"
-        )
-        ratio_delta = self.last_rule_ratio_delta
-        ratio_conf_str = (
-            f"RuleΔR:{ratio_delta:.2f}" if isinstance(ratio_delta, (float, int)) else "RuleΔR:N/A"
-        )
-        self.gui_confidence = f"{yolo_conf_str} | {rule_conf_str} | {ratio_conf_str}"
+        self.gui_confidence = f"{yolo_conf_str} | {self.last_rule_blob_summary}"
 
         if decision_source == 'consensus':
             decision_status = f"Final(consensus)"
@@ -296,75 +240,51 @@ class TrafficLightDetector(Node):
             f"cons_cnt:{self.consensus_count}, conf_cnt:{self.conflict_count}")
 
         if rclpy.ok() and self.show_camera_windows:
-            self.draw_yolo_results(frame1, detections1)
-            self.draw_yolo_results(frame2, detections2)
-            cv2.imshow("Camera 1", frame1)
-            cv2.imshow("Camera 2", frame2)
-            key = cv2.waitKey(1) & 0xFF
+            self.draw_yolo_results(frame, detections)
+            cv2.imshow("Camera 1", frame)
+            cv2.waitKey(1)
 
+    def manual_image_callback(self, img_msg):
+        try:
+            frame = self.bridge.compressed_imgmsg_to_cv2(img_msg, 'bgr8')
+        except Exception as exc:
+            self.get_logger().error(f"Compressed image 변환 실패: {exc}")
+            return
+        self.process_and_update(frame, self.rois.get(1))
 
-    def manual_synchronized_callback(self, img1_msg, img2_msg):
-        frame1 = self.bridge.compressed_imgmsg_to_cv2(img1_msg, 'bgr8')
-        frame2 = self.bridge.compressed_imgmsg_to_cv2(img2_msg, 'bgr8')
-        self.process_and_update(frame1, self.rois.get(1), frame2, self.rois.get(2))
-
-    def process_and_update(self, frame1, roi1_tuple, frame2, roi2_tuple):
+    def process_and_update(self, frame, roi_tuple):
         if self.mission_triggered or not rclpy.ok(): return
 
-        res1 = self.process_single_stream(frame1, roi1_tuple, 1)
-        res2 = self.process_single_stream(frame2, roi2_tuple, 2)
+        res = self.process_single_stream(frame, roi_tuple, 1)
 
         if rclpy.ok() and self.show_camera_windows:
-            self.visualizing(res1['result_img'], res1['roi'], 1, res1['result'])
-            self.visualizing(res2['result_img'], res2['roi'], 2, res2['result'])
+            self.visualizing(res['result_img'], res['roi'], 1, res['result'])
             key = cv2.waitKey(1) & 0xFF
             if self.roi_mode == 'manual' and key == ord('q'):
                 self.edit_mode = not self.edit_mode
                 self.get_logger().info(f'Mode changed to: {"ROI Edit" if self.edit_mode else "Color Detection"}')
 
-        results = [res1, res2]
-
         if self.debug_mode:
-            for res in results:
-                label = f"Camera {res.get('stream_id', '?')}"
-                metrics = res['result'].get('metrics')
-                if metrics:
-                    self.update_debug_rule_visuals(metrics)
-                else:
-                    self.update_debug_rule_visuals({'source_label': label})
-
-        def compute_score(res):
             metrics = res['result'].get('metrics')
-            if not metrics:
-                return 0.0
-            ratio_delta = metrics.get('ratio_delta')
-            intensity_delta = metrics.get('intensity_delta')
-            if ratio_delta is not None:
-                return abs(ratio_delta)
-            if intensity_delta is not None:
-                return abs(intensity_delta)
-            return 0.0
+            if metrics:
+                self.update_debug_rule_visuals(metrics)
+            else:
+                self.update_debug_rule_visuals({'source_label': 'Camera 1'})
 
-        best_res = max(results, key=compute_score)
-        best_metrics = best_res['result'].get('metrics') if best_res else None
-        best_color = best_res['result'].get('color', 'Unknown') if best_res else 'Unknown'
+        metrics = res['result'].get('metrics')
+        best_color = res['result'].get('color', 'Unknown')
 
         self.last_primary_color = best_color
         self.last_secondary_color = best_color
         self.last_yolo_confidence = None
-        self.last_rule_intensity_delta = best_metrics.get('intensity_delta') if best_metrics else None
-        self.last_rule_ratio_delta = best_metrics.get('ratio_delta') if best_metrics else None
+        self.last_rule_blob_summary = self._format_rule_blob_summary(metrics)
 
         final_color, decision_source = self.update_final_color_decision(best_color, best_color)
 
         if final_color == 'Green':
             self.trigger_green_mission()
 
-        intensity_delta = self.last_rule_intensity_delta
-        ratio_delta = self.last_rule_ratio_delta
-        rule_i_str = f"RuleΔI:{intensity_delta:.1f}" if isinstance(intensity_delta, (float, int)) else "RuleΔI:N/A"
-        rule_r_str = f"RuleΔR:{ratio_delta:.2f}" if isinstance(ratio_delta, (float, int)) else "RuleΔR:N/A"
-        self.gui_confidence = f"{rule_i_str} | {rule_r_str}"
+        self.gui_confidence = self.last_rule_blob_summary
 
         if decision_source == 'consensus':
             decision_status = "Final(consensus)"
@@ -374,13 +294,8 @@ class TrafficLightDetector(Node):
             else:
                 decision_status = "Awaiting stable detection"
 
-        roi_summaries = []
-        for res in results:
-            color = res['result'].get('color', 'Unknown')
-            roi_label = f"ROI{res['stream_id']}:" if 'stream_id' in res else "ROI?:"
-            roi_summaries.append(f"{roi_label}{color}")
-
-        detection_summary = ["Manual Mode", *roi_summaries, decision_status]
+        roi_color = res['result'].get('color', 'Unknown')
+        detection_summary = ["Manual Mode", f"ROI1:{roi_color}", decision_status]
         self.gui_detection_status = self.decorate_status(" | ".join(detection_summary))
         self.gui_state = final_color
         self.update_gui()
@@ -535,41 +450,48 @@ class TrafficLightDetector(Node):
 
         return top_ratio <= self.GREEN_TOP_MAX_RATIO and bottom_ratio >= self.GREEN_BOTTOM_MIN_RATIO
 
+    def _update_rule_color_ema(self, top_detected, bottom_detected):
+        """Update exponential moving averages for top(red) and bottom(green) detections."""
+        alpha = self.rule_ema_alpha
+        beta = 1.0 - alpha
+        target_red = 1.0 if top_detected else 0.0
+        target_green = 1.0 if bottom_detected else 0.0
+        self.rule_red_ema = beta * self.rule_red_ema + alpha * target_red
+        self.rule_green_ema = beta * self.rule_green_ema + alpha * target_green
+        self.rule_red_ema = max(0.0, min(1.0, self.rule_red_ema))
+        self.rule_green_ema = max(0.0, min(1.0, self.rule_green_ema))
+
     def evaluate_rule_based_color(self, frame, bbox, source_label=None):
-        """세로 2구 신호등의 위/아래 밝기 비교를 통해 색상을 판별합니다."""
-        if bbox is None:
+        """Simplified rule-based detector that looks for a single bright blob per half."""
+
+        def build_metrics():
             return {
                 'color': 'Unknown',
-                'top_mean': None,
-                'bottom_mean': None,
-                'intensity_delta': None,
-                'top_ratio': None,
-                'bottom_ratio': None,
-                'ratio_delta': None,
                 'threshold_used': None,
-                'full_binary': None,
                 'top_binary': None,
                 'bottom_binary': None,
-                'source_label': source_label
+                'full_binary': None,
+                'source_label': source_label,
+                'top_blob_count': 0,
+                'bottom_blob_count': 0,
+                'top_blob_detected': False,
+                'bottom_blob_detected': False,
+                'blob_size_threshold': (self.MIN_CLUSTER_WIDTH_PIXELS, self.MIN_CLUSTER_HEIGHT_PIXELS),
+                'top_clusters': [],
+                'bottom_clusters': [],
+                'red_ema': self.rule_red_ema,
+                'green_ema': self.rule_green_ema
             }
+
+        if bbox is None:
+            self._update_rule_color_ema(False, False)
+            return build_metrics()
 
         x1, y1, x2, y2 = bbox
         roi = frame[y1:y2, x1:x2]
         if roi.size == 0:
-            return {
-                'color': 'Unknown',
-                'top_mean': None,
-                'bottom_mean': None,
-                'intensity_delta': None,
-                'top_ratio': None,
-                'bottom_ratio': None,
-                'ratio_delta': None,
-                'threshold_used': None,
-                'full_binary': None,
-                'top_binary': None,
-                'bottom_binary': None,
-                'source_label': source_label
-            }
+            self._update_rule_color_ema(False, False)
+            return build_metrics()
 
         h, w = roi.shape[:2]
         if (
@@ -577,47 +499,19 @@ class TrafficLightDetector(Node):
             w < self.MIN_RULE_WIDTH or
             (h * w) < self.MIN_RULE_AREA
         ):
-            return {
-                'color': 'Unknown',
-                'top_mean': None,
-                'bottom_mean': None,
-                'intensity_delta': None,
-                'top_ratio': None,
-                'bottom_ratio': None,
-                'ratio_delta': None,
-                'threshold_used': None,
-                'full_binary': None,
-                'top_binary': None,
-                'bottom_binary': None,
-                'source_label': source_label
-            }
+            self._update_rule_color_ema(False, False)
+            return build_metrics()
+
+        if h < 2:
+            self._update_rule_color_ema(False, False)
+            return build_metrics()
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-        if h < 2:
-            return {
-                'color': 'Unknown',
-                'top_mean': None,
-                'bottom_mean': None,
-                'intensity_delta': None,
-                'top_ratio': None,
-                'bottom_ratio': None,
-                'ratio_delta': None,
-                'threshold_used': None,
-                'full_binary': None,
-                'top_binary': None,
-                'bottom_binary': None,
-                'source_label': source_label
-            }
-
         split_idx = h // 2
-        top_half = blurred[:split_idx, :]
-        bottom_half = blurred[split_idx:, :]
-
-        top_mean = float(np.mean(top_half))
-        bottom_mean = float(np.mean(bottom_half))
-        intensity_delta = bottom_mean - top_mean
+        if split_idx <= 0 or split_idx >= h:
+            return build_metrics()
 
         threshold = int(max(0, min(255, self.rule_binary_threshold)))
         _, binary = cv2.threshold(blurred, threshold, 255, cv2.THRESH_BINARY)
@@ -625,62 +519,91 @@ class TrafficLightDetector(Node):
         top_binary = binary[:split_idx, :]
         bottom_binary = binary[split_idx:, :]
 
-        top_ratio = float(np.count_nonzero(top_binary)) / top_binary.size if top_binary.size > 0 else 0.0
-        bottom_ratio = float(np.count_nonzero(bottom_binary)) / bottom_binary.size if bottom_binary.size > 0 else 0.0
-        ratio_delta = bottom_ratio - top_ratio
+        def detect_circular_clusters(binary_half, y_offset):
+            if binary_half.size == 0:
+                return []
+            contours, _ = cv2.findContours(binary_half, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            clusters = []
+            for contour in contours:
+                if len(contour) < 5:
+                    continue
+                area = cv2.contourArea(contour)
+                if area <= 0:
+                    continue
+                x, y, bw, bh = cv2.boundingRect(contour)
+                if bw < self.MIN_CLUSTER_WIDTH_PIXELS or bh < self.MIN_CLUSTER_HEIGHT_PIXELS:
+                    continue
+                (cx, cy), radius = cv2.minEnclosingCircle(contour)
+                if radius <= 0:
+                    continue
+                circle_area = np.pi * (radius ** 2)
+                if circle_area <= 0:
+                    continue
+                circularity = area / circle_area
+                if circularity < self.MIN_CLUSTER_CIRCULARITY:
+                    continue
+                absolute_bbox = (int(x), int(y + y_offset), int(bw), int(bh))
+                clusters.append({
+                    'bbox': absolute_bbox,
+                    'circularity': float(circularity)
+                })
+            return clusters
 
+        top_clusters = detect_circular_clusters(top_binary, 0)
+        bottom_clusters = detect_circular_clusters(bottom_binary, split_idx)
+
+        top_detected = len(top_clusters) > 0
+        bottom_detected = len(bottom_clusters) > 0
+
+        self._update_rule_color_ema(top_detected, bottom_detected)
+
+        ema_margin = 0.1
+        ema_threshold = 0.4
         color = 'Unknown'
-        ratio_threshold = self.rule_ratio_threshold
-        effective_intensity_threshold = max(self.rule_intensity_threshold, self.MIN_BASE_INTENSITY_DELTA)
-        active_min = self.rule_active_min_ratio
-        inactive_max = self.rule_inactive_max_ratio
+        if (self.rule_red_ema - self.rule_green_ema) >= ema_margin and self.rule_red_ema >= ema_threshold:
+            color = 'Red'
+        elif (self.rule_green_ema - self.rule_red_ema) >= ema_margin and self.rule_green_ema >= ema_threshold:
+            color = 'Green'
 
-        both_active = (top_ratio >= active_min and bottom_ratio >= active_min)
-        both_inactive = (top_ratio <= inactive_max and bottom_ratio <= inactive_max)
-
-        candidate = None
-        if not both_active and not both_inactive:
-            if abs(ratio_delta) >= ratio_threshold and abs(intensity_delta) >= effective_intensity_threshold:
-                candidate = 'Green' if ratio_delta > 0 else 'Red'
-            elif abs(intensity_delta) >= effective_intensity_threshold:
-                candidate = 'Green' if intensity_delta > 0 else 'Red'
-
-        if candidate == 'Green':
-            if (
-                bottom_ratio >= active_min and
-                top_ratio <= inactive_max
-            ):
-                color = 'Green'
-        elif candidate == 'Red':
-            if (
-                top_ratio >= active_min and
-                bottom_ratio <= inactive_max
-            ):
-                color = 'Red'
-
-        preview_label = source_label or 'ROI'
-        full_binary = binary if binary is not None else np.zeros_like(blurred)
-        if len(full_binary.shape) == 2:
-            preview_img = cv2.cvtColor(full_binary, cv2.COLOR_GRAY2BGR)
-        else:
-            preview_img = full_binary.copy()
-        cv2.putText(preview_img, f'{preview_label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
-        self.update_binary_preview(preview_img)
-
-        return {
+        metrics = build_metrics()
+        metrics.update({
             'color': color,
-            'top_mean': top_mean,
-            'bottom_mean': bottom_mean,
-            'intensity_delta': intensity_delta,
-            'top_ratio': top_ratio,
-            'bottom_ratio': bottom_ratio,
-            'ratio_delta': ratio_delta,
             'threshold_used': threshold,
             'top_binary': top_binary,
             'bottom_binary': bottom_binary,
             'full_binary': binary,
-            'source_label': source_label
-        }
+            'top_blob_count': len(top_clusters),
+            'bottom_blob_count': len(bottom_clusters),
+            'top_blob_detected': top_detected,
+            'bottom_blob_detected': bottom_detected,
+            'blob_size_threshold': (self.MIN_CLUSTER_WIDTH_PIXELS, self.MIN_CLUSTER_HEIGHT_PIXELS),
+            'top_clusters': top_clusters,
+            'bottom_clusters': bottom_clusters,
+            'red_ema': self.rule_red_ema,
+            'green_ema': self.rule_green_ema
+        })
+
+        preview_label = source_label or 'ROI'
+        if metrics['full_binary'] is not None:
+            preview_img = cv2.cvtColor(metrics['full_binary'], cv2.COLOR_GRAY2BGR)
+            cv2.putText(preview_img, f'{preview_label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+            self.update_binary_preview(preview_img)
+
+        return metrics
+
+    def _format_rule_blob_summary(self, metrics):
+        if not metrics or 'top_blob_detected' not in metrics or 'bottom_blob_detected' not in metrics:
+            return "RuleBlob:N/A"
+        top_flag = 'Y' if metrics.get('top_blob_detected') else 'N'
+        bottom_flag = 'Y' if metrics.get('bottom_blob_detected') else 'N'
+        top_count = metrics.get('top_blob_count')
+        bottom_count = metrics.get('bottom_blob_count')
+        count_suffix = ""
+        if isinstance(top_count, int) and isinstance(bottom_count, int):
+            count_suffix = f" ({top_count}/{bottom_count})"
+        red_ema = metrics.get('red_ema', self.rule_red_ema)
+        green_ema = metrics.get('green_ema', self.rule_green_ema)
+        return f"RuleBlob:T{top_flag}/B{bottom_flag}{count_suffix} | EMA R:{red_ema:.2f}/G:{green_ema:.2f}"
 
     def update_final_color_decision(self, primary_color, secondary_color):
         """1/2차 결과를 누적해 최종 신호등 색상을 결정합니다."""
@@ -747,23 +670,27 @@ class TrafficLightDetector(Node):
         label = 'ROI'
         full_binary = None
         threshold_used = None
-        intensity_delta = None
-        ratio_delta = None
-        top_ratio = None
-        bottom_ratio = None
+        top_detected = False
+        bottom_detected = False
+        top_blob_count = None
+        bottom_blob_count = None
+        blob_size_threshold = None
+        red_ema = self.rule_red_ema
+        green_ema = self.rule_green_ema
 
         if rule_metrics:
             label = rule_metrics.get('source_label') or label
             full_binary = rule_metrics.get('full_binary')
             threshold_used = rule_metrics.get('threshold_used')
-            intensity_delta = rule_metrics.get('intensity_delta')
-            ratio_delta = rule_metrics.get('ratio_delta')
-            top_ratio = rule_metrics.get('top_ratio')
-            bottom_ratio = rule_metrics.get('bottom_ratio')
+            top_detected = bool(rule_metrics.get('top_blob_detected'))
+            bottom_detected = bool(rule_metrics.get('bottom_blob_detected'))
+            top_blob_count = rule_metrics.get('top_blob_count')
+            bottom_blob_count = rule_metrics.get('bottom_blob_count')
+            blob_size_threshold = rule_metrics.get('blob_size_threshold')
+            red_ema = rule_metrics.get('red_ema', red_ema)
+            green_ema = rule_metrics.get('green_ema', green_ema)
         else:
             label = 'Idle'
-
-        full_binary = None
 
         if full_binary is None:
             full_display = np.zeros((200, 100), dtype=np.uint8)
@@ -777,79 +704,46 @@ class TrafficLightDetector(Node):
 
         cv2.putText(display_bgr, f'{label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
 
-        info_img = np.zeros((270, 360, 3), dtype=np.uint8)
-        effective_intensity_threshold = max(self.rule_intensity_threshold, self.MIN_BASE_INTENSITY_DELTA)
-
+        info_img = np.zeros((240, 420, 3), dtype=np.uint8)
+        top_clusters = rule_metrics.get('top_clusters', []) if rule_metrics else []
+        bottom_clusters = rule_metrics.get('bottom_clusters', []) if rule_metrics else []
+        for cluster in top_clusters:
+            x, y, bw, bh = cluster.get('bbox', (0, 0, 0, 0))
+            cv2.rectangle(display_bgr, (x, y), (x + bw, y + bh), (0, 0, 255), 2)
+        for cluster in bottom_clusters:
+            x, y, bw, bh = cluster.get('bbox', (0, 0, 0, 0))
+            cv2.rectangle(display_bgr, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
+        top_circularities = [cluster.get('circularity') for cluster in top_clusters]
+        bottom_circularities = [cluster.get('circularity') for cluster in bottom_clusters]
         lines = [
             f"Source: {label}",
             f"Thr Used: {threshold_used}" if threshold_used is not None else "Thr Used: N/A",
-            f"Top Ratio: {top_ratio:.2f}" if top_ratio is not None else "Top Ratio: N/A",
-            f"Bottom Ratio: {bottom_ratio:.2f}" if bottom_ratio is not None else "Bottom Ratio: N/A",
-            f"ΔR: {ratio_delta:.2f}" if ratio_delta is not None else "ΔR: N/A",
-            f"ΔI: {intensity_delta:.1f}" if intensity_delta is not None else "ΔI: N/A",
-            f"Thr ΔR: {self.rule_ratio_threshold:.3f}",
-            f"Eff ΔI Thr: {effective_intensity_threshold:.1f}",
-            f"Active Min: {self.rule_active_min_ratio:.2f}",
-            f"Inactive Max: {self.rule_inactive_max_ratio:.2f}"
+            f"Top Blob: {'Yes' if top_detected else 'No'} ({top_blob_count if top_blob_count is not None else 0})",
+            f"Bottom Blob: {'Yes' if bottom_detected else 'No'} ({bottom_blob_count if bottom_blob_count is not None else 0})",
+            (
+                f"Blob Size Thr: {blob_size_threshold[0]}x{blob_size_threshold[1]}px"
+                if isinstance(blob_size_threshold, (tuple, list)) and len(blob_size_threshold) == 2
+                else "Blob Size Thr: N/A"
+            ),
+            f"Top Circ: {np.mean(top_circularities):.2f}" if top_circularities else "Top Circ: N/A",
+            f"Bottom Circ: {np.mean(bottom_circularities):.2f}" if bottom_circularities else "Bottom Circ: N/A",
+            f"Red EMA: {red_ema:.2f}",
+            f"Green EMA: {green_ema:.2f}"
         ]
         for idx, text in enumerate(lines):
             cv2.putText(info_img, text, (10, 30 + idx * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
 
-        if self.debug_mode:
-            cv2.imshow(f'Debug Binary ({label})', display_bgr)
-            cv2.imshow(f'Debug Rule Info ({label})', info_img)
-            self._ensure_debug_trackbars()
-            cv2.imshow('Debug Rule Controls', display_bgr)
-        else:
-            self.update_binary_preview(display_bgr)
-
-    def _ensure_debug_trackbars(self):
-        if self.debug_trackbars_initialized:
-            return
-
-        window_name = 'Debug Rule Controls'
-        if window_name not in self.debug_window_names:
-            cv2.namedWindow(window_name)
-            self.debug_window_names.add(window_name)
-
-        cv2.createTrackbar(
-            'ΔI Threshold (x10)',
-            window_name,
-            int(self.rule_intensity_threshold * 10),
-            500,
-            lambda v: self._on_intensity_trackbar(v)
-        )
-
-        cv2.createTrackbar(
-            'ΔR Threshold (x1000)',
-            window_name,
-            int(self.rule_ratio_threshold * 1000),
-            1000,
-            lambda v: self._on_ratio_trackbar(v)
-        )
-
-        cv2.createTrackbar(
-            'Active Min (x100)',
-            window_name,
-            int(self.rule_active_min_ratio * 100),
-            100,
-            lambda v: self._on_active_ratio_trackbar(v)
-        )
-
-        cv2.createTrackbar(
-            'Inactive Max (x100)',
-            window_name,
-            int(self.rule_inactive_max_ratio * 100),
-            100,
-            lambda v: self._on_inactive_ratio_trackbar(v)
-        )
-
-        self.debug_trackbars_initialized = True
+        window_binary = f'Debug Binary ({label})'
+        window_info = f'Debug Rule Info ({label})'
+        cv2.imshow(window_binary, display_bgr)
+        cv2.imshow(window_info, info_img)
+        self.debug_window_names.update({window_binary, window_info})
 
     def update_binary_preview(self, preview_img):
         window_name = 'Binary Preview'
         if not self.binary_trackbar_initialized:
             cv2.namedWindow(window_name)
+            self.debug_window_names.add(window_name)
             cv2.createTrackbar(
                 'Bin Thr',
                 window_name,
@@ -859,18 +753,6 @@ class TrafficLightDetector(Node):
             )
             self.binary_trackbar_initialized = True
         cv2.imshow(window_name, preview_img)
-
-    def _on_intensity_trackbar(self, value):
-        self.rule_intensity_threshold = max(0.0, float(value) / 10.0)
-
-    def _on_ratio_trackbar(self, value):
-        self.rule_ratio_threshold = max(0.0, float(value) / 1000.0)
-
-    def _on_active_ratio_trackbar(self, value):
-        self.rule_active_min_ratio = max(0.0, min(1.0, float(value) / 100.0))
-
-    def _on_inactive_ratio_trackbar(self, value):
-        self.rule_inactive_max_ratio = max(0.0, min(1.0, float(value) / 100.0))
 
     def _on_binary_threshold_trackbar(self, value):
         self.rule_binary_threshold = max(0, min(255, int(value)))
@@ -923,16 +805,37 @@ class TrafficLightDetector(Node):
             self.temp_roi_end_point[stream_id] = (x, y)
 
     def load_rois_from_file(self):
-        if os.path.exists(self.ROI_FILE):
-            try:
-                with open(self.ROI_FILE, 'r') as f: self.rois = {int(k): tuple(v) for k, v in json.load(f).items()}
-                self.get_logger().info(f'Successfully loaded ROIs from {self.ROI_FILE}')
-            except Exception as e: self.get_logger().error(f'Failed to load ROIs: {e}')
+        if not os.path.exists(self.ROI_FILE):
+            return
+
+        try:
+            with open(self.ROI_FILE, 'r') as file:
+                data = json.load(file)
+
+            roi_value = None
+            if isinstance(data, dict):
+                roi_value = data.get('1', data.get(1))
+
+            if isinstance(roi_value, (list, tuple)) and len(roi_value) == 4:
+                self.rois[1] = tuple(roi_value)
+            else:
+                self.rois[1] = None
+
+            self.get_logger().info(f'Successfully loaded ROIs from {self.ROI_FILE}')
+        except Exception as exc:
+            self.get_logger().error(f'Failed to load ROIs: {exc}')
+
     def save_rois_to_file(self):
         try:
-            with open(self.ROI_FILE, 'w') as f: json.dump(self.rois, f, indent=4)
+            roi_value = self.rois.get(1)
+            if isinstance(roi_value, tuple):
+                roi_value = list(roi_value)
+            payload = {'1': roi_value if isinstance(roi_value, list) else None}
+            with open(self.ROI_FILE, 'w') as file:
+                json.dump(payload, file, indent=4)
             self.get_logger().info(f'Successfully saved ROIs to {self.ROI_FILE}')
-        except Exception as e: self.get_logger().error(f'Failed to save ROIs: {e}')
+        except Exception as exc:
+            self.get_logger().error(f'Failed to save ROIs: {exc}')
     def virtual_green_callback(self, request, response):
         if self.mission_triggered: response.success=False; response.message='Mission already triggered.'; return response
         self.get_logger().info('<<<<< VIRTUAL GREEN LIGHT triggered by service call! >>>>>')
