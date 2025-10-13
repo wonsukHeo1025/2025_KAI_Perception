@@ -30,8 +30,8 @@ class TrafficLightDetector(Node):
     CONSENSUS_REQUIRED_FRAMES = 2  # YOLO와 규칙 기반 결과 일치 시 필요한 연속 프레임 수
     CONFLICT_REQUIRED_FRAMES = 10  # 결과가 불일치할 때 규칙 기반 결과가 유지되어야 하는 연속 프레임 수
     DEFAULT_BINARY_THRESHOLD = 140  # 이진화 기본 임계값
-    MIN_CLUSTER_WIDTH_PIXELS = 40   # 유효한 클러스터로 인정하기 위한 최소 너비
-    MIN_CLUSTER_HEIGHT_PIXELS = 40  # 유효한 클러스터로 인정하기 위한 최소 높이
+    MIN_CLUSTER_WIDTH_RATIO = 0.25  # 유효한 클러스터로 인정하기 위한 최소 너비 비율 (ROI 대비)
+    MIN_CLUSTER_HEIGHT_PIXELS = 0   # 유효한 클러스터로 인정하기 위한 최소 높이 (0이면 비활성화)
     MIN_CLUSTER_CIRCULARITY = 0.75  # contour area 대비 최소 원형 유사도 비율
     MIN_RULE_HEIGHT = 10  # 규칙 기반 판별을 수행하기 위한 최소 ROI 높이
     MIN_RULE_WIDTH = 6   # 규칙 기반 판별을 수행하기 위한 최소 ROI 너비
@@ -140,8 +140,11 @@ class TrafficLightDetector(Node):
 
     def init_manual_mode(self):
         self.gui_detection_status = self.decorate_status("Manual (rule-based)")
-        self.rois = {1: None}; self.roi_points = {1: []}
-        self.temp_roi_end_point = {1: None}; self.edit_mode = False
+        self.rois = {1: None}
+        self.roi_points = {1: []}
+        self.temp_roi_end_point = {1: None}
+        self.roi_dirty_flags = {1: False}
+        self.edit_mode = False
         self.load_rois_from_file()
         self.image_subscriber = self.create_subscription(
             CompressedImage,
@@ -256,13 +259,16 @@ class TrafficLightDetector(Node):
         if self.mission_triggered or not rclpy.ok(): return
 
         res = self.process_single_stream(frame, roi_tuple, 1)
+        stream_id = res['stream_id']
 
         if rclpy.ok() and self.show_camera_windows:
-            self.visualizing(res['result_img'], res['roi'], 1, res['result'])
+            self.visualizing(res['result_img'], res['roi'], stream_id, res['result'])
             key = cv2.waitKey(1) & 0xFF
-            if self.roi_mode == 'manual' and key == ord('q'):
-                self.edit_mode = not self.edit_mode
-                self.get_logger().info(f'Mode changed to: {"ROI Edit" if self.edit_mode else "Color Detection"}')
+            if self.roi_mode == 'manual' and key == ord('e'):
+                if not self.edit_mode:
+                    self.enter_roi_edit_mode(stream_id)
+                else:
+                    self.exit_roi_edit_mode(stream_id)
 
         if self.debug_mode:
             metrics = res['result'].get('metrics')
@@ -476,11 +482,19 @@ class TrafficLightDetector(Node):
                 'bottom_blob_count': 0,
                 'top_blob_detected': False,
                 'bottom_blob_detected': False,
-                'blob_size_threshold': (self.MIN_CLUSTER_WIDTH_PIXELS, self.MIN_CLUSTER_HEIGHT_PIXELS),
+                'blob_size_threshold': {
+                    'min_width_ratio': self.MIN_CLUSTER_WIDTH_RATIO,
+                    'min_width_px': None,
+                    'min_height_px': self.MIN_CLUSTER_HEIGHT_PIXELS
+                },
                 'top_clusters': [],
                 'bottom_clusters': [],
                 'red_ema': self.rule_red_ema,
-                'green_ema': self.rule_green_ema
+                'green_ema': self.rule_green_ema,
+                'roi_width_px': None,
+                'roi_height_px': None,
+                'top_candidates': [],
+                'bottom_candidates': []
             }
 
         if bbox is None:
@@ -519,11 +533,15 @@ class TrafficLightDetector(Node):
         top_binary = binary[:split_idx, :]
         bottom_binary = binary[split_idx:, :]
 
-        def detect_circular_clusters(binary_half, y_offset):
+        roi_height, roi_width = binary.shape
+        width_threshold_px = max(1, int(np.ceil(roi_width * self.MIN_CLUSTER_WIDTH_RATIO)))
+
+        def analyze_clusters(binary_half, y_offset):
             if binary_half.size == 0:
-                return []
+                return [], []
             contours, _ = cv2.findContours(binary_half, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             clusters = []
+            candidates = []
             for contour in contours:
                 if len(contour) < 5:
                     continue
@@ -531,8 +549,9 @@ class TrafficLightDetector(Node):
                 if area <= 0:
                     continue
                 x, y, bw, bh = cv2.boundingRect(contour)
-                if bw < self.MIN_CLUSTER_WIDTH_PIXELS or bh < self.MIN_CLUSTER_HEIGHT_PIXELS:
-                    continue
+                width_ratio = float(bw) / float(roi_width) if roi_width > 0 else 0.0
+                passes_width = bw >= width_threshold_px
+                passes_height = True if self.MIN_CLUSTER_HEIGHT_PIXELS <= 0 else (bh >= self.MIN_CLUSTER_HEIGHT_PIXELS)
                 (cx, cy), radius = cv2.minEnclosingCircle(contour)
                 if radius <= 0:
                     continue
@@ -540,17 +559,33 @@ class TrafficLightDetector(Node):
                 if circle_area <= 0:
                     continue
                 circularity = area / circle_area
-                if circularity < self.MIN_CLUSTER_CIRCULARITY:
+                passes_circularity = circularity >= self.MIN_CLUSTER_CIRCULARITY
+                candidate = {
+                    'bbox': (int(x), int(y + y_offset), int(bw), int(bh)),
+                    'width_px': int(bw),
+                    'height_px': int(bh),
+                    'width_ratio': float(width_ratio),
+                    'circularity': float(circularity),
+                    'passes_width': bool(passes_width),
+                    'passes_height': bool(passes_height),
+                    'passes_circularity': bool(passes_circularity)
+                }
+                passes_all = passes_width and passes_height and passes_circularity
+                candidate['passes_all'] = passes_all
+                candidates.append(candidate)
+                if not passes_all:
                     continue
                 absolute_bbox = (int(x), int(y + y_offset), int(bw), int(bh))
                 clusters.append({
                     'bbox': absolute_bbox,
-                    'circularity': float(circularity)
+                    'circularity': float(circularity),
+                    'area': float(area),
+                    'width_ratio': float(width_ratio)
                 })
-            return clusters
+            return clusters, candidates
 
-        top_clusters = detect_circular_clusters(top_binary, 0)
-        bottom_clusters = detect_circular_clusters(bottom_binary, split_idx)
+        top_clusters, top_candidates = analyze_clusters(top_binary, 0)
+        bottom_clusters, bottom_candidates = analyze_clusters(bottom_binary, split_idx)
 
         top_detected = len(top_clusters) > 0
         bottom_detected = len(bottom_clusters) > 0
@@ -576,9 +611,17 @@ class TrafficLightDetector(Node):
             'bottom_blob_count': len(bottom_clusters),
             'top_blob_detected': top_detected,
             'bottom_blob_detected': bottom_detected,
-            'blob_size_threshold': (self.MIN_CLUSTER_WIDTH_PIXELS, self.MIN_CLUSTER_HEIGHT_PIXELS),
+            'blob_size_threshold': {
+                'min_width_ratio': self.MIN_CLUSTER_WIDTH_RATIO,
+                'min_width_px': int(width_threshold_px),
+                'min_height_px': self.MIN_CLUSTER_HEIGHT_PIXELS if self.MIN_CLUSTER_HEIGHT_PIXELS > 0 else None
+            },
+            'roi_width_px': roi_width,
+            'roi_height_px': roi_height,
             'top_clusters': top_clusters,
             'bottom_clusters': bottom_clusters,
+            'top_candidates': top_candidates,
+            'bottom_candidates': bottom_candidates,
             'red_ema': self.rule_red_ema,
             'green_ema': self.rule_green_ema
         })
@@ -604,6 +647,29 @@ class TrafficLightDetector(Node):
         red_ema = metrics.get('red_ema', self.rule_red_ema)
         green_ema = metrics.get('green_ema', self.rule_green_ema)
         return f"RuleBlob:T{top_flag}/B{bottom_flag}{count_suffix} | EMA R:{red_ema:.2f}/G:{green_ema:.2f}"
+
+    def _summarize_candidate_status(self, candidates, label):
+        if not candidates:
+            return f"{label} cand: none", False
+        def candidate_width_ratio(candidate):
+            if not isinstance(candidate, dict):
+                return 0.0
+            value = candidate.get('width_ratio', 0.0)
+            return float(value) if value is not None else 0.0
+        best = max(candidates, key=candidate_width_ratio)
+        circularity = float(best.get('circularity', 0.0)) if isinstance(best, dict) else 0.0
+        circularity = max(0.0, min(1.0, circularity))
+        width_ratio = candidate_width_ratio(best)
+        width_ratio = max(0.0, width_ratio)
+        passes_circularity = bool(best.get('passes_circularity')) if isinstance(best, dict) else False
+        passes_width = bool(best.get('passes_width')) if isinstance(best, dict) else False
+        passes_all = bool(best.get('passes_all')) if isinstance(best, dict) else False
+        circ_status = "pass" if passes_circularity else "fail"
+        width_status = "pass" if passes_width else "fail"
+        return (
+            f"{label} cand: circ {circularity * 100:.0f}%:{circ_status} | "
+            f"width {width_ratio * 100:.0f}%:{width_status}"
+        ), passes_all
 
     def update_final_color_decision(self, primary_color, secondary_color):
         """1/2차 결과를 누적해 최종 신호등 색상을 결정합니다."""
@@ -704,9 +770,11 @@ class TrafficLightDetector(Node):
 
         cv2.putText(display_bgr, f'{label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
 
-        info_img = np.zeros((240, 420, 3), dtype=np.uint8)
+        info_img = np.zeros((300, 480, 3), dtype=np.uint8)
         top_clusters = rule_metrics.get('top_clusters', []) if rule_metrics else []
         bottom_clusters = rule_metrics.get('bottom_clusters', []) if rule_metrics else []
+        top_candidates = rule_metrics.get('top_candidates', []) if rule_metrics else []
+        bottom_candidates = rule_metrics.get('bottom_candidates', []) if rule_metrics else []
         for cluster in top_clusters:
             x, y, bw, bh = cluster.get('bbox', (0, 0, 0, 0))
             cv2.rectangle(display_bgr, (x, y), (x + bw, y + bh), (0, 0, 255), 2)
@@ -715,23 +783,38 @@ class TrafficLightDetector(Node):
             cv2.rectangle(display_bgr, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
         top_circularities = [cluster.get('circularity') for cluster in top_clusters]
         bottom_circularities = [cluster.get('circularity') for cluster in bottom_clusters]
+        top_width_ratios = [cluster.get('width_ratio') for cluster in top_clusters if cluster.get('width_ratio') is not None]
+        bottom_width_ratios = [cluster.get('width_ratio') for cluster in bottom_clusters if cluster.get('width_ratio') is not None]
+        blob_threshold_text = "Size Thr: N/A"
+        if isinstance(blob_size_threshold, dict):
+            ratio = blob_size_threshold.get('min_width_ratio')
+            width_px = blob_size_threshold.get('min_width_px')
+            height_px = blob_size_threshold.get('min_height_px')
+            if ratio is not None and width_px is not None and height_px is not None:
+                blob_threshold_text = (
+                    f"Size Thr: width≥{ratio * 100:.0f}% (~{int(width_px)}px) | height≥{height_px}px"
+                )
+
+        top_candidate_line, _ = self._summarize_candidate_status(top_candidates, "Top")
+        bottom_candidate_line, _ = self._summarize_candidate_status(bottom_candidates, "Bottom")
+
         lines = [
             f"Source: {label}",
             f"Thr Used: {threshold_used}" if threshold_used is not None else "Thr Used: N/A",
             f"Top Blob: {'Yes' if top_detected else 'No'} ({top_blob_count if top_blob_count is not None else 0})",
             f"Bottom Blob: {'Yes' if bottom_detected else 'No'} ({bottom_blob_count if bottom_blob_count is not None else 0})",
-            (
-                f"Blob Size Thr: {blob_size_threshold[0]}x{blob_size_threshold[1]}px"
-                if isinstance(blob_size_threshold, (tuple, list)) and len(blob_size_threshold) == 2
-                else "Blob Size Thr: N/A"
-            ),
+            blob_threshold_text,
             f"Top Circ: {np.mean(top_circularities):.2f}" if top_circularities else "Top Circ: N/A",
             f"Bottom Circ: {np.mean(bottom_circularities):.2f}" if bottom_circularities else "Bottom Circ: N/A",
+            f"Top Width Avg: {np.mean(top_width_ratios) * 100:.0f}%" if top_width_ratios else "Top Width Avg: N/A",
+            f"Bottom Width Avg: {np.mean(bottom_width_ratios) * 100:.0f}%" if bottom_width_ratios else "Bottom Width Avg: N/A",
+            top_candidate_line,
+            bottom_candidate_line,
             f"Red EMA: {red_ema:.2f}",
             f"Green EMA: {green_ema:.2f}"
         ]
         for idx, text in enumerate(lines):
-            cv2.putText(info_img, text, (10, 30 + idx * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+            cv2.putText(info_img, text, (10, 30 + idx * 26), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
 
         window_binary = f'Debug Binary ({label})'
         window_info = f'Debug Rule Info ({label})'
@@ -775,6 +858,7 @@ class TrafficLightDetector(Node):
         return status_text
 
     def visualizing(self, frame, roi_tuple, stream_id, detection_result):
+        metrics = detection_result.get('metrics') if isinstance(detection_result, dict) else None
         if roi_tuple:
             x,y,w,h = roi_tuple
             detected_color = detection_result.get('color', 'Unknown')
@@ -787,7 +871,43 @@ class TrafficLightDetector(Node):
             if self.roi_points.get(stream_id) and self.temp_roi_end_point.get(stream_id):
                 p1,p2 = self.roi_points[stream_id][0], self.temp_roi_end_point[stream_id]
                 cv2.rectangle(frame, p1, p2, (0, 255, 255), 1)
+        status_lines = []
+        if metrics:
+            top_summary, top_pass = self._summarize_candidate_status(metrics.get('top_candidates', []), "Top")
+            bottom_summary, bottom_pass = self._summarize_candidate_status(metrics.get('bottom_candidates', []), "Bottom")
+            status_lines = [(top_summary, top_pass), (bottom_summary, bottom_pass)]
+        base_y = 60 if (self.roi_mode == 'manual' and self.edit_mode) else 40
+        for idx, (text, passed) in enumerate(status_lines):
+            color = (0, 200, 0) if passed else (0, 165, 255)
+            cv2.putText(frame, text, (10, base_y + idx * 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
         cv2.imshow(f"Camera {stream_id}", frame)
+
+    def enter_roi_edit_mode(self, stream_id):
+        if self.roi_mode != 'manual' or self.edit_mode:
+            return
+        self.edit_mode = True
+        self.roi_points.setdefault(stream_id, [])
+        self.roi_points[stream_id] = []
+        self.temp_roi_end_point.setdefault(stream_id, None)
+        self.temp_roi_end_point[stream_id] = None
+        self.roi_dirty_flags.setdefault(stream_id, False)
+        self.roi_dirty_flags[stream_id] = False
+        self.get_logger().info("ROI edit mode enabled. Click top-left then bottom-right to set a new ROI.")
+
+    def exit_roi_edit_mode(self, stream_id):
+        if self.roi_mode != 'manual' or not self.edit_mode:
+            return
+        self.edit_mode = False
+        self.roi_points.setdefault(stream_id, [])
+        self.roi_points[stream_id] = []
+        self.temp_roi_end_point.setdefault(stream_id, None)
+        self.temp_roi_end_point[stream_id] = None
+        self.get_logger().info("ROI edit mode disabled. Saving ROI to file.")
+        try:
+            self.save_rois_to_file()
+        finally:
+            self.roi_dirty_flags.setdefault(stream_id, False)
+            self.roi_dirty_flags[stream_id] = False
 
     def mouse_callback(self, event, x, y, flags, stream_id):
         if self.roi_mode != 'manual' or not self.edit_mode: return
@@ -799,7 +919,11 @@ class TrafficLightDetector(Node):
                 start_x,end_x=min(x1,x2),max(x1,x2); start_y,end_y=min(y1,y2),max(y1,y2)
                 if end_x > start_x and end_y > start_y:
                     self.rois[stream_id] = (start_x, start_y, end_x - start_x, end_y - start_y)
-                    self.save_rois_to_file()
+                    self.roi_dirty_flags.setdefault(stream_id, False)
+                    self.roi_dirty_flags[stream_id] = True
+                    self.get_logger().info(
+                        f"ROI updated to (x:{start_x}, y:{start_y}, w:{end_x - start_x}, h:{end_y - start_y}). "
+                        "Press 'e' again to save.")
                 self.roi_points[stream_id] = []; self.temp_roi_end_point[stream_id] = None
         elif event == cv2.EVENT_MOUSEMOVE and self.roi_points.get(stream_id):
             self.temp_roi_end_point[stream_id] = (x, y)
@@ -820,6 +944,7 @@ class TrafficLightDetector(Node):
                 self.rois[1] = tuple(roi_value)
             else:
                 self.rois[1] = None
+            self.roi_dirty_flags[1] = False
 
             self.get_logger().info(f'Successfully loaded ROIs from {self.ROI_FILE}')
         except Exception as exc:
