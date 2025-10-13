@@ -28,6 +28,17 @@ class TrafficLightDetector(Node):
     GUI_HEIGHT = 6
     GREEN_TOP_MAX_RATIO = 0.05  # 최대 허용 상단 점등 비율 (전체 영역 대비)
     GREEN_BOTTOM_MIN_RATIO = 0.4  # 최소 요구 하단 점등 비율 (전체 영역 대비)
+    CONSENSUS_REQUIRED_FRAMES = 2  # YOLO와 규칙 기반 결과 일치 시 필요한 연속 프레임 수
+    CONFLICT_REQUIRED_FRAMES = 10  # 결과가 불일치할 때 규칙 기반 결과가 유지되어야 하는 연속 프레임 수
+    INTENSITY_DIFF_THRESHOLD = 12.0  # 위/아래 평균 밝기 차이가 이 값보다 작으면 Unknown 처리
+    RATIO_DIFF_THRESHOLD = 0.05  # 위/아래 이진화 픽셀 비율 차이가 이 값보다 크면 신뢰 가능한 변화로 간주
+    MIN_BASE_INTENSITY_DELTA = 10.0  # 환경 잡음을 억제하기 위한 최소 ΔI 임계값
+    ACTIVE_MIN_RATIO_DEFAULT = 0.35  # 점등된 절반으로 인정하기 위한 최소 비율(기본값)
+    INACTIVE_MAX_RATIO_DEFAULT = 0.25  # 꺼진 절반으로 인정하기 위한 최대 비율(기본값)
+    DEFAULT_BINARY_THRESHOLD = 140  # 이진화 기본 임계값
+    MIN_RULE_HEIGHT = 10  # 규칙 기반 판별을 수행하기 위한 최소 ROI 높이
+    MIN_RULE_WIDTH = 6   # 규칙 기반 판별을 수행하기 위한 최소 ROI 너비
+    MIN_RULE_AREA = 160  # 규칙 기반 판별을 수행하기 위한 최소 ROI 면적
 
     def __init__(self):
         super().__init__('traffic_light_detector')
@@ -45,6 +56,7 @@ class TrafficLightDetector(Node):
         default_model_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
         self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_lightonly_251002.pt YOLO 모델 파일 경로'))
         self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
+        self.declare_parameter('debug_mode', False, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
         
         # --- 파라미터 값 읽어오기 ---
         self.roi_mode = self.get_parameter('roi_mode').get_parameter_value().string_value
@@ -55,12 +67,16 @@ class TrafficLightDetector(Node):
         self.configured_yolo_model_path = self.get_parameter('yolo_model_path').get_parameter_value().string_value
         yolo_conf_param = self.get_parameter('yolo_confidence_threshold').get_parameter_value().double_value
         self.yolo_confidence_threshold = max(0.0, min(yolo_conf_param, 1.0))
-        
-        self.hsv_ranges = {
-            'red1': {'h_min': 0, 'h_max': 31, 's_min': 150, 's_max': 255, 'v_min': 173, 'v_max': 255},
-            'red2': {'h_min': 170, 'h_max': 179, 's_min': 150, 's_max': 255, 'v_min': 173, 'v_max': 255},
-            'green': {'h_min': 40, 'h_max': 80, 's_min': 150, 's_max': 255, 'v_min': 173, 'v_max': 255}
-        }
+        self.debug_mode = self.get_parameter('debug_mode').get_parameter_value().bool_value
+
+        if self.roi_mode == 'yolo':
+            # YOLO 모드에서는 카메라 창만 사용하므로 보조 창을 강제로 비활성화한다.
+            self.show_control_windows = False
+            self.show_mask_windows = False
+        elif self.roi_mode == 'manual':
+            # Manual 모드 역시 규칙 기반 탐지를 사용하므로 추가 제어 창이 필요 없다.
+            self.show_control_windows = False
+            self.show_mask_windows = False
 
         self.bridge = CvBridge()
         self.yolo_model = None
@@ -74,10 +90,23 @@ class TrafficLightDetector(Node):
         self.gui_is_first_print = True; self.gui_state = "Waiting..."
         self.gui_service_status = "Idle"; self.gui_last_error = "None"
         self.gui_confidence = "N/A"
+        self.last_final_color = "Unknown"
+        self.consensus_candidate = None; self.consensus_count = 0
+        self.conflict_candidate = None; self.conflict_count = 0
+        self.last_primary_color = "Unknown"; self.last_secondary_color = "Unknown"
+        self.last_yolo_confidence = None; self.last_rule_intensity_delta = None
+        self.last_rule_ratio_delta = None
+        self.last_decision_source = "None"
+        self.debug_window_names = set()
+        self.debug_last_rule_visuals = {}
+        self.debug_trackbars_initialized = False
+        self.binary_trackbar_initialized = False
+        self.rule_intensity_threshold = self.INTENSITY_DIFF_THRESHOLD
+        self.rule_ratio_threshold = self.RATIO_DIFF_THRESHOLD
+        self.rule_active_min_ratio = self.ACTIVE_MIN_RATIO_DEFAULT
+        self.rule_inactive_max_ratio = self.INACTIVE_MAX_RATIO_DEFAULT
+        self.rule_binary_threshold = self.DEFAULT_BINARY_THRESHOLD
         
-        if self.show_camera_windows or self.show_control_windows or self.show_mask_windows:
-            self.setup_control_windows()
-
         if self.roi_mode == 'yolo': self.init_yolo_mode()
         elif self.roi_mode == 'manual': self.init_manual_mode()
         else:
@@ -85,31 +114,6 @@ class TrafficLightDetector(Node):
             self.create_timer(0.1, self.destroy_node); return
 
         self.get_logger().info(f'TrafficLightDetector node started in \'{self.roi_mode}\' mode.')
-
-    def create_hsv_gradient(self, h_range, s_range, v_value, width, height):
-        h_min, h_max = h_range; s_min, s_max = s_range
-        if h_min > h_max: h_min, h_max = h_max, h_min
-        h = np.linspace(h_min, h_max, width); s = np.linspace(s_min, s_max, height)
-        H, S = np.meshgrid(h, s)
-        V = np.full((height, width), v_value, dtype=np.float64)
-        hsv_gradient = np.stack([H, S, V], axis=-1).astype(np.uint8)
-        return cv2.cvtColor(hsv_gradient, cv2.COLOR_HSV2BGR)
-
-    def setup_control_windows(self):
-        """OpenCV 창과 트랙바를 설정합니다. (Threshold 트랙바 제외)"""
-        if self.show_control_windows:
-            red_controls_window, green_controls_window = "Red Controls", "Green Controls"
-            cv2.namedWindow(red_controls_window); cv2.namedWindow(green_controls_window)
-            for key in ['h_min', 'h_max', 's_min', 's_max', 'v_min', 'v_max']:
-                max_val = 179 if 'h' in key else 255
-                cv2.createTrackbar(f"G_{key}", green_controls_window, self.hsv_ranges['green'][key], max_val, lambda v, k=key: self.hsv_ranges['green'].__setitem__(k, v))
-            for key in ['h_min', 'h_max']: cv2.createTrackbar(f"R1_{key}", red_controls_window, self.hsv_ranges['red1'][key], 179, lambda v, k=key: self.hsv_ranges['red1'].__setitem__(k, v))
-            for key in ['h_min', 'h_max']: cv2.createTrackbar(f"R2_{key}", red_controls_window, self.hsv_ranges['red2'][key], 179, lambda v, k=key: self.hsv_ranges['red2'].__setitem__(k, v))
-            for key in ['s_min', 's_max', 'v_min', 'v_max']:
-                cv2.createTrackbar(f"R_{key}", red_controls_window, self.hsv_ranges['red1'][key], 255, lambda v, k=key: (self.hsv_ranges['red1'].__setitem__(k, v), self.hsv_ranges['red2'].__setitem__(k, v)))
-        
-        if self.show_mask_windows:
-            cv2.namedWindow("Mask 1"); cv2.namedWindow("Mask 2")
 
     def init_yolo_mode(self):
         self.gui_detection_status = f"YOLO-Based | Thr:{self.yolo_confidence_threshold:.2f}"
@@ -139,7 +143,7 @@ class TrafficLightDetector(Node):
         self.time_synchronizer.registerCallback(self.yolo_synchronized_callback)
 
     def init_manual_mode(self):
-        self.gui_detection_status = "Manual"
+        self.gui_detection_status = self.decorate_status("Manual (rule-based)")
         self.rois = {1: None, 2: None}; self.roi_points = {1: [], 2: []}
         self.temp_roi_end_point = {1: None, 2: None}; self.edit_mode = False
         self.load_rois_from_file()
@@ -149,8 +153,6 @@ class TrafficLightDetector(Node):
         self.time_synchronizer.registerCallback(self.manual_synchronized_callback)
         if self.show_camera_windows:
             cv2.namedWindow("Camera 1"); cv2.namedWindow("Camera 2")
-            # Camera 1 창 생성 후 Threshold 트랙바 추가
-            cv2.createTrackbar("Threshold (Pixels)", "Camera 1", self.threshold_pixels, 1000, lambda v: setattr(self, 'threshold_pixels', v))
             cv2.setMouseCallback("Camera 1", self.mouse_callback, 1)
             cv2.setMouseCallback("Camera 2", self.mouse_callback, 2)
 
@@ -165,10 +167,11 @@ class TrafficLightDetector(Node):
             return
 
         results1 = self.run_yolo_inference(frame1)
+       
         results2 = self.run_yolo_inference(frame2)
 
-        detections1 = self.extract_valid_detections(frame1, results1)
-        detections2 = self.extract_valid_detections(frame2, results2)
+        detections1 = self.extract_valid_detections(frame1, results1, camera_id=1)
+        detections2 = self.extract_valid_detections(frame2, results2, camera_id=2)
 
         best_detection1 = self.find_best_traffic_light_detection(detections1)
         best_detection2 = self.find_best_traffic_light_detection(detections2)
@@ -181,31 +184,122 @@ class TrafficLightDetector(Node):
             overall_best_detection = best_detection1
         elif best_detection2:
             overall_best_detection = best_detection2
-        
-        final_color = "Unknown"
-        
-        if overall_best_detection:
-            self.get_logger().info(f"YOLO detected: '{overall_best_detection.class_name}' with confidence {overall_best_detection.score:.2f}")
-            if 'green light' in overall_best_detection.class_name:
-                final_color = "Green"
-            elif 'red light' in overall_best_detection.class_name:
-                final_color = "Red"
-            self.gui_confidence = f"{overall_best_detection.score:.2f}"
-            if final_color == "Green": self.trigger_green_mission()
-        else:
-            self.gui_confidence = "N/A"
 
-        self.gui_state = final_color.capitalize()
-        detection_state = "Detected" if final_color != "Unknown" else "Not Detected"
-        self.gui_detection_status = f"YOLO-Based ({detection_state}) | Thr:{self.yolo_confidence_threshold:.2f}"
+        primary_color = 'Unknown'
+        secondary_color = 'Unknown'
+        decision_source = None
+        rule_metrics = {'color': 'Unknown', 'intensity_delta': None, 'top_mean': None, 'bottom_mean': None}
+        camera_rule_metrics = {}
+
+        if best_detection1:
+            metrics1 = self.evaluate_rule_based_color(
+                frame1,
+                best_detection1.bbox,
+                source_label='Camera 1'
+            )
+            camera_rule_metrics[1] = metrics1
+            if self.debug_mode:
+                self.update_debug_rule_visuals(metrics1)
+
+        if best_detection2:
+            metrics2 = self.evaluate_rule_based_color(
+                frame2,
+                best_detection2.bbox,
+                source_label='Camera 2'
+            )
+            camera_rule_metrics[2] = metrics2
+            if self.debug_mode:
+                self.update_debug_rule_visuals(metrics2)
+
+        if self.debug_mode:
+            for cam_id in (1, 2):
+                if cam_id not in camera_rule_metrics:
+                    self.update_debug_rule_visuals({'source_label': f"Camera {cam_id}"})
+
+        if overall_best_detection:
+            self.get_logger().info(
+                f"YOLO detected: '{overall_best_detection.class_name}' with confidence {overall_best_detection.score:.2f}")
+
+            if 'green light' in overall_best_detection.class_name:
+                primary_color = 'Green'
+            elif 'red light' in overall_best_detection.class_name:
+                primary_color = 'Red'
+            else:
+                primary_color = 'Unknown'
+
+            rule_metrics = camera_rule_metrics.get(overall_best_detection.camera_id)
+            if rule_metrics is None:
+                source_frame = frame1 if overall_best_detection.camera_id == 1 else frame2
+                source_label = f"Camera {overall_best_detection.camera_id}"
+                rule_metrics = self.evaluate_rule_based_color(
+                    source_frame,
+                    overall_best_detection.bbox,
+                    source_label=source_label
+                )
+                camera_rule_metrics[overall_best_detection.camera_id] = rule_metrics
+            secondary_color = rule_metrics['color']
+
+            self.last_yolo_confidence = overall_best_detection.score
+        else:
+            self.last_yolo_confidence = None
+
+        self.last_rule_intensity_delta = rule_metrics.get('intensity_delta')
+        self.last_rule_ratio_delta = rule_metrics.get('ratio_delta')
+        self.last_primary_color = primary_color
+        self.last_secondary_color = secondary_color
+
+        final_color, decision_source = self.update_final_color_decision(primary_color, secondary_color)
+
+        if final_color == 'Green':
+            self.trigger_green_mission()
+
+        yolo_conf_str = f"YOLO:{self.last_yolo_confidence:.2f}" if self.last_yolo_confidence is not None else "YOLO:N/A"
+        rule_delta = self.last_rule_intensity_delta
+        rule_conf_str = (
+            f"RuleΔI:{rule_delta:.1f}" if isinstance(rule_delta, (float, int)) else "RuleΔI:N/A"
+        )
+        ratio_delta = self.last_rule_ratio_delta
+        ratio_conf_str = (
+            f"RuleΔR:{ratio_delta:.2f}" if isinstance(ratio_delta, (float, int)) else "RuleΔR:N/A"
+        )
+        self.gui_confidence = f"{yolo_conf_str} | {rule_conf_str} | {ratio_conf_str}"
+
+        if decision_source == 'consensus':
+            decision_status = f"Final(consensus)"
+        elif decision_source == 'rule_override':
+            decision_status = f"Final(rule override)"
+        else:
+            if primary_color == secondary_color and primary_color in {'Red', 'Green'}:
+                decision_status = (
+                    f"Consensus pending {self.consensus_count}/{self.CONSENSUS_REQUIRED_FRAMES}"
+                )
+            elif secondary_color in {'Red', 'Green'} and primary_color != secondary_color:
+                decision_status = (
+                    f"Rule override pending {self.conflict_count}/{self.CONFLICT_REQUIRED_FRAMES}"
+                )
+            else:
+                decision_status = "Awaiting stable detection"
+
+        self.gui_state = final_color
+        detection_summary = [
+            "YOLO Mode",
+            f"1차:{primary_color}",
+            f"2차:{secondary_color}",
+            decision_status,
+            f"Thr:{self.yolo_confidence_threshold:.2f}"
+        ]
+        self.gui_detection_status = self.decorate_status(" | ".join(detection_summary))
         self.update_gui()
 
-        if rclpy.ok() and (self.show_camera_windows or self.show_control_windows or self.show_mask_windows):
-            if self.show_camera_windows:
-                self.draw_yolo_results(frame1, detections1)
-                self.draw_yolo_results(frame2, detections2)
-                cv2.imshow("Camera 1", frame1)
-                cv2.imshow("Camera 2", frame2)
+        self.get_logger().debug(
+            f"Detections -> primary:{primary_color}, secondary:{secondary_color}, final:{final_color}, "
+            f"cons_cnt:{self.consensus_count}, conf_cnt:{self.conflict_count}")
+
+        if rclpy.ok() and self.show_camera_windows:
+            self.draw_yolo_results(frame1, detections1)
+            self.draw_yolo_results(frame2, detections2)
+            cv2.imshow("Camera 1", frame1)
+            cv2.imshow("Camera 2", frame2)
             key = cv2.waitKey(1) & 0xFF
 
 
@@ -217,39 +311,78 @@ class TrafficLightDetector(Node):
     def process_and_update(self, frame1, roi1_tuple, frame2, roi2_tuple):
         if self.mission_triggered or not rclpy.ok(): return
 
-        if self.show_camera_windows: self.threshold_pixels = cv2.getTrackbarPos("Threshold (Pixels)", "Camera 1")
-        if self.show_control_windows:
-            grad_w, grad_h = 400, 75
-            g = self.hsv_ranges['green']
-            green_grad = self.create_hsv_gradient((g['h_min'], g['h_max']), (g['s_min'], g['s_max']), g['v_max'], grad_w, grad_h)
-            cv2.imshow("Green Controls", green_grad)
-            r1, r2 = self.hsv_ranges['red1'], self.hsv_ranges['red2']
-            red_grad1 = self.create_hsv_gradient((r1['h_min'], r1['h_max']), (r1['s_min'], r1['s_max']), r1['v_max'], grad_w // 2, grad_h)
-            red_grad2 = self.create_hsv_gradient((r2['h_min'], r2['h_max']), (r2['s_min'], r2['s_max']), r2['v_max'], grad_w // 2, grad_h)
-            cv2.imshow("Red Controls", np.hstack([red_grad1, red_grad2]))
-            
         res1 = self.process_single_stream(frame1, roi1_tuple, 1)
         res2 = self.process_single_stream(frame2, roi2_tuple, 2)
 
-        if rclpy.ok() and (self.show_camera_windows or self.show_control_windows or self.show_mask_windows):
-            if self.show_camera_windows:
-                self.visualizing(res1['result_img'], res1['roi'], 1, res1['result'])
-                self.visualizing(res2['result_img'], res2['roi'], 2, res2['result'])
+        if rclpy.ok() and self.show_camera_windows:
+            self.visualizing(res1['result_img'], res1['roi'], 1, res1['result'])
+            self.visualizing(res2['result_img'], res2['roi'], 2, res2['result'])
             key = cv2.waitKey(1) & 0xFF
             if self.roi_mode == 'manual' and key == ord('q'):
                 self.edit_mode = not self.edit_mode
                 self.get_logger().info(f'Mode changed to: {"ROI Edit" if self.edit_mode else "Color Detection"}')
 
-        res1_pixels = max(res1['result']['red_pixels'], res1['result']['green_pixels'])
-        res2_pixels = max(res2['result']['red_pixels'], res2['result']['green_pixels'])
-        best_res = res1 if res1_pixels > res2_pixels else res2
-        final_color = best_res['result']['color']
-        self.gui_state = final_color.capitalize()
-        pixel_str = f"R:{best_res['result']['red_pixels']}, G:{best_res['result']['green_pixels']} / Thr:{self.threshold_pixels}"
-        self.gui_detection_status = f"{self.roi_mode.capitalize()}-Based ({'Detected' if final_color != 'Unknown' else 'Not Detected'}) | {pixel_str}"
-        self.gui_confidence = "N/A (HSV Range-based)"
+        results = [res1, res2]
 
-        if final_color.lower() == 'green': self.trigger_green_mission()
+        if self.debug_mode:
+            for res in results:
+                label = f"Camera {res.get('stream_id', '?')}"
+                metrics = res['result'].get('metrics')
+                if metrics:
+                    self.update_debug_rule_visuals(metrics)
+                else:
+                    self.update_debug_rule_visuals({'source_label': label})
+
+        def compute_score(res):
+            metrics = res['result'].get('metrics')
+            if not metrics:
+                return 0.0
+            ratio_delta = metrics.get('ratio_delta')
+            intensity_delta = metrics.get('intensity_delta')
+            if ratio_delta is not None:
+                return abs(ratio_delta)
+            if intensity_delta is not None:
+                return abs(intensity_delta)
+            return 0.0
+
+        best_res = max(results, key=compute_score)
+        best_metrics = best_res['result'].get('metrics') if best_res else None
+        best_color = best_res['result'].get('color', 'Unknown') if best_res else 'Unknown'
+
+        self.last_primary_color = best_color
+        self.last_secondary_color = best_color
+        self.last_yolo_confidence = None
+        self.last_rule_intensity_delta = best_metrics.get('intensity_delta') if best_metrics else None
+        self.last_rule_ratio_delta = best_metrics.get('ratio_delta') if best_metrics else None
+
+        final_color, decision_source = self.update_final_color_decision(best_color, best_color)
+
+        if final_color == 'Green':
+            self.trigger_green_mission()
+
+        intensity_delta = self.last_rule_intensity_delta
+        ratio_delta = self.last_rule_ratio_delta
+        rule_i_str = f"RuleΔI:{intensity_delta:.1f}" if isinstance(intensity_delta, (float, int)) else "RuleΔI:N/A"
+        rule_r_str = f"RuleΔR:{ratio_delta:.2f}" if isinstance(ratio_delta, (float, int)) else "RuleΔR:N/A"
+        self.gui_confidence = f"{rule_i_str} | {rule_r_str}"
+
+        if decision_source == 'consensus':
+            decision_status = "Final(consensus)"
+        else:
+            if best_color in {'Red', 'Green'}:
+                decision_status = f"Consensus pending {self.consensus_count}/{self.CONSENSUS_REQUIRED_FRAMES}"
+            else:
+                decision_status = "Awaiting stable detection"
+
+        roi_summaries = []
+        for res in results:
+            color = res['result'].get('color', 'Unknown')
+            roi_label = f"ROI{res['stream_id']}:" if 'stream_id' in res else "ROI?:"
+            roi_summaries.append(f"{roi_label}{color}")
+
+        detection_summary = ["Manual Mode", *roi_summaries, decision_status]
+        self.gui_detection_status = self.decorate_status(" | ".join(detection_summary))
+        self.gui_state = final_color
         self.update_gui()
 
     def process_single_stream(self, frame, roi_tuple, stream_id):
@@ -262,19 +395,24 @@ class TrafficLightDetector(Node):
 
         result_img = frame.copy()
         box_found = roi_tuple is not None
-        detection_result = {'color': 'Unknown', 'red_pixels': 0, 'green_pixels': 0, 'color_mask': None}
+        detection_result = {'color': 'Unknown', 'metrics': None, 'bbox': None}
 
         if box_found:
             x, y, w, h = roi_tuple
-            roi_img = frame[y:y+h, x:x+w]
-            if roi_img.size > 0: detection_result = self.detect_color_with_hsv_range(roi_img)
-        
-        if self.show_mask_windows:
-            mask_img = detection_result.get('color_mask')
-            if mask_img is not None: cv2.imshow(f"Mask {stream_id}", mask_img)
-            else: cv2.imshow(f"Mask {stream_id}", np.zeros((100, 100, 3), dtype=np.uint8))
+            bbox = (x, y, x + w, y + h)
+            source_label = f"Camera {stream_id}"
+            metrics = self.evaluate_rule_based_color(frame, bbox, source_label=source_label)
+            detection_result['color'] = metrics.get('color', 'Unknown')
+            detection_result['metrics'] = metrics
+            detection_result['bbox'] = bbox
 
-        return {'result': detection_result, 'result_img': result_img, 'roi': roi_tuple, 'box_found': box_found}
+        return {
+            'result': detection_result,
+            'result_img': result_img,
+            'roi': roi_tuple,
+            'box_found': box_found,
+            'stream_id': stream_id
+        }
 
     def resolve_yolo_model_path(self):
         candidates = []
@@ -319,7 +457,7 @@ class TrafficLightDetector(Node):
             label = f"{det.class_name}: {det.score:.2f}"
             cv2.putText(frame, label, (x1, max(0, y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-    def extract_valid_detections(self, frame, yolo_results):
+    def extract_valid_detections(self, frame, yolo_results, camera_id):
         """YOLO 결과에서 필요한 클래스만 추려 이중 검증을 통과한 탐지를 반환합니다."""
         detections = []
         if yolo_results is None or not getattr(yolo_results, 'boxes', None):
@@ -361,7 +499,14 @@ class TrafficLightDetector(Node):
                         f"Rejected green light detection due to guard check (score={score:.2f}).")
 
             if is_valid:
-                detections.append(SimpleNamespace(class_name=class_name, score=score, bbox=(x1, y1, x2, y2)))
+                detections.append(
+                    SimpleNamespace(
+                        class_name=class_name,
+                        score=score,
+                        bbox=(x1, y1, x2, y2),
+                        camera_id=camera_id
+                    )
+                )
 
         return detections
 
@@ -390,25 +535,345 @@ class TrafficLightDetector(Node):
 
         return top_ratio <= self.GREEN_TOP_MAX_RATIO and bottom_ratio >= self.GREEN_BOTTOM_MIN_RATIO
 
-    def detect_color_with_hsv_range(self, roi_img):
-        hsv_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
-        r1,r2,g = self.hsv_ranges['red1'],self.hsv_ranges['red2'],self.hsv_ranges['green']
-        lower_red1 = np.array([r1['h_min'],r1['s_min'],r1['v_min']]); upper_red1 = np.array([r1['h_max'],r1['s_max'],r1['v_max']])
-        lower_red2 = np.array([r2['h_min'],r2['s_min'],r2['v_min']]); upper_red2 = np.array([r2['h_max'],r2['s_max'],r2['v_max']])
-        lower_green= np.array([g['h_min'],g['s_min'],g['v_min']]); upper_green= np.array([g['h_max'],g['s_max'],g['v_max']])
-        mask_red1 = cv2.inRange(hsv_roi, lower_red1, upper_red1)
-        mask_red2 = cv2.inRange(hsv_roi, lower_red2, upper_red2)
-        mask_red = cv2.bitwise_or(mask_red1, mask_red2)
-        red_pixel_count = cv2.countNonZero(mask_red)
-        mask_green = cv2.inRange(hsv_roi, lower_green, upper_green)
-        green_pixel_count = cv2.countNonZero(mask_green)
-        detected_color = "Unknown"
-        if red_pixel_count > self.threshold_pixels and red_pixel_count > green_pixel_count: detected_color = "Red"
-        elif green_pixel_count > self.threshold_pixels and green_pixel_count > red_pixel_count: detected_color = "Green"
-        color_mask_display = np.zeros_like(roi_img)
-        color_mask_display[mask_red > 0] = (0, 0, 255)
-        color_mask_display[mask_green > 0] = (0, 255, 0)
-        return { 'color': detected_color, 'red_pixels': red_pixel_count, 'green_pixels': green_pixel_count, 'color_mask': color_mask_display }
+    def evaluate_rule_based_color(self, frame, bbox, source_label=None):
+        """세로 2구 신호등의 위/아래 밝기 비교를 통해 색상을 판별합니다."""
+        if bbox is None:
+            return {
+                'color': 'Unknown',
+                'top_mean': None,
+                'bottom_mean': None,
+                'intensity_delta': None,
+                'top_ratio': None,
+                'bottom_ratio': None,
+                'ratio_delta': None,
+                'threshold_used': None,
+                'full_binary': None,
+                'top_binary': None,
+                'bottom_binary': None,
+                'source_label': source_label
+            }
+
+        x1, y1, x2, y2 = bbox
+        roi = frame[y1:y2, x1:x2]
+        if roi.size == 0:
+            return {
+                'color': 'Unknown',
+                'top_mean': None,
+                'bottom_mean': None,
+                'intensity_delta': None,
+                'top_ratio': None,
+                'bottom_ratio': None,
+                'ratio_delta': None,
+                'threshold_used': None,
+                'full_binary': None,
+                'top_binary': None,
+                'bottom_binary': None,
+                'source_label': source_label
+            }
+
+        h, w = roi.shape[:2]
+        if (
+            h < self.MIN_RULE_HEIGHT or
+            w < self.MIN_RULE_WIDTH or
+            (h * w) < self.MIN_RULE_AREA
+        ):
+            return {
+                'color': 'Unknown',
+                'top_mean': None,
+                'bottom_mean': None,
+                'intensity_delta': None,
+                'top_ratio': None,
+                'bottom_ratio': None,
+                'ratio_delta': None,
+                'threshold_used': None,
+                'full_binary': None,
+                'top_binary': None,
+                'bottom_binary': None,
+                'source_label': source_label
+            }
+
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        if h < 2:
+            return {
+                'color': 'Unknown',
+                'top_mean': None,
+                'bottom_mean': None,
+                'intensity_delta': None,
+                'top_ratio': None,
+                'bottom_ratio': None,
+                'ratio_delta': None,
+                'threshold_used': None,
+                'full_binary': None,
+                'top_binary': None,
+                'bottom_binary': None,
+                'source_label': source_label
+            }
+
+        split_idx = h // 2
+        top_half = blurred[:split_idx, :]
+        bottom_half = blurred[split_idx:, :]
+
+        top_mean = float(np.mean(top_half))
+        bottom_mean = float(np.mean(bottom_half))
+        intensity_delta = bottom_mean - top_mean
+
+        threshold = int(max(0, min(255, self.rule_binary_threshold)))
+        _, binary = cv2.threshold(blurred, threshold, 255, cv2.THRESH_BINARY)
+
+        top_binary = binary[:split_idx, :]
+        bottom_binary = binary[split_idx:, :]
+
+        top_ratio = float(np.count_nonzero(top_binary)) / top_binary.size if top_binary.size > 0 else 0.0
+        bottom_ratio = float(np.count_nonzero(bottom_binary)) / bottom_binary.size if bottom_binary.size > 0 else 0.0
+        ratio_delta = bottom_ratio - top_ratio
+
+        color = 'Unknown'
+        ratio_threshold = self.rule_ratio_threshold
+        effective_intensity_threshold = max(self.rule_intensity_threshold, self.MIN_BASE_INTENSITY_DELTA)
+        active_min = self.rule_active_min_ratio
+        inactive_max = self.rule_inactive_max_ratio
+
+        both_active = (top_ratio >= active_min and bottom_ratio >= active_min)
+        both_inactive = (top_ratio <= inactive_max and bottom_ratio <= inactive_max)
+
+        candidate = None
+        if not both_active and not both_inactive:
+            if abs(ratio_delta) >= ratio_threshold and abs(intensity_delta) >= effective_intensity_threshold:
+                candidate = 'Green' if ratio_delta > 0 else 'Red'
+            elif abs(intensity_delta) >= effective_intensity_threshold:
+                candidate = 'Green' if intensity_delta > 0 else 'Red'
+
+        if candidate == 'Green':
+            if (
+                bottom_ratio >= active_min and
+                top_ratio <= inactive_max
+            ):
+                color = 'Green'
+        elif candidate == 'Red':
+            if (
+                top_ratio >= active_min and
+                bottom_ratio <= inactive_max
+            ):
+                color = 'Red'
+
+        preview_label = source_label or 'ROI'
+        full_binary = binary if binary is not None else np.zeros_like(blurred)
+        if len(full_binary.shape) == 2:
+            preview_img = cv2.cvtColor(full_binary, cv2.COLOR_GRAY2BGR)
+        else:
+            preview_img = full_binary.copy()
+        cv2.putText(preview_img, f'{preview_label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+        self.update_binary_preview(preview_img)
+
+        return {
+            'color': color,
+            'top_mean': top_mean,
+            'bottom_mean': bottom_mean,
+            'intensity_delta': intensity_delta,
+            'top_ratio': top_ratio,
+            'bottom_ratio': bottom_ratio,
+            'ratio_delta': ratio_delta,
+            'threshold_used': threshold,
+            'top_binary': top_binary,
+            'bottom_binary': bottom_binary,
+            'full_binary': binary,
+            'source_label': source_label
+        }
+
+    def update_final_color_decision(self, primary_color, secondary_color):
+        """1/2차 결과를 누적해 최종 신호등 색상을 결정합니다."""
+        decision_source = None
+
+        consensus = (
+            primary_color == secondary_color and
+            primary_color in {'Red', 'Green'}
+        )
+
+        if consensus:
+            if self.consensus_candidate == primary_color:
+                self.consensus_count += 1
+            else:
+                self.consensus_candidate = primary_color
+                self.consensus_count = 1
+
+            if self.consensus_count >= self.CONSENSUS_REQUIRED_FRAMES:
+                decision_source = 'consensus'
+        else:
+            self.consensus_candidate = None
+            self.consensus_count = 0
+
+        conflict = (
+            secondary_color in {'Red', 'Green'} and
+            primary_color != secondary_color
+        )
+
+        if conflict:
+            if self.conflict_candidate == secondary_color:
+                self.conflict_count += 1
+            else:
+                self.conflict_candidate = secondary_color
+                self.conflict_count = 1
+
+            if self.conflict_count >= self.CONFLICT_REQUIRED_FRAMES:
+                decision_source = 'rule_override'
+        else:
+            self.conflict_candidate = None
+            self.conflict_count = 0
+
+        if decision_source:
+            new_color = secondary_color if decision_source == 'rule_override' else primary_color
+            if self.last_final_color != new_color:
+                self.get_logger().info(
+                    f"Final traffic light decision updated to {new_color} ({decision_source}).")
+            self.last_final_color = new_color
+            self.last_decision_source = decision_source
+            # 새 결정을 내렸으면 카운터를 초기화해 다음 변화를 기다린다.
+            self.consensus_candidate = None
+            self.consensus_count = 0
+            self.conflict_candidate = None
+            self.conflict_count = 0
+        else:
+            self.last_decision_source = 'None'
+
+        final_color = self.last_final_color if self.last_final_color else 'Unknown'
+        return final_color, decision_source
+
+    def update_debug_rule_visuals(self, rule_metrics):
+        if not self.debug_mode:
+            return
+
+        label = 'ROI'
+        full_binary = None
+        threshold_used = None
+        intensity_delta = None
+        ratio_delta = None
+        top_ratio = None
+        bottom_ratio = None
+
+        if rule_metrics:
+            label = rule_metrics.get('source_label') or label
+            full_binary = rule_metrics.get('full_binary')
+            threshold_used = rule_metrics.get('threshold_used')
+            intensity_delta = rule_metrics.get('intensity_delta')
+            ratio_delta = rule_metrics.get('ratio_delta')
+            top_ratio = rule_metrics.get('top_ratio')
+            bottom_ratio = rule_metrics.get('bottom_ratio')
+        else:
+            label = 'Idle'
+
+        full_binary = None
+
+        if full_binary is None:
+            full_display = np.zeros((200, 100), dtype=np.uint8)
+        else:
+            full_display = full_binary
+
+        if len(full_display.shape) == 2:
+            display_bgr = cv2.cvtColor(full_display, cv2.COLOR_GRAY2BGR)
+        else:
+            display_bgr = full_display.copy()
+
+        cv2.putText(display_bgr, f'{label}', (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+
+        info_img = np.zeros((270, 360, 3), dtype=np.uint8)
+        effective_intensity_threshold = max(self.rule_intensity_threshold, self.MIN_BASE_INTENSITY_DELTA)
+
+        lines = [
+            f"Source: {label}",
+            f"Thr Used: {threshold_used}" if threshold_used is not None else "Thr Used: N/A",
+            f"Top Ratio: {top_ratio:.2f}" if top_ratio is not None else "Top Ratio: N/A",
+            f"Bottom Ratio: {bottom_ratio:.2f}" if bottom_ratio is not None else "Bottom Ratio: N/A",
+            f"ΔR: {ratio_delta:.2f}" if ratio_delta is not None else "ΔR: N/A",
+            f"ΔI: {intensity_delta:.1f}" if intensity_delta is not None else "ΔI: N/A",
+            f"Thr ΔR: {self.rule_ratio_threshold:.3f}",
+            f"Eff ΔI Thr: {effective_intensity_threshold:.1f}",
+            f"Active Min: {self.rule_active_min_ratio:.2f}",
+            f"Inactive Max: {self.rule_inactive_max_ratio:.2f}"
+        ]
+        for idx, text in enumerate(lines):
+            cv2.putText(info_img, text, (10, 30 + idx * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+
+        if self.debug_mode:
+            cv2.imshow(f'Debug Binary ({label})', display_bgr)
+            cv2.imshow(f'Debug Rule Info ({label})', info_img)
+            self._ensure_debug_trackbars()
+            cv2.imshow('Debug Rule Controls', display_bgr)
+        else:
+            self.update_binary_preview(display_bgr)
+
+    def _ensure_debug_trackbars(self):
+        if self.debug_trackbars_initialized:
+            return
+
+        window_name = 'Debug Rule Controls'
+        if window_name not in self.debug_window_names:
+            cv2.namedWindow(window_name)
+            self.debug_window_names.add(window_name)
+
+        cv2.createTrackbar(
+            'ΔI Threshold (x10)',
+            window_name,
+            int(self.rule_intensity_threshold * 10),
+            500,
+            lambda v: self._on_intensity_trackbar(v)
+        )
+
+        cv2.createTrackbar(
+            'ΔR Threshold (x1000)',
+            window_name,
+            int(self.rule_ratio_threshold * 1000),
+            1000,
+            lambda v: self._on_ratio_trackbar(v)
+        )
+
+        cv2.createTrackbar(
+            'Active Min (x100)',
+            window_name,
+            int(self.rule_active_min_ratio * 100),
+            100,
+            lambda v: self._on_active_ratio_trackbar(v)
+        )
+
+        cv2.createTrackbar(
+            'Inactive Max (x100)',
+            window_name,
+            int(self.rule_inactive_max_ratio * 100),
+            100,
+            lambda v: self._on_inactive_ratio_trackbar(v)
+        )
+
+        self.debug_trackbars_initialized = True
+
+    def update_binary_preview(self, preview_img):
+        window_name = 'Binary Preview'
+        if not self.binary_trackbar_initialized:
+            cv2.namedWindow(window_name)
+            cv2.createTrackbar(
+                'Bin Thr',
+                window_name,
+                int(self.rule_binary_threshold),
+                255,
+                lambda v: self._on_binary_threshold_trackbar(v)
+            )
+            self.binary_trackbar_initialized = True
+        cv2.imshow(window_name, preview_img)
+
+    def _on_intensity_trackbar(self, value):
+        self.rule_intensity_threshold = max(0.0, float(value) / 10.0)
+
+    def _on_ratio_trackbar(self, value):
+        self.rule_ratio_threshold = max(0.0, float(value) / 1000.0)
+
+    def _on_active_ratio_trackbar(self, value):
+        self.rule_active_min_ratio = max(0.0, min(1.0, float(value) / 100.0))
+
+    def _on_inactive_ratio_trackbar(self, value):
+        self.rule_inactive_max_ratio = max(0.0, min(1.0, float(value) / 100.0))
+
+    def _on_binary_threshold_trackbar(self, value):
+        self.rule_binary_threshold = max(0, min(255, int(value)))
 
     def update_gui(self):
         if not rclpy.ok(): return
@@ -421,6 +886,11 @@ class TrafficLightDetector(Node):
                f"  Service     : {self.gui_service_status}\n"
                f"  Last Error  : {self.gui_last_error}\n"
                f"-------------------------------------"), flush=True)
+
+    def decorate_status(self, status_text):
+        if self.debug_mode and not status_text.startswith('[DEBUG]'):
+            return f"[DEBUG] {status_text}"
+        return status_text
 
     def visualizing(self, frame, roi_tuple, stream_id, detection_result):
         if roi_tuple:
@@ -468,6 +938,13 @@ class TrafficLightDetector(Node):
         self.get_logger().info('<<<<< VIRTUAL GREEN LIGHT triggered by service call! >>>>>')
         self.trigger_green_mission(); response.success=True; response.message='Triggering green mission.'; return response
     def trigger_green_mission(self):
+        if self.debug_mode:
+            self.get_logger().info('Debug mode enabled; skipping /green trigger.')
+            self.gui_service_status = "Debug (skip trigger)"
+            self.gui_last_error = "None"
+            self.update_gui()
+            return
+
         if self.mission_triggered: return
         self.mission_triggered = True; self.gui_service_status = "Pending..."; self.update_gui()
         if self.retry_green_service_timer is None: self.retry_green_service_timer = self.create_timer(1.0, self.green_service_call_tick)
@@ -489,7 +966,7 @@ class TrafficLightDetector(Node):
         self.update_gui()
     def cleanup(self):
         if self.retry_green_service_timer is not None: self.retry_green_service_timer.cancel()
-        if self.show_camera_windows or self.show_control_windows or self.show_mask_windows:
+        if self.show_camera_windows or bool(self.debug_window_names):
             cv2.destroyAllWindows(); cv2.waitKey(1)
         print("\n--- Cleanup Process Finished ---")
 
