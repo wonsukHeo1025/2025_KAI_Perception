@@ -25,8 +25,6 @@ class TrafficLightDetector(Node):
     HSV 색상 범위를 트랙바로 실시간 조절하고, GUI 창 표시 여부를 파라미터로 제어하는 기능이 통합되었습니다.
     """
     GUI_HEIGHT = 6
-    GREEN_TOP_MAX_RATIO = 0.05  # 최대 허용 상단 점등 비율 (전체 영역 대비)
-    GREEN_BOTTOM_MIN_RATIO = 0.4  # 최소 요구 하단 점등 비율 (전체 영역 대비)
     CONSENSUS_REQUIRED_FRAMES = 2  # YOLO와 규칙 기반 결과 일치 시 필요한 연속 프레임 수
     CONFLICT_REQUIRED_FRAMES = 10  # 결과가 불일치할 때 규칙 기반 결과가 유지되어야 하는 연속 프레임 수
     DEFAULT_BINARY_THRESHOLD = 140  # 이진화 기본 임계값
@@ -50,8 +48,8 @@ class TrafficLightDetector(Node):
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
         self.declare_parameter('show_mask_windows', True, ParameterDescriptor(description='마스크 시각화 창 표시 여부'))
-        default_model_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
-        self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_lightonly_251002.pt YOLO 모델 파일 경로'))
+        default_model_path = os.path.join(self.script_dir, "models", "yolov10n_one_class.pt")
+        self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_one_class.pt YOLO 모델 파일 경로'))
         self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
         self.declare_parameter('debug_mode', True, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
         
@@ -78,7 +76,7 @@ class TrafficLightDetector(Node):
         self.bridge = CvBridge()
         self.yolo_model = None
         self.resolved_yolo_model_path = None
-        self.yolo_target_classes = {'green light', 'red light', 'unknown light'}
+        self.yolo_target_classes = {'traffic_light', 'traffic light'}
         self.green_client = self.create_client(Trigger, '/green')
         self.virtual_green_service = self.create_service(Trigger, '/virtual_green', self.virtual_green_callback)
         
@@ -175,21 +173,16 @@ class TrafficLightDetector(Node):
 
         if best_detection:
             self.get_logger().info(
-                f"YOLO detected: '{best_detection.class_name}' with confidence {best_detection.score:.2f}")
-
-            if 'green light' in best_detection.class_name:
-                primary_color = 'Green'
-            elif 'red light' in best_detection.class_name:
-                primary_color = 'Red'
-            else:
-                primary_color = 'Unknown'
+                f"YOLO detected traffic light bbox with confidence {best_detection.score:.2f}")
 
             rule_metrics = self.evaluate_rule_based_color(
                 frame,
                 best_detection.bbox,
                 source_label='Camera 1'
             )
-            secondary_color = rule_metrics.get('color', 'Unknown')
+            rule_color = rule_metrics.get('color', 'Unknown')
+            primary_color = rule_color
+            secondary_color = rule_color
             self.last_yolo_confidence = best_detection.score
 
             if self.debug_mode:
@@ -228,10 +221,11 @@ class TrafficLightDetector(Node):
                 decision_status = "Awaiting stable detection"
 
         self.gui_state = final_color
+        bbox_state = "bbox:OK" if best_detection else "bbox:None"
         detection_summary = [
             "YOLO Mode",
-            f"1차:{primary_color}",
-            f"2차:{secondary_color}",
+            bbox_state,
+            f"Rule:{secondary_color}",
             decision_status,
             f"Thr:{self.yolo_confidence_threshold:.2f}"
         ]
@@ -344,7 +338,7 @@ class TrafficLightDetector(Node):
                 rel_path = self.configured_yolo_model_path.lstrip('/\\')
                 candidates.append(os.path.join(self.script_dir, self.configured_yolo_model_path))
                 candidates.append(os.path.join(self.script_dir, rel_path))
-        default_path = os.path.join(self.script_dir, "models", "yolov10n_lightonly_251002.pt")
+        default_path = os.path.join(self.script_dir, "models", "yolov10n_one_class.pt")
         candidates.append(default_path)
         for path in candidates:
             if path and os.path.exists(path): return path
@@ -367,9 +361,8 @@ class TrafficLightDetector(Node):
         """프레임에 검증된 YOLO 탐지 결과를 시각화합니다."""
         if not detections: return
         color_map = {
-            'green light': (0, 255, 0),
-            'red light': (0, 0, 255),
-            'unknown light': (255, 255, 0)
+            'traffic_light': (255, 255, 255),
+            'traffic light': (255, 255, 255)
         }
         for det in detections:
             x1, y1, x2, y2 = det.bbox
@@ -412,49 +405,16 @@ class TrafficLightDetector(Node):
             if x2 <= x1 or y2 <= y1:
                 continue
 
-            is_valid = True
-            if class_name == 'green light':
-                is_valid = self.is_green_light_active(frame, (x1, y1, x2, y2))
-                if not is_valid:
-                    self.get_logger().debug(
-                        f"Rejected green light detection due to guard check (score={score:.2f}).")
-
-            if is_valid:
-                detections.append(
-                    SimpleNamespace(
-                        class_name=class_name,
-                        score=score,
-                        bbox=(x1, y1, x2, y2),
-                        camera_id=camera_id
-                    )
+            detections.append(
+                SimpleNamespace(
+                    class_name=class_name,
+                    score=score,
+                    bbox=(x1, y1, x2, y2),
+                    camera_id=camera_id
                 )
+            )
 
         return detections
-
-    def is_green_light_active(self, frame, bbox):
-        """green light 탐지 결과가 실제 점등 상태인지 이진화 기반으로 검증합니다."""
-        x1, y1, x2, y2 = bbox
-        roi = frame[y1:y2, x1:x2]
-        if roi.size == 0:
-            return False
-
-        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        h, w = binary.shape
-        if h < 2 or w < 2:
-            return False
-
-        split_idx = h // 2
-        top_half = binary[:split_idx, :]
-        bottom_half = binary[split_idx:, :]
-
-        total_pixels = h * w
-        top_ratio = float(np.count_nonzero(top_half)) / total_pixels
-        bottom_ratio = float(np.count_nonzero(bottom_half)) / total_pixels
-
-        return top_ratio <= self.GREEN_TOP_MAX_RATIO and bottom_ratio >= self.GREEN_BOTTOM_MIN_RATIO
 
     def _update_rule_color_ema(self, top_detected, bottom_detected):
         """Update exponential moving averages for top(red) and bottom(green) detections."""
