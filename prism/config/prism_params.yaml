@@ -44,7 +44,7 @@ prism_fusion_node:
       min_interval_ms: 0
 
     # Color mapping control
-    enable_color_mapping: true  # Set to false for interpolation-only mode (FILC-like performance)
+    enable_color_mapping: false  # Set to false for interpolation-only mode (FILC-like performance)
 
     # Interpolation disabled (use raw points)
     interpolation:
