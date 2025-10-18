@@ -46,8 +46,8 @@ class TrafficLightDetector(Node):
         self.declare_parameter('show_camera_windows', True, ParameterDescriptor(description='메인 카메라 창 표시 여부'))
         self.declare_parameter('show_control_windows', True, ParameterDescriptor(description='색상 제어 창 표시 여부'))
         self.declare_parameter('show_mask_windows', True, ParameterDescriptor(description='마스크 시각화 창 표시 여부'))
-        default_model_path = os.path.join(self.script_dir, "models", "yolov10n_one_class.pt")
-        self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_one_class.pt YOLO 모델 파일 경로'))
+        default_model_path = os.path.join(self.script_dir, "models", "yolov10n_TL.pt")
+        self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_TL.pt YOLO 모델 파일 경로'))
         self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
         self.declare_parameter('debug_mode', True, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
         
