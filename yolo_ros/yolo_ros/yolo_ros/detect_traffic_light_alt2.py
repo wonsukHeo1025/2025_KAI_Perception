@@ -38,6 +38,7 @@ class TrafficLightDetector(Node):
     MODEL_EMA_THRESHOLD = 0.6      # EMA가 이 값을 넘어야 색상으로 채택
     MODEL_EMA_MARGIN = 0.1         # 두 EMA 간 차이가 이 값 이상이어야 함
     MODEL_EMA_DECAY = 0.1          # YOLO 결과가 없거나 무효일 때 EMA를 감소시키는 비율
+    MODEL_EMA_RULE_UNKNOWN_SCALE = 0.5  # 룰베이스가 Unknown일 때 신규 추정 가중치 축소 비율
 
     def __init__(self):
         super().__init__('traffic_light_detector')
@@ -56,6 +57,11 @@ class TrafficLightDetector(Node):
         self.declare_parameter('yolo_model_path', default_model_path, ParameterDescriptor(description='/models/yolov10n_lightonly_251002.pt YOLO 모델 파일 경로'))
         self.declare_parameter('yolo_confidence_threshold', 0.5, ParameterDescriptor(description='YOLO 탐지를 채택할 최소 신뢰도 (0.0~1.0)'))
         self.declare_parameter('debug_mode', True, ParameterDescriptor(description='초록불 트리거를 비활성화하고 디버그 시각화를 활성화합니다.'))
+        self.declare_parameter(
+            'model_ema_rule_unknown_scale',
+            float(self.MODEL_EMA_RULE_UNKNOWN_SCALE),
+            ParameterDescriptor(description='룰이 Unknown일 때 YOLO EMA 업데이트 가중치 배율 (0.0~1.0)')
+        )
         
         # --- 파라미터 값 읽어오기 ---
         self.roi_mode = self.get_parameter('roi_mode').get_parameter_value().string_value
@@ -67,6 +73,8 @@ class TrafficLightDetector(Node):
         yolo_conf_param = self.get_parameter('yolo_confidence_threshold').get_parameter_value().double_value
         self.yolo_confidence_threshold = max(0.0, min(yolo_conf_param, 1.0))
         self.debug_mode = self.get_parameter('debug_mode').get_parameter_value().bool_value
+        scale_param = self.get_parameter('model_ema_rule_unknown_scale').get_parameter_value().double_value
+        self.model_ema_rule_unknown_scale = max(0.0, min(scale_param, 1.0))
 
         if self.roi_mode == 'yolo':
             # YOLO 모드에서는 카메라 창만 사용하므로 보조 창을 강제로 비활성화한다.
@@ -103,6 +111,8 @@ class TrafficLightDetector(Node):
         self.rule_red_ema = 0.0
         self.rule_green_ema = 0.0
         self.model_ema_alpha = self.MODEL_EMA_ALPHA
+        if not hasattr(self, 'model_ema_rule_unknown_scale'):
+            self.model_ema_rule_unknown_scale = self.MODEL_EMA_RULE_UNKNOWN_SCALE
         self.model_red_ema = 0.0
         self.model_green_ema = 0.0
         self.last_model_ema_summary = "ModelEMA:R0.00/G0.00"
@@ -213,7 +223,16 @@ class TrafficLightDetector(Node):
                     self.update_debug_rule_visuals(rule_metrics)
             else:
                 if model_color in {'Red', 'Green'}:
-                    ema_color = self._update_model_color_ema(model_color, best_detection.score)
+                    alpha_scale = (
+                        self.model_ema_rule_unknown_scale
+                        if rule_color == 'Unknown'
+                        else 1.0
+                    )
+                    ema_color = self._update_model_color_ema(
+                        model_color,
+                        best_detection.score,
+                        alpha_scale=alpha_scale
+                    )
                 else:
                     self._decay_model_color_ema()
                     ema_color = self._model_ema_to_color()
@@ -482,9 +501,11 @@ class TrafficLightDetector(Node):
             return 'Red'
         return 'Unknown'
 
-    def _update_model_color_ema(self, color, confidence):
+    def _update_model_color_ema(self, color, confidence, alpha_scale=1.0):
         confidence = max(0.0, min(1.0, confidence if confidence is not None else 0.0))
-        alpha = self.model_ema_alpha * confidence if confidence > 0.0 else 0.0
+        alpha_scale = max(0.0, min(1.0, alpha_scale))
+        base_alpha = self.model_ema_alpha * confidence if confidence > 0.0 else 0.0
+        alpha = base_alpha * alpha_scale
         alpha = max(0.0, min(1.0, alpha))
         beta = 1.0 - alpha
 
