@@ -25,8 +25,6 @@ class TrafficLightDetector(Node):
     HSV 색상 범위를 트랙바로 실시간 조절하고, GUI 창 표시 여부를 파라미터로 제어하는 기능이 통합되었습니다.
     """
     GUI_HEIGHT = 6
-    CONSENSUS_REQUIRED_FRAMES = 2  # YOLO와 규칙 기반 결과 일치 시 필요한 연속 프레임 수
-    CONFLICT_REQUIRED_FRAMES = 10  # 결과가 불일치할 때 규칙 기반 결과가 유지되어야 하는 연속 프레임 수
     DEFAULT_BINARY_THRESHOLD = 140  # 이진화 기본 임계값
     MIN_CLUSTER_WIDTH_RATIO = 0.25  # 유효한 클러스터로 인정하기 위한 최소 너비 비율 (ROI 대비)
     MIN_CLUSTER_HEIGHT_PIXELS = 0   # 유효한 클러스터로 인정하기 위한 최소 높이 (0이면 비활성화)
@@ -85,13 +83,9 @@ class TrafficLightDetector(Node):
         self.gui_is_first_print = True; self.gui_state = "Waiting..."
         self.gui_service_status = "Idle"; self.gui_last_error = "None"
         self.gui_confidence = "N/A"
-        self.last_final_color = "Unknown"
-        self.consensus_candidate = None; self.consensus_count = 0
-        self.conflict_candidate = None; self.conflict_count = 0
-        self.last_primary_color = "Unknown"; self.last_secondary_color = "Unknown"
         self.last_yolo_confidence = None
         self.last_rule_blob_summary = "RuleBlob:N/A"
-        self.last_decision_source = "None"
+        self.current_color = "Unknown"
         self.debug_window_names = set()
         self.binary_trackbar_initialized = False
         self.rule_binary_threshold = self.DEFAULT_BINARY_THRESHOLD
@@ -167,8 +161,6 @@ class TrafficLightDetector(Node):
         detections = self.extract_valid_detections(frame, results, camera_id=1)
         best_detection = self.find_best_traffic_light_detection(detections)
 
-        primary_color = 'Unknown'
-        secondary_color = 'Unknown'
         rule_metrics = None
 
         if best_detection:
@@ -180,23 +172,21 @@ class TrafficLightDetector(Node):
                 best_detection.bbox,
                 source_label='Camera 1'
             )
-            rule_color = rule_metrics.get('color', 'Unknown')
-            primary_color = rule_color
-            secondary_color = rule_color
             self.last_yolo_confidence = best_detection.score
-
-            if self.debug_mode:
-                self.update_debug_rule_visuals(rule_metrics)
         else:
             self.last_yolo_confidence = None
-            if self.debug_mode:
-                self.update_debug_rule_visuals({'source_label': 'Camera 1'})
+            rule_metrics = self.evaluate_rule_based_color(
+                frame,
+                None,
+                source_label='Camera 1'
+            )
 
-        self.last_primary_color = primary_color
-        self.last_secondary_color = secondary_color
+        if self.debug_mode:
+            self.update_debug_rule_visuals(rule_metrics)
+
+        final_color = rule_metrics.get('color', 'Unknown') if rule_metrics else 'Unknown'
+        self.current_color = final_color
         self.last_rule_blob_summary = self._format_rule_blob_summary(rule_metrics)
-
-        final_color, decision_source = self.update_final_color_decision(primary_color, secondary_color)
 
         if final_color == 'Green':
             self.trigger_green_mission()
@@ -204,37 +194,16 @@ class TrafficLightDetector(Node):
         yolo_conf_str = f"YOLO:{self.last_yolo_confidence:.2f}" if self.last_yolo_confidence is not None else "YOLO:N/A"
         self.gui_confidence = f"{yolo_conf_str} | {self.last_rule_blob_summary}"
 
-        if decision_source == 'consensus':
-            decision_status = f"Final(consensus)"
-        elif decision_source == 'rule_override':
-            decision_status = f"Final(rule override)"
-        else:
-            if primary_color == secondary_color and primary_color in {'Red', 'Green'}:
-                decision_status = (
-                    f"Consensus pending {self.consensus_count}/{self.CONSENSUS_REQUIRED_FRAMES}"
-                )
-            elif secondary_color in {'Red', 'Green'} and primary_color != secondary_color:
-                decision_status = (
-                    f"Rule override pending {self.conflict_count}/{self.CONFLICT_REQUIRED_FRAMES}"
-                )
-            else:
-                decision_status = "Awaiting stable detection"
-
-        self.gui_state = final_color
         bbox_state = "bbox:OK" if best_detection else "bbox:None"
         detection_summary = [
             "YOLO Mode",
             bbox_state,
-            f"Rule:{secondary_color}",
-            decision_status,
+            f"Color:{final_color}",
             f"Thr:{self.yolo_confidence_threshold:.2f}"
         ]
+        self.gui_state = final_color
         self.gui_detection_status = self.decorate_status(" | ".join(detection_summary))
         self.update_gui()
-
-        self.get_logger().debug(
-            f"Detections -> primary:{primary_color}, secondary:{secondary_color}, final:{final_color}, "
-            f"cons_cnt:{self.consensus_count}, conf_cnt:{self.conflict_count}")
 
         if rclpy.ok() and self.show_camera_windows:
             self.draw_yolo_results(frame, detections)
@@ -274,30 +243,18 @@ class TrafficLightDetector(Node):
         metrics = res['result'].get('metrics')
         best_color = res['result'].get('color', 'Unknown')
 
-        self.last_primary_color = best_color
-        self.last_secondary_color = best_color
         self.last_yolo_confidence = None
         self.last_rule_blob_summary = self._format_rule_blob_summary(metrics)
+        self.current_color = best_color
 
-        final_color, decision_source = self.update_final_color_decision(best_color, best_color)
-
-        if final_color == 'Green':
+        if best_color == 'Green':
             self.trigger_green_mission()
 
         self.gui_confidence = self.last_rule_blob_summary
 
-        if decision_source == 'consensus':
-            decision_status = "Final(consensus)"
-        else:
-            if best_color in {'Red', 'Green'}:
-                decision_status = f"Consensus pending {self.consensus_count}/{self.CONSENSUS_REQUIRED_FRAMES}"
-            else:
-                decision_status = "Awaiting stable detection"
-
-        roi_color = res['result'].get('color', 'Unknown')
-        detection_summary = ["Manual Mode", f"ROI1:{roi_color}", decision_status]
+        detection_summary = ["Manual Mode", f"Color:{best_color}"]
         self.gui_detection_status = self.decorate_status(" | ".join(detection_summary))
-        self.gui_state = final_color
+        self.gui_state = best_color
         self.update_gui()
 
     def process_single_stream(self, frame, roi_tuple, stream_id):
@@ -630,64 +587,6 @@ class TrafficLightDetector(Node):
             f"{label} cand: circ {circularity * 100:.0f}%:{circ_status} | "
             f"width {width_ratio * 100:.0f}%:{width_status}"
         ), passes_all
-
-    def update_final_color_decision(self, primary_color, secondary_color):
-        """1/2차 결과를 누적해 최종 신호등 색상을 결정합니다."""
-        decision_source = None
-
-        consensus = (
-            primary_color == secondary_color and
-            primary_color in {'Red', 'Green'}
-        )
-
-        if consensus:
-            if self.consensus_candidate == primary_color:
-                self.consensus_count += 1
-            else:
-                self.consensus_candidate = primary_color
-                self.consensus_count = 1
-
-            if self.consensus_count >= self.CONSENSUS_REQUIRED_FRAMES:
-                decision_source = 'consensus'
-        else:
-            self.consensus_candidate = None
-            self.consensus_count = 0
-
-        conflict = (
-            secondary_color in {'Red', 'Green'} and
-            primary_color != secondary_color
-        )
-
-        if conflict:
-            if self.conflict_candidate == secondary_color:
-                self.conflict_count += 1
-            else:
-                self.conflict_candidate = secondary_color
-                self.conflict_count = 1
-
-            if self.conflict_count >= self.CONFLICT_REQUIRED_FRAMES:
-                decision_source = 'rule_override'
-        else:
-            self.conflict_candidate = None
-            self.conflict_count = 0
-
-        if decision_source:
-            new_color = secondary_color if decision_source == 'rule_override' else primary_color
-            if self.last_final_color != new_color:
-                self.get_logger().info(
-                    f"Final traffic light decision updated to {new_color} ({decision_source}).")
-            self.last_final_color = new_color
-            self.last_decision_source = decision_source
-            # 새 결정을 내렸으면 카운터를 초기화해 다음 변화를 기다린다.
-            self.consensus_candidate = None
-            self.consensus_count = 0
-            self.conflict_candidate = None
-            self.conflict_count = 0
-        else:
-            self.last_decision_source = 'None'
-
-        final_color = self.last_final_color if self.last_final_color else 'Unknown'
-        return final_color, decision_source
 
     def update_debug_rule_visuals(self, rule_metrics):
         if not self.debug_mode:
