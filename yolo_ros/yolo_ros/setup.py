@@ -30,6 +30,8 @@ setup(
     entry_points={
         "console_scripts": [
             "detect_traffic_light = yolo_ros.detect_traffic_light:main",
+            "detect_traffic_light_tl = yolo_ros.detect_traffic_light_TL:main",
+            "detect_traffic_light_gru = yolo_ros.detect_traffic_light_GRU:main",
             "test_mission_node = yolo_ros.test_mission_node:main",
             "yolo_dual_camera_node = yolo_ros.yolo_dual_camera_node:main",
         ],
