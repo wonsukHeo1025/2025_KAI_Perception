@@ -1,0 +1,21 @@
+camera_1:
+  extrinsic_matrix:
+  # PLACEHOLDER: Update with actual extrinsic calibration (4x4 transformation from os_lidar to camera frame)
+  # This is currently set to identity matrix - replace with actual calibration
+  - - 1.0  # R11
+    - 0.0  # R12
+    - 0.0  # R13
+    - 0.0  # tx
+  - - 0.0  # R21
+    - 1.0  # R22
+    - 0.0  # R23
+    - 0.0  # ty
+  - - 0.0  # R31
+    - 0.0  # R32
+    - 1.0  # R33
+    - 0.0  # tz
+  - - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+

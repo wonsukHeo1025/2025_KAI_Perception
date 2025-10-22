@@ -159,6 +159,18 @@ target_link_libraries(multi_iou_fusion_node
 )
 ament_target_dependencies(multi_iou_fusion_node ${dependencies})
 
+# Add single-camera IoU fusion node
+add_executable(single_iou_fusion_node
+  src/nodes/single_iou_fusion_node.cpp
+)
+target_link_libraries(single_iou_fusion_node
+  calico_utils
+  calico_fusion
+  ${YAML_CPP_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+ament_target_dependencies(single_iou_fusion_node ${dependencies})
+
 # Install targets
 install(TARGETS
   calico_utils
@@ -169,6 +181,7 @@ install(TARGETS
   visualization_node
   projection_debug_node
   multi_iou_fusion_node
+  single_iou_fusion_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

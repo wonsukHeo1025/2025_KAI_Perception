@@ -1,0 +1,22 @@
+calico:
+  cones_topic: "/cone/lidar/box" 
+  output_topic: "/cone/fused"
+  # Unknown(미분류) 콘을 결과에서 제거할지 여부
+  filter_unknown: true
+
+  max_matching_distance: 25.0 # 픽셀 단위 매칭 거리 임계값
+
+  cameras:
+    - id: "camera_1" 
+      detections_topic: "/camera_1/detections"
+
+  calibration:
+    config_folder: ""  # Leave empty to use package default directory
+    camera_extrinsic_calibration: "single_camera_extrinsic_calibration.yaml" 
+    camera_intrinsic_calibration: "single_camera_intrinsic_calibration.yaml" 
+
+  qos:
+    history_depth: 1
+    sync_slop: 0.1 # 초 단위
+    sync_queue_size: 10
+
