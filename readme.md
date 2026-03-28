@@ -2,7 +2,7 @@
 
 ## 개요
 
-담당: GPS·IMU 융합 기반 위치 추정 + 카메라-라이다 센서 퓨전 및 객체 추적
+담당: GPS·IMU 퓨전 기반 위치 추정 + 카메라-라이다 센서 퓨전 및 객체 추적
 
 RTK-GNSS, IMU, LiDAR, 듀얼 카메라를 센서로 사용하는 자율주행 자작자율차 Perception 워크스페이스입니다.  
 저는 차량의 자기 위치 추정 정확도와 객체 인지 성능을 동시에 높이는 역할을 맡았고 EKF 기반 로컬라이제이션, YOLO 기반 콘 검출, 카메라-라이다 투영 및 객체 단위 센서 퓨전, Hungarian + UKF 기반 추적 파이프라인을 중심으로 구현했습니다.
@@ -16,7 +16,7 @@ RTK-GNSS, IMU, LiDAR, 듀얼 카메라를 센서로 사용하는 자율주행 �
 | Camera Cone Detection | [`yolo_ros/yolo_ros/yolo_ros/yolo_dual_camera_node.py`](./yolo_ros/yolo_ros/yolo_ros/yolo_dual_camera_node.py) | 실환경 데이터로 학습한 YOLOv8 콘 검출 모델 적용, 듀얼 카메라 동시 추론, 카메라별 `DetectionArray` 및 디버그 이미지 발행 |
 | LiDAR Cone Detection | [`cone_detection`](./cone_detection) | 포인트클라우드 필터링, 클러스터링, 콘 후보 추출, `TrackedConeArray` 및 `BoundingBox3DArray` 기반 LiDAR 콘 출력 구성 |
 | Projection / Calibration | [`prism`](./prism) | 다중 카메라 intrinsic/extrinsic calibration 로딩, LiDAR 3D 포인트 및 박스의 2D 이미지 투영, 카메라-라이다 정합 디버그 시각화 |
-| Camera-LiDAR Fusion | [`calico/src/nodes/multi_iou_fusion_node.cpp`](./calico/src/nodes/multi_iou_fusion_node.cpp) | 투영된 LiDAR 3D box와 카메라 bbox 간 IoU cost 계산, Hungarian 기반 최적 매칭, 멀티 카메라 결과 병합, `TrackedConeArray` 기반 융합 결과 발행 |
+| Camera-LiDAR Fusion | [`calico/src/nodes/multi_iou_fusion_node.cpp`](./calico/src/nodes/multi_iou_fusion_node.cpp) | 투영된 LiDAR 3D box와 카메라 bbox 간 IoU cost 계산, Hungarian 기반 최적 매칭, 멀티 카메라 결과 병합, `TrackedConeArray` 기반 퓨전 결과 발행 |
 | Multi-Object Tracking | [`calico/src/nodes/ukf_tracking_node.cpp`](./calico/src/nodes/ukf_tracking_node.cpp), [`kalman_filters`](./kalman_filters) | UKF 기반 객체 추적, IMU 기반 ego-motion 보상, matched/unmatched cone 관리, 신규 트랙 생성 및 소실 트랙 제거 |
 | ROS 2 Interface | [`custom_interface`](./custom_interface) | `TrackedCone.msg`, `TrackedConeArray.msg`, `ModifiedFloat32MultiArray.msg` 등 Perception 파이프라인 메시지 인터페이스 구성 |
 
@@ -32,7 +32,7 @@ GPS + IMU Fusion
 Cone Detection
 - 실환경 주행 이미지 기반으로 학습한 YOLOv8 custom cone detector 적용
 - 단일 카메라/듀얼 카메라 노드를 분리해 운용하고, 듀얼 카메라로 FOV 한계를 보완
-- LiDAR 포인트클라우드에서 콘 클러스터와 3D bounding box를 생성해 카메라-라이다 융합 입력으로 사용
+- LiDAR 포인트클라우드에서 콘 클러스터와 3D bounding box를 생성해 카메라-라이다 퓨전 입력으로 사용
 
 Camera-LiDAR Fusion + Tracking
 - calibration YAML을 기반으로 LiDAR 3D point/box를 각 카메라 이미지 평면으로 투영
@@ -43,7 +43,7 @@ Camera-LiDAR Fusion + Tracking
 
 ## 상세 구현
 
-### 1. GPS·IMU 융합 로컬라이제이션 구현
+### 1. GPS·IMU 퓨전 로컬라이제이션 구현
 
 - EKF 상태를 위치, 속도, 자세, accel bias, gyro bias까지 포함한 15-state 구조로 설계
 - RTK-GNSS 위치/속도와 IMU를 함께 사용해 저주파 측정 업데이트 + 고주파 예측 구조 구현
@@ -79,7 +79,7 @@ Camera-LiDAR Fusion + Tracking
 - LiDAR 포인트와 3D box를 카메라 좌표계로 변환한 뒤 `cv::projectPoints`를 사용해 2D 이미지 평면으로 투영
 - `projection_debug_node`를 통해 각 카메라 영상 위에 투영 결과를 오버레이해 센서 정합 상태를 검증
 
-### 4. 객체 단위 센서 융합 및 UKF 추적
+### 4. 객체 단위 센서 퓨전 및 UKF 추적
 
 - LiDAR에서 생성한 `/cone/lidar/box`와 카메라 검출 bbox를 같은 이미지 평면으로 맞춘 뒤 IoU 기반 cost matrix 생성
 - Hungarian matcher를 사용해 전체 비용이 최소가 되는 최적 매칭 결과를 계산
